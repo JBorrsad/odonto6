@@ -1,0 +1,3 @@
+@echo off
+echo Ejecutando aplicacion con parametros JVM para Firestore...
+powershell -ExecutionPolicy Bypass -File .\run.ps1 

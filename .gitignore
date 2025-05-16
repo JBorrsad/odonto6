@@ -1,0 +1,22 @@
+# Archivos de credenciales y configuración
+**/temp-firebase-credentials.json
+**/*credentials*.json
+**/*.env
+**/*.key
+**/*.pem
+**/*.p12
+
+# Archivos temporales
+**/temp/
+**/tmp/
+
+# Carpetas de dependencias
+**/node_modules/
+**/target/
+**/build/
+**/bin/
+**/obj/
+
+# Logs
+**/logs/
+**/*.log 
