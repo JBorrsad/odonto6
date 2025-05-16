@@ -1,10 +1,13 @@
 import React, { useEffect } from 'react';
 
-function Modal({ isOpen = true, onClose, title, children, footer }) {
+function Modal({ isOpen = false, onClose, title, children, footer }) {
+  // No hacer nada si el modal no está abierto
+  if (!isOpen) return null;
+  
   // Cerrar modal con Escape
   useEffect(() => {
     const handleEsc = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && onClose) onClose();
     };
     
     window.addEventListener('keydown', handleEsc);
@@ -18,12 +21,17 @@ function Modal({ isOpen = true, onClose, title, children, footer }) {
     };
   }, [onClose]);
 
+  // Manejar el caso en que onClose no esté definido
+  const handleClose = () => {
+    if (onClose) onClose();
+  };
+
   return (
     <>
       {/* Overlay */}
       <div 
         className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4"
-        onClick={onClose}
+        onClick={handleClose}
       >
         {/* Modal */}
         <div 
@@ -34,7 +42,7 @@ function Modal({ isOpen = true, onClose, title, children, footer }) {
           <div className="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-900">{title}</h3>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="text-gray-400 hover:text-gray-500 focus:outline-none"
             >
               <span className="sr-only">Cerrar</span>
