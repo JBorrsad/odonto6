@@ -1,17 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { getPatientById, getOdontogramByPatientId, getAppointmentsByPatient } from '../services/api';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { getPatientById, getOdontogramByPatientId, getAppointmentsByPatient, updatePatient, deletePatient } from '../services/api';
 import Card from '../components/common/Card';
-import Odontogram from '../components/Odontogram';
+import Odontogram from '../components/patient/Odontogram';
+import PatientForm from '../components/patient/PatientForm';
+import Button from '../components/common/Button';
 
 function PatientDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [patient, setPatient] = useState(null);
   const [odontogram, setOdontogram] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('info');
+  const [isEditing, setIsEditing] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -61,17 +67,47 @@ function PatientDetailPage() {
 
   const getStatusClass = (status) => {
     switch (status?.toLowerCase()) {
-      case 'confirmada':
+      case 'confirmed':
         return 'bg-green-100 text-green-800';
-      case 'sin confirmar':
+      case 'pending':
         return 'bg-yellow-100 text-yellow-800';
-      case 'en sala de espera':
+      case 'waiting_room':
         return 'bg-blue-100 text-blue-800';
-      case 'en curso':
+      case 'in_progress':
         return 'bg-purple-100 text-purple-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const handleSavePatient = async (updatedPatientData) => {
+    setSaveLoading(true);
+    try {
+      const updated = await updatePatient(id, updatedPatientData);
+      setPatient(updated);
+      setIsEditing(false);
+    } catch (err) {
+      setError(err.message || "Error al actualizar el paciente");
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const handleDeletePatient = async () => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar este paciente? Esta acción no se puede deshacer.')) {
+      setDeleteLoading(true);
+      try {
+        await deletePatient(id);
+        navigate('/patients');
+      } catch (err) {
+        setError(err.message || "Error al eliminar el paciente");
+        setDeleteLoading(false);
+      }
+    }
+  };
+
+  const handleOdontogramUpdate = (updatedOdontogram) => {
+    setOdontogram(updatedOdontogram);
   };
 
   if (loading) {
@@ -110,11 +146,36 @@ function PatientDetailPage() {
   return (
     <div className="p-6">
       <div className="mb-6 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">{patient.nombre} {patient.apellidos}</h1>
-        <Link to="/patients" className="text-blue-500 hover:underline">
-          Volver a pacientes
-        </Link>
+        <h1 className="text-2xl font-bold text-gray-900">{patient.nombre} {patient.apellido}</h1>
+        <div className="flex space-x-2">
+          {!isEditing && (
+            <>
+              <Button 
+                onClick={() => setIsEditing(true)} 
+                variant="secondary"
+              >
+                Editar
+              </Button>
+              <Button 
+                onClick={handleDeletePatient} 
+                variant="danger"
+                loading={deleteLoading}
+              >
+                Eliminar
+              </Button>
+            </>
+          )}
+          <Link to="/patients" className="inline-block py-2 px-4 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+            Volver
+          </Link>
+        </div>
       </div>
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+          <p>{error}</p>
+        </div>
+      )}
 
       <div className="mb-6">
         <div className="flex border-b border-gray-200">
@@ -142,40 +203,49 @@ function PatientDetailPage() {
       {activeTab === 'info' && (
         <Card>
           <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Información Personal</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="text-gray-500">Edad:</div>
-                  <div>{patient.edad} años</div>
-                  
-                  <div className="text-gray-500">Sexo:</div>
-                  <div>{patient.sexo === 'M' ? 'Masculino' : 'Femenino'}</div>
-                  
-                  <div className="text-gray-500">Teléfono:</div>
-                  <div>{patient.telefono}</div>
-                  
-                  <div className="text-gray-500">Email:</div>
-                  <div>{patient.email}</div>
+            {isEditing ? (
+              <PatientForm 
+                patient={patient} 
+                onSubmit={handleSavePatient} 
+                onCancel={() => setIsEditing(false)}
+                loading={saveLoading}
+              />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Información Personal</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="text-gray-500">Edad:</div>
+                    <div>{patient.age} años</div>
+                    
+                    <div className="text-gray-500">Sexo:</div>
+                    <div>{patient.sexo === 'MALE' ? 'Masculino' : 'Femenino'}</div>
+                    
+                    <div className="text-gray-500">Teléfono:</div>
+                    <div>{patient.telefono?.numero}</div>
+                    
+                    <div className="text-gray-500">Email:</div>
+                    <div>{patient.email?.address}</div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">Próxima Cita</h3>
+                  {appointments && appointments.length > 0 ? (
+                    <div className="border rounded p-3">
+                      <div className="font-medium">{formatDate(appointments[0].start)}</div>
+                      <div className="text-sm text-gray-500">Dr. {appointments[0].doctorId || 'N/A'}</div>
+                      <div className="text-sm">{appointments[0].treatment || 'N/A'}</div>
+                      <div className={`text-xs mt-2 inline-block px-2 py-1 rounded ${getStatusClass(appointments[0].status)}`}>
+                        {appointments[0].status || 'Sin estado'}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-gray-500">No hay citas programadas</div>
+                  )}
                 </div>
               </div>
-              
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Próxima Cita</h3>
-                {appointments && appointments.length > 0 ? (
-                  <div className="border rounded p-3">
-                    <div className="font-medium">{formatDate(appointments[0].fecha)}</div>
-                    <div className="text-sm text-gray-500">Dr. {appointments[0].doctor?.nombre || 'N/A'}</div>
-                    <div className="text-sm">{appointments[0].tratamiento || 'N/A'}</div>
-                    <div className={`text-xs mt-2 inline-block px-2 py-1 rounded ${getStatusClass(appointments[0].estado)}`}>
-                      {appointments[0].estado || 'Sin estado'}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-gray-500">No hay citas programadas</div>
-                )}
-              </div>
-            </div>
+            )}
           </div>
         </Card>
       )}
@@ -184,13 +254,13 @@ function PatientDetailPage() {
         <Card>
           <div className="p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Odontograma</h3>
-            {odontogram ? (
-              <Odontogram data={odontogram} isChild={patient.edad < 18} />
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                No hay datos del odontograma disponibles
-              </div>
-            )}
+            <Odontogram 
+              patientId={id}
+              data={odontogram?.teeth} 
+              isChild={patient.age < 18} 
+              isEditable={true}
+              onUpdate={handleOdontogramUpdate}
+            />
           </div>
         </Card>
       )}
@@ -210,15 +280,15 @@ function PatientDetailPage() {
                 {appointments.map((appointment) => (
                   <div key={appointment.id} className="py-3">
                     <div className="flex justify-between">
-                      <div className="font-medium">{formatDate(appointment.fecha)}</div>
-                      <div className={`text-xs px-2 py-1 rounded ${getStatusClass(appointment.estado)}`}>
-                        {appointment.estado || 'Sin estado'}
+                      <div className="font-medium">{formatDate(appointment.start)}</div>
+                      <div className={`text-xs px-2 py-1 rounded ${getStatusClass(appointment.status)}`}>
+                        {appointment.status || 'Sin estado'}
                       </div>
                     </div>
-                    <div className="text-sm text-gray-500">Dr. {appointment.doctor?.nombre || 'N/A'}</div>
-                    <div className="text-sm">{appointment.tratamiento || 'N/A'}</div>
-                    {appointment.notas && (
-                      <div className="text-sm mt-1 text-gray-500">{appointment.notas}</div>
+                    <div className="text-sm text-gray-500">Dr. {appointment.doctorId || 'N/A'}</div>
+                    <div className="text-sm">{appointment.treatment || 'N/A'}</div>
+                    {appointment.notes && (
+                      <div className="text-sm mt-1 text-gray-500">{appointment.notes}</div>
                     )}
                   </div>
                 ))}

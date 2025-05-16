@@ -1,26 +1,22 @@
 import React, { useEffect } from 'react';
 
-function Modal({ isOpen, onClose, title, children, footer }) {
+function Modal({ isOpen = true, onClose, title, children, footer }) {
   // Cerrar modal con Escape
   useEffect(() => {
     const handleEsc = (e) => {
-      if (e.key === 'Escape' && isOpen) onClose();
+      if (e.key === 'Escape') onClose();
     };
     
     window.addEventListener('keydown', handleEsc);
     
     // Bloquear scroll cuando modal esté abierto
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    }
+    document.body.style.overflow = 'hidden';
     
     return () => {
       window.removeEventListener('keydown', handleEsc);
       document.body.style.overflow = 'auto';
     };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
+  }, [onClose]);
 
   return (
     <>

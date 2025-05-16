@@ -8,7 +8,8 @@ import './index.css';
 import axios from 'axios';
 
 // Configurar base URL para el entorno de desarrollo
-axios.defaults.baseURL = import.meta.env.DEV ? 'http://localhost:8080' : '';
+// Usar URL relativa para aprovechar el proxy de Vite
+axios.defaults.baseURL = '';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

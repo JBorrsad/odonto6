@@ -72,10 +72,10 @@ function WeeklySchedule({ week, doctor, appointments, onNewAppointment, onEditAp
     const colors = {
       'PENDIENTE': 'bg-yellow-100 border-yellow-300',
       'CONFIRMADA': 'bg-green-100 border-green-300',
-      'EN_ESPERA': 'bg-blue-100 border-blue-300',
-      'EN_CURSO': 'bg-indigo-100 border-indigo-300',
-      'COMPLETADA': 'bg-gray-100 border-gray-300',
-      'CANCELADA': 'bg-red-100 border-red-300'
+      'SALA_ESPERA': 'bg-gray-100 border-gray-300',
+      'EN_CURSO': 'bg-blue-100 border-blue-300',
+      'COMPLETADA': 'bg-gray-100 border-gray-300 opacity-60',
+      'CANCELADA': 'bg-red-100 border-red-300 opacity-60'
     };
     
     return colors[status] || 'bg-gray-100 border-gray-300';

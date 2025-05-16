@@ -4,11 +4,16 @@ import Button from '../common/Button';
 function PatientForm({ patient, onSubmit, onCancel }) {
   const [form, setForm] = useState({
     nombre: '',
-    apellidos: '',
+    apellido: '',
     fechaNacimiento: '',
-    sexo: 'MASCULINO',
-    telefono: '',
-    email: '',
+    age: '',
+    sexo: 'MALE',
+    telefono: {
+      numero: ''
+    },
+    email: {
+      address: ''
+    },
   });
 
   const [errors, setErrors] = useState({});
@@ -22,21 +27,39 @@ function PatientForm({ patient, onSubmit, onCancel }) {
         
       setForm({
         nombre: patient.nombre || '',
-        apellidos: patient.apellidos || '',
+        apellido: patient.apellido || '',
         fechaNacimiento,
-        sexo: patient.sexo || 'MASCULINO',
-        telefono: patient.telefono || '',
-        email: patient.email || '',
+        age: patient.age || '',
+        sexo: patient.sexo || 'MALE',
+        telefono: {
+          numero: patient.telefono?.numero || ''
+        },
+        email: {
+          address: patient.email?.address || ''
+        },
       });
     }
   }, [patient]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm({
-      ...form,
-      [name]: value,
-    });
+    
+    // Manejar campos anidados
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
+      setForm({
+        ...form,
+        [parent]: {
+          ...form[parent],
+          [child]: value
+        }
+      });
+    } else {
+      setForm({
+        ...form,
+        [name]: value,
+      });
+    }
     
     // Limpiar error cuando el usuario comienza a corregir
     if (errors[name]) {
@@ -51,15 +74,19 @@ function PatientForm({ patient, onSubmit, onCancel }) {
     const newErrors = {};
     
     if (!form.nombre) newErrors.nombre = 'El nombre es obligatorio';
-    if (!form.apellidos) newErrors.apellidos = 'Los apellidos son obligatorios';
+    if (!form.apellido) newErrors.apellido = 'El apellido es obligatorio';
     if (!form.fechaNacimiento) newErrors.fechaNacimiento = 'La fecha de nacimiento es obligatoria';
     
-    if (form.telefono && !/^\d{9}$/.test(form.telefono)) {
-      newErrors.telefono = 'El teléfono debe tener 9 dígitos';
+    if (!form.telefono.numero) {
+      newErrors['telefono.numero'] = 'El teléfono es obligatorio';
+    } else if (!/^\d{9}$/.test(form.telefono.numero)) {
+      newErrors['telefono.numero'] = 'El teléfono debe tener 9 dígitos';
     }
     
-    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = 'El email no es válido';
+    if (!form.email.address) {
+      newErrors['email.address'] = 'El email es obligatorio';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.address)) {
+      newErrors['email.address'] = 'El email no es válido';
     }
     
     setErrors(newErrors);
@@ -74,10 +101,29 @@ function PatientForm({ patient, onSubmit, onCancel }) {
       const patientData = {
         ...form,
         fechaNacimiento: form.fechaNacimiento ? new Date(form.fechaNacimiento).toISOString() : null,
+        age: form.age ? parseInt(form.age, 10) : null,
       };
       
       onSubmit(patientData);
     }
+  };
+
+  const calculateAge = (birthdate) => {
+    if (!birthdate) return;
+    
+    const today = new Date();
+    const birthDate = new Date(birthdate);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    setForm({
+      ...form,
+      age: age.toString()
+    });
   };
 
   return (
@@ -97,17 +143,17 @@ function PatientForm({ patient, onSubmit, onCancel }) {
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-gray-700">Apellidos</label>
+        <label className="block text-sm font-medium text-gray-700">Apellido</label>
         <input
           type="text"
-          name="apellidos"
-          value={form.apellidos}
+          name="apellido"
+          value={form.apellido}
           onChange={handleChange}
           className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-            errors.apellidos ? 'border-red-300' : ''
+            errors.apellido ? 'border-red-300' : ''
           }`}
         />
-        {errors.apellidos && <p className="mt-1 text-sm text-red-600">{errors.apellidos}</p>}
+        {errors.apellido && <p className="mt-1 text-sm text-red-600">{errors.apellido}</p>}
       </div>
       
       <div>
@@ -116,12 +162,28 @@ function PatientForm({ patient, onSubmit, onCancel }) {
           type="date"
           name="fechaNacimiento"
           value={form.fechaNacimiento}
-          onChange={handleChange}
+          onChange={(e) => {
+            handleChange(e);
+            calculateAge(e.target.value);
+          }}
           className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
             errors.fechaNacimiento ? 'border-red-300' : ''
           }`}
         />
         {errors.fechaNacimiento && <p className="mt-1 text-sm text-red-600">{errors.fechaNacimiento}</p>}
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Edad</label>
+        <input
+          type="number"
+          name="age"
+          value={form.age}
+          onChange={handleChange}
+          min="0"
+          max="120"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        />
       </div>
       
       <div>
@@ -132,8 +194,8 @@ function PatientForm({ patient, onSubmit, onCancel }) {
           onChange={handleChange}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         >
-          <option value="MASCULINO">Masculino</option>
-          <option value="FEMENINO">Femenino</option>
+          <option value="MALE">Masculino</option>
+          <option value="FEMALE">Femenino</option>
         </select>
       </div>
       
@@ -141,28 +203,28 @@ function PatientForm({ patient, onSubmit, onCancel }) {
         <label className="block text-sm font-medium text-gray-700">Teléfono</label>
         <input
           type="tel"
-          name="telefono"
-          value={form.telefono}
+          name="telefono.numero"
+          value={form.telefono.numero}
           onChange={handleChange}
           className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-            errors.telefono ? 'border-red-300' : ''
+            errors['telefono.numero'] ? 'border-red-300' : ''
           }`}
         />
-        {errors.telefono && <p className="mt-1 text-sm text-red-600">{errors.telefono}</p>}
+        {errors['telefono.numero'] && <p className="mt-1 text-sm text-red-600">{errors['telefono.numero']}</p>}
       </div>
       
       <div>
         <label className="block text-sm font-medium text-gray-700">Email</label>
         <input
           type="email"
-          name="email"
-          value={form.email}
+          name="email.address"
+          value={form.email.address}
           onChange={handleChange}
           className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-            errors.email ? 'border-red-300' : ''
+            errors['email.address'] ? 'border-red-300' : ''
           }`}
         />
-        {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+        {errors['email.address'] && <p className="mt-1 text-sm text-red-600">{errors['email.address']}</p>}
       </div>
       
       <div className="flex justify-end space-x-2 pt-4">

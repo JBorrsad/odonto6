@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { getAppointments, getDoctors, updateAppointmentStatus } from '../services/api';
-import { useLocation, useNavigate, Routes, Route } from 'react-router-dom';
+import { getAppointments, getDoctors, createAppointment, updateAppointment, deleteAppointment } from '../services/api';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import Card from '../components/common/Card';
+import Button from '../components/common/Button';
+import Modal from '../components/common/Modal';
+import AppointmentForm from '../components/appointment/AppointmentForm';
+import AppointmentDetail from '../components/appointment/AppointmentDetail';
 
 // Componente para la vista diaria
-function DailySchedule({ date, appointments, doctors }) {
+function DailySchedule({ date, appointments, doctors, onAppointmentClick }) {
   const businessHours = [];
   for (let i = 8; i < 20; i++) {
     businessHours.push(`${i}:00`);
@@ -18,15 +23,19 @@ function DailySchedule({ date, appointments, doctors }) {
   };
 
   const getStatusClass = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'confirmada':
+    switch (status) {
+      case 'CONFIRMED':
         return 'bg-green-100 text-green-800 border-green-500';
-      case 'sin confirmar':
+      case 'PENDING':
         return 'bg-yellow-100 text-yellow-800 border-yellow-500';
-      case 'en sala de espera':
+      case 'WAITING_ROOM':
         return 'bg-blue-100 text-blue-800 border-blue-500';
-      case 'en curso':
+      case 'IN_PROGRESS':
         return 'bg-purple-100 text-purple-800 border-purple-500';
+      case 'COMPLETED':
+        return 'bg-gray-100 text-gray-800 border-gray-500';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800 border-red-500';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-500';
     }
@@ -34,16 +43,14 @@ function DailySchedule({ date, appointments, doctors }) {
 
   const getAppointmentsByHourAndDoctor = (hour, doctorId) => {
     return appointments.filter(appointment => {
-      const startTime = new Date(appointment.fecha);
+      const startTime = new Date(appointment.start);
       const hourStr = `${startTime.getHours()}:${startTime.getMinutes() === 0 ? '00' : '30'}`;
-      return hourStr === hour && appointment.doctor?.id === doctorId;
+      return hourStr === hour && appointment.doctorId === doctorId;
     });
   };
 
-  // Calcular la duración en número de bloques de 30 min
   const getAppointmentDuration = (appointment) => {
-    const durationMinutes = appointment.duracion || 30; // Default to 30 minutes
-    return Math.ceil(durationMinutes / 30);
+    return appointment.durationSlots || 1;
   };
 
   return (
@@ -61,7 +68,7 @@ function DailySchedule({ date, appointments, doctors }) {
               </th>
               {doctors.map(doctor => (
                 <th key={doctor.id} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Dr. {doctor.nombre} {doctor.apellidos}
+                  Dr. {doctor.nombreCompleto}
                 </th>
               ))}
             </tr>
@@ -77,9 +84,9 @@ function DailySchedule({ date, appointments, doctors }) {
                   
                   // Si ya hay una cita que ocupa esta celda desde una fila anterior, no mostramos nada
                   const isOccupiedFromAbove = appointments.some(appointment => {
-                    if (appointment.doctor?.id !== doctor.id) return false;
+                    if (appointment.doctorId !== doctor.id) return false;
                     
-                    const startTime = new Date(appointment.fecha);
+                    const startTime = new Date(appointment.start);
                     const appointmentHour = `${startTime.getHours()}:${startTime.getMinutes() === 0 ? '00' : '30'}`;
                     
                     // Encontrar el índice de la hora de inicio en businessHours
@@ -106,14 +113,15 @@ function DailySchedule({ date, appointments, doctors }) {
                         return (
                           <div 
                             key={appointment.id} 
-                            className={`p-2 rounded border-l-4 mb-1 ${getStatusClass(appointment.estado)}`}
+                            className={`p-2 rounded border-l-4 mb-1 cursor-pointer hover:shadow ${getStatusClass(appointment.status)}`}
                             style={{ height: `${duration * 35}px` }}
+                            onClick={() => onAppointmentClick(appointment)}
                           >
-                            <div className="font-medium">{appointment.paciente?.nombre} {appointment.paciente?.apellidos}</div>
+                            <div className="font-medium">{appointment.patientName || 'Paciente'}</div>
                             <div className="text-xs">
-                              {formatTime(appointment.fecha)} - Duración: {appointment.duracion || 30} min
+                              {formatTime(appointment.start)} - {duration * 30} min
                             </div>
-                            <div className="text-xs mt-1">{appointment.tratamiento}</div>
+                            <div className="text-xs mt-1">{appointment.treatment || 'Consulta'}</div>
                           </div>
                         );
                       }) : null}
@@ -130,8 +138,8 @@ function DailySchedule({ date, appointments, doctors }) {
 }
 
 // Componente para la vista semanal
-function WeeklySchedule({ selectedDate, appointments, doctors }) {
-  const [selectedDoctor, setSelectedDoctor] = useState(doctors[0]?.id || null);
+function WeeklySchedule({ selectedDate, appointments, doctors, onAppointmentClick }) {
+  const [selectedDoctor, setSelectedDoctor] = useState(doctors[0]?.id || '');
   
   // Generar los días de la semana
   const getWeekDays = (date) => {
@@ -140,7 +148,8 @@ function WeeklySchedule({ selectedDate, appointments, doctors }) {
     
     const days = [];
     for (let i = 0; i < 7; i++) {
-      const day = new Date(curr.setDate(first + i));
+      const day = new Date(curr);
+      day.setDate(first + i);
       days.push(day);
     }
     return days;
@@ -159,15 +168,19 @@ function WeeklySchedule({ selectedDate, appointments, doctors }) {
   };
   
   const getStatusClass = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'confirmada':
+    switch (status) {
+      case 'CONFIRMED':
         return 'bg-green-100 text-green-800 border-green-500';
-      case 'sin confirmar':
+      case 'PENDING':
         return 'bg-yellow-100 text-yellow-800 border-yellow-500';
-      case 'en sala de espera':
+      case 'WAITING_ROOM':
         return 'bg-blue-100 text-blue-800 border-blue-500';
-      case 'en curso':
+      case 'IN_PROGRESS':
         return 'bg-purple-100 text-purple-800 border-purple-500';
+      case 'COMPLETED':
+        return 'bg-gray-100 text-gray-800 border-gray-500';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800 border-red-500';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-500';
     }
@@ -175,10 +188,10 @@ function WeeklySchedule({ selectedDate, appointments, doctors }) {
   
   const getAppointmentsForDayAndDoctor = (day, doctorId) => {
     return appointments.filter(appointment => {
-      const appointmentDate = new Date(appointment.fecha);
+      const appointmentDate = new Date(appointment.start);
       return (
         appointmentDate.toDateString() === day.toDateString() && 
-        appointment.doctor?.id === doctorId
+        appointment.doctorId === doctorId
       );
     });
   };
@@ -192,263 +205,443 @@ function WeeklySchedule({ selectedDate, appointments, doctors }) {
         
         <select 
           className="border rounded p-2"
-          value={selectedDoctor || ''}
+          value={selectedDoctor}
           onChange={(e) => setSelectedDoctor(e.target.value)}
         >
+          <option value="">Seleccionar doctor</option>
           {doctors.map(doctor => (
             <option key={doctor.id} value={doctor.id}>
-              Dr. {doctor.nombre} {doctor.apellidos}
+              Dr. {doctor.nombreCompleto}
             </option>
           ))}
         </select>
       </div>
       
-      <div className="grid grid-cols-7 gap-2">
-        {weekDays.map(day => (
-          <div key={day.toISOString()} className="border rounded">
-            <div className={`text-center p-2 font-medium ${day.toDateString() === new Date().toDateString() ? 'bg-blue-100' : 'bg-gray-100'}`}>
-              {formatDate(day)}
+      {selectedDoctor ? (
+        <div className="grid grid-cols-7 gap-2">
+          {weekDays.map(day => (
+            <div key={day.toISOString()} className="border rounded">
+              <div className="p-2 bg-gray-100 font-medium text-center border-b">
+                {formatDate(day)}
+              </div>
+              <div className="p-2 h-64 overflow-y-auto">
+                {getAppointmentsForDayAndDoctor(day, selectedDoctor).length > 0 ? (
+                  getAppointmentsForDayAndDoctor(day, selectedDoctor).map(appointment => (
+                    <div 
+                      key={appointment.id} 
+                      className={`p-2 text-sm rounded border-l-4 mb-2 cursor-pointer hover:shadow ${getStatusClass(appointment.status)}`}
+                      onClick={() => onAppointmentClick(appointment)}
+                    >
+                      <div className="font-medium">{appointment.patientName || 'Paciente'}</div>
+                      <div className="text-xs">{formatTime(appointment.start)}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-gray-500 text-sm py-4">
+                    No hay citas
+                  </div>
+                )}
+              </div>
             </div>
-            
-            <div className="p-2 min-h-40">
-              {getAppointmentsForDayAndDoctor(day, selectedDoctor).map(appointment => (
-                <div 
-                  key={appointment.id}
-                  className={`p-2 text-xs rounded border-l-4 mb-1 ${getStatusClass(appointment.estado)}`}
-                >
-                  <div>{formatTime(appointment.fecha)}</div>
-                  <div className="font-medium">{appointment.paciente?.nombre}</div>
-                  <div>{appointment.tratamiento}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8 text-gray-500">
+          Selecciona un doctor para ver su agenda semanal
+        </div>
+      )}
     </div>
   );
 }
 
-// Componente para la vista de calendario mensual
-function CalendarView({ selectedDate, appointments, onDateSelect }) {
-  const [currentMonth, setCurrentMonth] = useState(new Date(selectedDate));
+// Componente para la vista mensual
+function CalendarView({ selectedDate, appointments, doctors, onDateSelect }) {
+  const [selectedDoctor, setSelectedDoctor] = useState('');
   
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
     
-    // Determinar el primer día del mes
-    const firstDay = new Date(year, month, 1).getDay();
+    // Primer día del mes
+    const firstDay = new Date(year, month, 1);
+    // Último día del mes
+    const lastDay = new Date(year, month + 1, 0);
     
-    // Crear array para todos los días
+    // Día de la semana del primer día (0 = Domingo, 1 = Lunes, etc.)
+    const firstDayOfWeek = firstDay.getDay();
+    // Total de días en el mes
+    const daysInMonth = lastDay.getDate();
+    
+    // Array para almacenar todos los días que se mostrarán
     const days = [];
     
-    // Añadir días vacíos para alinear el primer día
-    for (let i = 0; i < firstDay; i++) {
-      days.push({ day: null, date: null });
+    // Días del mes anterior para completar la primera semana
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
+    for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+      const day = new Date(year, month - 1, prevMonthLastDay - i);
+      days.push({ date: day, isCurrentMonth: false });
     }
     
-    // Añadir todos los días del mes
+    // Días del mes actual
     for (let i = 1; i <= daysInMonth; i++) {
-      const dayDate = new Date(year, month, i);
-      days.push({ 
-        day: i, 
-        date: dayDate,
-        appointments: appointments.filter(appointment => {
-          const appointmentDate = new Date(appointment.fecha);
-          return appointmentDate.toDateString() === dayDate.toDateString();
-        })
-      });
+      const day = new Date(year, month, i);
+      days.push({ date: day, isCurrentMonth: true });
+    }
+    
+    // Días del mes siguiente para completar la última semana
+    const remainingDays = 42 - days.length; // 6 semanas * 7 días = 42
+    for (let i = 1; i <= remainingDays; i++) {
+      const day = new Date(year, month + 1, i);
+      days.push({ date: day, isCurrentMonth: false });
     }
     
     return days;
   };
   
-  const days = getDaysInMonth(currentMonth);
-  const weekdays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const filteredAppointments = selectedDoctor
+    ? appointments.filter(appt => appt.doctorId === selectedDoctor)
+    : appointments;
   
-  const prevMonth = () => {
-    const date = new Date(currentMonth);
-    date.setMonth(date.getMonth() - 1);
-    setCurrentMonth(date);
+  const getAppointmentsForDay = (day) => {
+    return filteredAppointments.filter(appointment => {
+      const appointmentDate = new Date(appointment.start);
+      return appointmentDate.toDateString() === day.toDateString();
+    });
   };
   
-  const nextMonth = () => {
-    const date = new Date(currentMonth);
-    date.setMonth(date.getMonth() + 1);
-    setCurrentMonth(date);
-  };
+  const days = getDaysInMonth(selectedDate);
+  const weekDays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
   
   return (
     <div className="calendar-view">
       <div className="flex justify-between items-center mb-4">
-        <button 
-          onClick={prevMonth}
-          className="bg-gray-200 p-2 rounded hover:bg-gray-300"
-        >
-          &lt;
-        </button>
-        
         <h2 className="text-xl font-semibold">
-          {currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+          {selectedDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
         </h2>
         
-        <button 
-          onClick={nextMonth}
-          className="bg-gray-200 p-2 rounded hover:bg-gray-300"
+        <select 
+          className="border rounded p-2"
+          value={selectedDoctor}
+          onChange={(e) => setSelectedDoctor(e.target.value)}
         >
-          &gt;
-        </button>
+          <option value="">Todos los doctores</option>
+          {doctors.map(doctor => (
+            <option key={doctor.id} value={doctor.id}>
+              Dr. {doctor.nombreCompleto}
+            </option>
+          ))}
+        </select>
       </div>
       
       <div className="grid grid-cols-7 gap-1">
-        {weekdays.map(day => (
-          <div key={day} className="text-center p-2 font-medium text-sm text-gray-500">
+        {weekDays.map(day => (
+          <div key={day} className="p-2 text-center font-medium bg-gray-100">
             {day}
           </div>
         ))}
         
-        {days.map((day, index) => (
-          <div 
-            key={index} 
-            className={`border p-1 min-h-24 ${
-              day.date && day.date.toDateString() === new Date().toDateString()
-                ? 'bg-blue-50'
-                : day.date ? 'hover:bg-gray-50 cursor-pointer' : 'bg-gray-100'
-            }`}
-            onClick={() => day.date && onDateSelect(day.date)}
-          >
-            {day.day && (
-              <>
-                <div className="text-right">{day.day}</div>
-                <div>
-                  {day.appointments.length > 0 && (
-                    <div className="text-xs mt-1">
-                      <div className="bg-blue-100 text-blue-800 rounded-full px-2 py-1 inline-block">
-                        {day.appointments.length} {day.appointments.length === 1 ? 'cita' : 'citas'}
+        {days.map((day, index) => {
+          const dayAppointments = getAppointmentsForDay(day.date);
+          const isToday = day.date.toDateString() === new Date().toDateString();
+          const isSelected = day.date.toDateString() === selectedDate.toDateString();
+          
+          return (
+            <div 
+              key={index} 
+              className={`p-1 border min-h-[80px] ${
+                day.isCurrentMonth ? 'bg-white' : 'bg-gray-50 text-gray-400'
+              } ${isToday ? 'border-blue-500 border-2' : ''}
+              ${isSelected ? 'bg-blue-50' : ''}
+              cursor-pointer hover:bg-blue-50`}
+              onClick={() => onDateSelect(day.date)}
+            >
+              <div className="text-right p-1">
+                {day.date.getDate()}
+              </div>
+              
+              {dayAppointments.length > 0 && (
+                <div className="p-1">
+                  {dayAppointments.length > 3 
+                    ? <div className="text-xs bg-blue-100 p-1 rounded text-center">{dayAppointments.length} citas</div>
+                    : dayAppointments.map(appointment => (
+                      <div key={appointment.id} className="text-xs p-1 truncate bg-blue-100 rounded mb-1">
+                        {appointment.patientName || 'Paciente'}
                       </div>
-                    </div>
-                  )}
+                    ))
+                  }
                 </div>
-              </>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
 function SchedulePage() {
-  const location = useLocation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const patientId = searchParams.get('patientId');
+  
   const [appointments, setAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState('daily');
-
-  // Extraer patientId de URL si existe
-  const queryParams = new URLSearchParams(location.search);
-  const patientId = queryParams.get('patientId');
-
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [formLoading, setFormLoading] = useState(false);
+  
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        
-        // Obtener citas
-        const appointmentsData = await getAppointments();
-        setAppointments(appointmentsData);
-
-        // Obtener doctores
-        const doctorsData = await getDoctors();
-        setDoctors(doctorsData);
-
-      } catch (err) {
-        setError(err.message || "Error al cargar los datos");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-  }, []);
-
+  }, [selectedDate]);
+  
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      
+      // Formatear la fecha para filtrar citas
+      const dateQuery = selectedDate.toISOString().split('T')[0];
+      
+      const [appointmentsData, doctorsData] = await Promise.all([
+        getAppointments(new Date(dateQuery)),
+        getDoctors()
+      ]);
+      
+      // Enriquecer citas con nombres de pacientes y doctores para mostrar
+      const enrichedAppointments = appointmentsData.map(appointment => {
+        return {
+          ...appointment,
+          // Estos campos deberían venir del backend, pero los simulamos para la UI
+          patientName: `Paciente ${appointment.patientId?.substring(0, 5)}`,
+          doctorName: `Dr. ${appointment.doctorId?.substring(0, 5)}`
+        };
+      });
+      
+      setAppointments(enrichedAppointments);
+      setDoctors(doctorsData);
+    } catch (err) {
+      setError(err.message || "Error al cargar datos");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   const handleViewChange = (mode) => {
     setViewMode(mode);
   };
-
+  
   const handleDateSelect = (date) => {
     setSelectedDate(date);
-    setViewMode('daily');
   };
-
-  if (loading) {
-    return (
-      <div className="p-6 text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-        <p className="mt-2">Cargando horario...</p>
-      </div>
+  
+  const handlePrevDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 1);
+    setSelectedDate(newDate);
+  };
+  
+  const handleNextDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 1);
+    setSelectedDate(newDate);
+  };
+  
+  const handlePrevWeek = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 7);
+    setSelectedDate(newDate);
+  };
+  
+  const handleNextWeek = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 7);
+    setSelectedDate(newDate);
+  };
+  
+  const handlePrevMonth = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setMonth(newDate.getMonth() - 1);
+    setSelectedDate(newDate);
+  };
+  
+  const handleNextMonth = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setMonth(newDate.getMonth() + 1);
+    setSelectedDate(newDate);
+  };
+  
+  const handleNewAppointment = () => {
+    setSelectedAppointment(null);
+    setShowAppointmentModal(true);
+  };
+  
+  const handleAppointmentClick = (appointment) => {
+    setSelectedAppointment(appointment);
+    setShowDetailsModal(true);
+  };
+  
+  const handleAppointmentUpdate = (updatedAppointment) => {
+    // Actualizar la cita en la lista
+    setAppointments(
+      appointments.map(appt => 
+        appt.id === updatedAppointment.id ? updatedAppointment : appt
+      )
     );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <Card>
-          <div className="p-4 text-red-500">
-            Error: {error}
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
+    setShowDetailsModal(false);
+  };
+  
+  const handleSubmitAppointment = async (appointmentData) => {
+    setFormLoading(true);
+    try {
+      let result;
+      
+      if (selectedAppointment) {
+        // Actualizar cita existente
+        result = await updateAppointment(selectedAppointment.id, appointmentData);
+        
+        // Actualizar lista local
+        setAppointments(
+          appointments.map(appt => 
+            appt.id === selectedAppointment.id ? result : appt
+          )
+        );
+      } else {
+        // Crear nueva cita
+        result = await createAppointment(appointmentData);
+        
+        // Añadir a lista local
+        setAppointments([...appointments, result]);
+      }
+      
+      setShowAppointmentModal(false);
+      
+    } catch (err) {
+      setError(err.message || "Error al guardar la cita");
+    } finally {
+      setFormLoading(false);
+    }
+  };
+  
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Agenda</h1>
-        
-        <button 
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          onClick={() => navigate('/schedule/new')}
-        >
+        <h1 className="text-2xl font-bold text-gray-900">Horario</h1>
+        <Button onClick={handleNewAppointment} variant="primary">
           Nueva Cita
-        </button>
+        </Button>
       </div>
-
-      <div className="mb-6">
-        <div className="flex border-b border-gray-200 mb-4">
-          <button
-            className={`py-2 px-4 font-medium ${viewMode === 'daily' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
-            onClick={() => handleViewChange('daily')}
-          >
-            Diario
-          </button>
-          <button
-            className={`py-2 px-4 font-medium ${viewMode === 'weekly' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
-            onClick={() => handleViewChange('weekly')}
-          >
-            Semanal
-          </button>
-          <button
-            className={`py-2 px-4 font-medium ${viewMode === 'calendar' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'}`}
-            onClick={() => handleViewChange('calendar')}
-          >
-            Calendario
-          </button>
+      
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+          <p>{error}</p>
         </div>
-
+      )}
+      
+      <Card className="mb-6">
+        <div className="p-4">
+          <div className="flex flex-wrap items-center justify-between">
+            <div className="flex space-x-2 mb-4 md:mb-0">
+              <button
+                onClick={() => handleViewChange('daily')}
+                className={`px-3 py-1 rounded ${viewMode === 'daily' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+              >
+                Diario
+              </button>
+              <button
+                onClick={() => handleViewChange('weekly')}
+                className={`px-3 py-1 rounded ${viewMode === 'weekly' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+              >
+                Semanal
+              </button>
+              <button
+                onClick={() => handleViewChange('monthly')}
+                className={`px-3 py-1 rounded ${viewMode === 'monthly' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+              >
+                Mensual
+              </button>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              {viewMode === 'daily' && (
+                <>
+                  <button
+                    onClick={handlePrevDay}
+                    className="p-1 hover:bg-gray-100 rounded"
+                  >
+                    &lt;
+                  </button>
+                  <span className="font-medium">Hoy: {selectedDate.toLocaleDateString()}</span>
+                  <button
+                    onClick={handleNextDay}
+                    className="p-1 hover:bg-gray-100 rounded"
+                  >
+                    &gt;
+                  </button>
+                </>
+              )}
+              
+              {viewMode === 'weekly' && (
+                <>
+                  <button
+                    onClick={handlePrevWeek}
+                    className="p-1 hover:bg-gray-100 rounded"
+                  >
+                    &lt;
+                  </button>
+                  <span className="font-medium">Semana de {selectedDate.toLocaleDateString()}</span>
+                  <button
+                    onClick={handleNextWeek}
+                    className="p-1 hover:bg-gray-100 rounded"
+                  >
+                    &gt;
+                  </button>
+                </>
+              )}
+              
+              {viewMode === 'monthly' && (
+                <>
+                  <button
+                    onClick={handlePrevMonth}
+                    className="p-1 hover:bg-gray-100 rounded"
+                  >
+                    &lt;
+                  </button>
+                  <span className="font-medium">
+                    {selectedDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                  </span>
+                  <button
+                    onClick={handleNextMonth}
+                    className="p-1 hover:bg-gray-100 rounded"
+                  >
+                    &gt;
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </Card>
+      
+      {loading ? (
+        <div className="text-center py-10">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          <p className="mt-2">Cargando datos...</p>
+        </div>
+      ) : (
         <Card>
           <div className="p-4">
             {viewMode === 'daily' && (
               <DailySchedule 
                 date={selectedDate} 
                 appointments={appointments} 
-                doctors={doctors} 
+                doctors={doctors}
+                onAppointmentClick={handleAppointmentClick}
               />
             )}
             
@@ -456,24 +649,50 @@ function SchedulePage() {
               <WeeklySchedule 
                 selectedDate={selectedDate} 
                 appointments={appointments} 
-                doctors={doctors} 
+                doctors={doctors}
+                onAppointmentClick={handleAppointmentClick}
               />
             )}
             
-            {viewMode === 'calendar' && (
+            {viewMode === 'monthly' && (
               <CalendarView 
                 selectedDate={selectedDate} 
                 appointments={appointments} 
-                onDateSelect={handleDateSelect} 
+                doctors={doctors}
+                onDateSelect={handleDateSelect}
               />
             )}
           </div>
         </Card>
-      </div>
-
-      <Routes>
-        <Route path="/new" element={<div>Formulario de nueva cita aquí</div>} />
-      </Routes>
+      )}
+      
+      {showAppointmentModal && (
+        <Modal
+          title={selectedAppointment ? "Editar Cita" : "Nueva Cita"}
+          onClose={() => setShowAppointmentModal(false)}
+        >
+          <AppointmentForm
+            appointment={selectedAppointment}
+            onSubmit={handleSubmitAppointment}
+            onCancel={() => setShowAppointmentModal(false)}
+            patientId={patientId}
+            loading={formLoading}
+          />
+        </Modal>
+      )}
+      
+      {showDetailsModal && selectedAppointment && (
+        <Modal
+          title="Detalles de la Cita"
+          onClose={() => setShowDetailsModal(false)}
+        >
+          <AppointmentDetail
+            appointment={selectedAppointment}
+            onClose={() => setShowDetailsModal(false)}
+            onUpdate={handleAppointmentUpdate}
+          />
+        </Modal>
+      )}
     </div>
   );
 }

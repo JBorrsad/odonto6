@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../common/Button';
 
-function DoctorForm({ doctor, onSubmit, onCancel }) {
+function DoctorForm({ doctor, onSubmit, onCancel, loading = false }) {
   const [form, setForm] = useState({
     nombreCompleto: '',
     especialidad: '',
@@ -37,13 +37,8 @@ function DoctorForm({ doctor, onSubmit, onCancel }) {
   const validate = () => {
     const newErrors = {};
     
-    if (!form.nombreCompleto) {
-      newErrors.nombreCompleto = 'El nombre completo es obligatorio';
-    }
-    
-    if (!form.especialidad) {
-      newErrors.especialidad = 'La especialidad es obligatoria';
-    }
+    if (!form.nombreCompleto) newErrors.nombreCompleto = 'El nombre completo es obligatorio';
+    if (!form.especialidad) newErrors.especialidad = 'La especialidad es obligatoria';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -89,29 +84,31 @@ function DoctorForm({ doctor, onSubmit, onCancel }) {
       
       <div>
         <label className="block text-sm font-medium text-gray-700">Especialidad</label>
-        <select
+        <input
+          type="text"
           name="especialidad"
           value={form.especialidad}
           onChange={handleChange}
           className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
             errors.especialidad ? 'border-red-300' : ''
           }`}
-        >
-          <option value="">Selecciona una especialidad</option>
-          {especialidades.map(esp => (
-            <option key={esp} value={esp}>
-              {esp}
-            </option>
-          ))}
-        </select>
+        />
         {errors.especialidad && <p className="mt-1 text-sm text-red-600">{errors.especialidad}</p>}
       </div>
       
       <div className="flex justify-end space-x-2 pt-4">
-        <Button onClick={onCancel} variant="secondary">
+        <Button 
+          onClick={onCancel} 
+          variant="secondary"
+          disabled={loading}
+        >
           Cancelar
         </Button>
-        <Button type="submit" variant="primary">
+        <Button 
+          type="submit" 
+          variant="primary"
+          loading={loading}
+        >
           {doctor ? 'Actualizar' : 'Crear'} Doctor
         </Button>
       </div>

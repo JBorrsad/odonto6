@@ -1,54 +1,75 @@
 import React, { useState, useEffect } from 'react';
+import { getPatients, getDoctors } from '../../services/api';
 import Button from '../common/Button';
 
-function AppointmentForm({ appointment, patients, doctors, onSubmit, onCancel }) {
+function AppointmentForm({ appointment, onSubmit, onCancel, patientId, loading = false }) {
+  const [patients, setPatients] = useState([]);
+  const [doctors, setDoctors] = useState([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [error, setError] = useState(null);
+  
   const [form, setForm] = useState({
-    patientId: '',
+    patientId: patientId || '',
     doctorId: '',
-    start: '',
-    time: '09:00',
-    slots: 1, // Cantidad de bloques de 30 minutos
-    status: 'PENDIENTE',
+    date: '',
+    time: '08:00',
+    durationSlots: 1,
+    status: 'PENDING',
+    notes: ''
   });
 
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    if (appointment) {
-      // Formatear fecha y hora para los inputs
-      let startDate = '';
-      let startTime = '';
-      
-      if (appointment.start) {
-        const date = new Date(appointment.start);
-        startDate = date.toISOString().split('T')[0];
+    const fetchData = async () => {
+      try {
+        setLoadingData(true);
+        const [patientsData, doctorsData] = await Promise.all([
+          getPatients(),
+          getDoctors()
+        ]);
         
-        // Formatear hora como HH:MM
-        const hours = date.getHours().toString().padStart(2, '0');
-        const minutes = date.getMinutes().toString().padStart(2, '0');
-        startTime = `${hours}:${minutes}`;
+        setPatients(patientsData);
+        setDoctors(doctorsData);
+      } catch (err) {
+        setError(err.message || 'Error al cargar datos');
+      } finally {
+        setLoadingData(false);
       }
+    };
+    
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (appointment) {
+      // Convertir la fecha ISO a componentes locales
+      const startDate = new Date(appointment.start);
+      const dateStr = startDate.toISOString().split('T')[0];
+      const timeStr = startDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
       
       setForm({
         patientId: appointment.patientId || '',
         doctorId: appointment.doctorId || '',
-        start: startDate,
-        time: startTime,
-        slots: appointment.durationSlots || 1,
-        status: appointment.status || 'PENDIENTE',
+        date: dateStr,
+        time: timeStr,
+        durationSlots: appointment.durationSlots || 1,
+        status: appointment.status || 'PENDING',
+        notes: appointment.notes || ''
       });
+    } else if (patientId) {
+      setForm(prev => ({
+        ...prev,
+        patientId
+      }));
     }
-  }, [appointment]);
+  }, [appointment, patientId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    // Convertir a número si es el campo 'slots'
-    const processedValue = name === 'slots' ? parseInt(value, 10) : value;
-    
     setForm({
       ...form,
-      [name]: processedValue,
+      [name]: value,
     });
     
     // Limpiar error cuando el usuario comienza a corregir
@@ -63,22 +84,16 @@ function AppointmentForm({ appointment, patients, doctors, onSubmit, onCancel })
   const validate = () => {
     const newErrors = {};
     
-    if (!form.patientId) newErrors.patientId = 'Selecciona un paciente';
-    if (!form.doctorId) newErrors.doctorId = 'Selecciona un doctor';
-    if (!form.start) newErrors.start = 'Selecciona una fecha';
-    if (!form.time) newErrors.time = 'Selecciona una hora';
+    if (!form.patientId) newErrors.patientId = 'El paciente es obligatorio';
+    if (!form.doctorId) newErrors.doctorId = 'El doctor es obligatorio';
+    if (!form.date) newErrors.date = 'La fecha es obligatoria';
+    if (!form.time) newErrors.time = 'La hora es obligatoria';
+    if (!form.durationSlots) newErrors.durationSlots = 'La duración es obligatoria';
     
-    // Validar que la hora termine en :00 o :30
-    if (form.time) {
-      const minutes = form.time.split(':')[1];
-      if (minutes !== '00' && minutes !== '30') {
-        newErrors.time = 'La hora debe terminar en :00 o :30';
-      }
-    }
-    
-    // Validar el número de bloques
-    if (form.slots < 1 || form.slots > 4) {
-      newErrors.slots = 'La duración debe ser entre 1 y 4 bloques';
+    // Validar que la hora sea en punto o media hora
+    const minutes = parseInt(form.time.split(':')[1], 10);
+    if (minutes !== 0 && minutes !== 30) {
+      newErrors.time = 'La hora debe ser en punto (:00) o media hora (:30)';
     }
     
     setErrors(newErrors);
@@ -89,64 +104,53 @@ function AppointmentForm({ appointment, patients, doctors, onSubmit, onCancel })
     e.preventDefault();
     
     if (validate()) {
-      // Combinar fecha y hora para crear DateTime
-      const [year, month, day] = form.start.split('-');
-      const [hours, minutes] = form.time.split(':');
-      
-      const startDateTime = new Date(
-        parseInt(year, 10),
-        parseInt(month, 10) - 1, // Month es zero-based
-        parseInt(day, 10),
-        parseInt(hours, 10),
-        parseInt(minutes, 10)
-      ).toISOString();
+      // Crear objeto Date combinando fecha y hora
+      const [hours, minutes] = form.time.split(':').map(n => parseInt(n, 10));
+      const start = new Date(form.date);
+      start.setHours(hours, minutes, 0, 0);
       
       const appointmentData = {
-        patientId: form.patientId,
-        doctorId: form.doctorId,
-        start: startDateTime,
-        durationSlots: form.slots,
-        status: form.status,
+        ...form,
+        start: start.toISOString(),
+        durationSlots: parseInt(form.durationSlots, 10)
       };
       
       onSubmit(appointmentData);
     }
   };
 
-  // Lista de opciones para bloques de duración (30min a 2h)
-  const slotOptions = [
-    { value: 1, label: '30 minutos' },
-    { value: 2, label: '1 hora' },
-    { value: 3, label: '1 hora 30 minutos' },
-    { value: 4, label: '2 horas' }
-  ];
-
-  // Lista de estados de cita
-  const statusOptions = [
-    { value: 'PENDIENTE', label: 'Pendiente' },
-    { value: 'CONFIRMADA', label: 'Confirmada' },
-    { value: 'EN_ESPERA', label: 'En sala de espera' },
-    { value: 'EN_CURSO', label: 'En curso' },
-    { value: 'COMPLETADA', label: 'Completada' },
-    { value: 'CANCELADA', label: 'Cancelada' }
-  ];
+  if (loadingData) {
+    return (
+      <div className="text-center py-4">
+        <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+        <p className="mt-2">Cargando datos...</p>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-3 text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+      
       <div>
         <label className="block text-sm font-medium text-gray-700">Paciente</label>
         <select
           name="patientId"
           value={form.patientId}
           onChange={handleChange}
+          disabled={!!patientId}
           className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
             errors.patientId ? 'border-red-300' : ''
           }`}
         >
-          <option value="">Selecciona un paciente</option>
-          {patients && patients.map(patient => (
+          <option value="">Seleccionar paciente</option>
+          {patients.map(patient => (
             <option key={patient.id} value={patient.id}>
-              {patient.nombre} {patient.apellidos}
+              {patient.nombre} {patient.apellido}
             </option>
           ))}
         </select>
@@ -163,64 +167,77 @@ function AppointmentForm({ appointment, patients, doctors, onSubmit, onCancel })
             errors.doctorId ? 'border-red-300' : ''
           }`}
         >
-          <option value="">Selecciona un doctor</option>
-          {doctors && doctors.map(doctor => (
+          <option value="">Seleccionar doctor</option>
+          {doctors.map(doctor => (
             <option key={doctor.id} value={doctor.id}>
-              {doctor.nombreCompleto}
+              Dr. {doctor.nombreCompleto}
             </option>
           ))}
         </select>
         {errors.doctorId && <p className="mt-1 text-sm text-red-600">{errors.doctorId}</p>}
       </div>
       
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700">Fecha</label>
           <input
             type="date"
-            name="start"
-            value={form.start}
+            name="date"
+            value={form.date}
             onChange={handleChange}
+            min={new Date().toISOString().split('T')[0]}
             className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-              errors.start ? 'border-red-300' : ''
+              errors.date ? 'border-red-300' : ''
             }`}
           />
-          {errors.start && <p className="mt-1 text-sm text-red-600">{errors.start}</p>}
+          {errors.date && <p className="mt-1 text-sm text-red-600">{errors.date}</p>}
         </div>
         
         <div>
           <label className="block text-sm font-medium text-gray-700">Hora</label>
-          <input
-            type="time"
+          <select
             name="time"
             value={form.time}
             onChange={handleChange}
-            step="1800" // Pasos de 30 minutos
             className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
               errors.time ? 'border-red-300' : ''
             }`}
-          />
+          >
+            {[...Array(24)].map((_, hour) => [0, 30].map(minute => {
+              const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+              // Mostrar horas de 8:00 a 20:00
+              if (hour >= 8 && hour < 20) {
+                return (
+                  <option key={timeValue} value={timeValue}>
+                    {timeValue}
+                  </option>
+                );
+              }
+              return null;
+            })).flat().filter(Boolean)}
+          </select>
           {errors.time && <p className="mt-1 text-sm text-red-600">{errors.time}</p>}
         </div>
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-gray-700">Duración</label>
+        <label className="block text-sm font-medium text-gray-700">Duración (bloques de 30 min)</label>
         <select
-          name="slots"
-          value={form.slots}
+          name="durationSlots"
+          value={form.durationSlots}
           onChange={handleChange}
           className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-            errors.slots ? 'border-red-300' : ''
+            errors.durationSlots ? 'border-red-300' : ''
           }`}
         >
-          {slotOptions.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
+          <option value="1">30 minutos</option>
+          <option value="2">1 hora</option>
+          <option value="3">1 hora 30 minutos</option>
+          <option value="4">2 horas</option>
+          <option value="5">2 horas 30 minutos</option>
+          <option value="6">3 horas</option>
         </select>
-        {errors.slots && <p className="mt-1 text-sm text-red-600">{errors.slots}</p>}
+        {errors.durationSlots && <p className="mt-1 text-sm text-red-600">{errors.durationSlots}</p>}
       </div>
       
       <div>
@@ -231,19 +248,39 @@ function AppointmentForm({ appointment, patients, doctors, onSubmit, onCancel })
           onChange={handleChange}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         >
-          {statusOptions.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
+          <option value="PENDING">Sin confirmar</option>
+          <option value="CONFIRMED">Confirmada</option>
+          <option value="WAITING_ROOM">En sala de espera</option>
+          <option value="IN_PROGRESS">En curso</option>
+          <option value="COMPLETED">Completada</option>
+          <option value="CANCELLED">Cancelada</option>
         </select>
       </div>
       
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Notas</label>
+        <textarea
+          name="notes"
+          value={form.notes}
+          onChange={handleChange}
+          rows="3"
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        ></textarea>
+      </div>
+      
       <div className="flex justify-end space-x-2 pt-4">
-        <Button onClick={onCancel} variant="secondary">
+        <Button 
+          onClick={onCancel} 
+          variant="secondary"
+          disabled={loading}
+        >
           Cancelar
         </Button>
-        <Button type="submit" variant="primary">
+        <Button 
+          type="submit" 
+          variant="primary"
+          loading={loading}
+        >
           {appointment ? 'Actualizar' : 'Crear'} Cita
         </Button>
       </div>
