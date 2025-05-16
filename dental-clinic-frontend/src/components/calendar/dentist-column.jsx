@@ -13,7 +13,7 @@ import BreakTime from './break-time';
  * @property {string} treatment
  * @property {('finished'|'encounter'|'registered'|'waiting')} status
  * @property {('pink'|'green'|'blue'|'yellow')} color
- * @property {number} startSlot - 0 = 9am, 1 = 9:30am, 2 = 10am, etc.
+ * @property {number} startSlot - 0 = 8am, 1 = 8:30am, 2 = 9am, etc.
  * @property {number} endSlot - Slot where the appointment ends
  */
 
@@ -45,16 +45,20 @@ function DentistColumn({
   showNotAvailable = false,
   showBreakTime = false,
 }) {
-  // Create slots for each half hour (9am to 4:30pm)
-  const slots = Array(16).fill(null);
+  // Create slots for each half hour (8am to 8pm)
+  const slots = Array(25).fill(null);
   const [notAvailableBlocks, setNotAvailableBlocks] = useState([]);
   const prevBlocksRef = useRef([]);
 
   // Fill slots with appointments
   appointments.forEach((appointment) => {
+    // Ajustar los slots para el nuevo horario (añadir +2 a los startSlot/endSlot para compensar el inicio a las 8:00)
+    const adjustedStartSlot = appointment.startSlot + 2;
+    const adjustedEndSlot = appointment.endSlot + 2;
+    
     // Mark all slots that this appointment spans
-    for (let i = appointment.startSlot; i <= appointment.endSlot; i++) {
-      if (i === appointment.startSlot) {
+    for (let i = adjustedStartSlot; i <= adjustedEndSlot; i++) {
+      if (i === adjustedStartSlot) {
         slots[i] = { ...appointment, isStart: true };
       } else {
         slots[i] = { ...appointment, isStart: false };
@@ -75,9 +79,10 @@ function DentistColumn({
     let currentBlock = null;
 
     // Encuentra bloques consecutivos de celdas vacías
+    // El slot 14 ahora corresponde a las 15:00
     slots.forEach((slot, index) => {
       // Si el slot está vacío y estamos en una posición para mostrar áreas no disponibles
-      if (index > 10 && !slot) {
+      if (index > 14 && !slot) {
         if (!currentBlock) {
           // Inicia un nuevo bloque
           currentBlock = { startIndex: index, endIndex: index };
@@ -113,7 +118,7 @@ function DentistColumn({
   }, [slots, showNotAvailable, notAvailableBlocks.length]);
 
   // Índice para BREAK TIME (1:00 PM)
-  const breakTimeIndex = 8; // slot 8 corresponde a 1:00 PM
+  const breakTimeIndex = 10; // slot 10 corresponde a 1:00 PM (8:00 + 5 horas)
 
   return (
     <div className="flex-1 min-w-[250px] border-r">
@@ -202,7 +207,7 @@ function DentistColumn({
             ) : null}
 
             {/* Renderizar NOT AVAILABLE para celdas individuales que no forman parte de ningún bloque */}
-            {!slot && showNotAvailable && index > 10 && !isNotAvailableStart && !isPartOfNotAvailableBlock ? (
+            {!slot && showNotAvailable && index > 14 && !isNotAvailableStart && !isPartOfNotAvailableBlock ? (
               <div className="absolute inset-0 z-10">
                 <NotAvailableArea />
               </div>

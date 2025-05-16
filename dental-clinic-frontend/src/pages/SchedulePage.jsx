@@ -256,7 +256,7 @@ function SchedulePage() {
   };
 
   return (
-    <div className="bg-white rounded-md">
+    <div className="bg-white rounded-md h-full flex flex-col">
       {/* Eliminamos la barra de navegación duplicada y dejamos solo la que viene del layout principal */}
       
       {loading ? (
@@ -269,9 +269,9 @@ function SchedulePage() {
           {error}
         </div>
       ) : (
-        <div>
-          {/* Nueva barra superior de calendario según el diseño proporcionado */}
-          <div className="px-6 py-4 flex justify-between items-center border-b border-gray-200">
+        <div className="flex flex-col flex-grow overflow-hidden">
+          {/* Nueva barra superior de calendario según el diseño proporcionado - ahora con posición sticky */}
+          <div className="sticky top-0 z-50 px-6 py-4 flex justify-between items-center border-b border-gray-200 bg-white shadow-sm">
             {/* Contador de citas a la izquierda */}
             <div className="flex items-center">
               <div className="flex items-center">
@@ -371,7 +371,10 @@ function SchedulePage() {
             </div>
           </div>
           
-          <CalendarView />
+          {/* Contenido del calendario con scroll - ahora con overflow-auto */}
+          <div className="flex-grow overflow-auto">
+            <CalendarView />
+          </div>
         </div>
       )}
 

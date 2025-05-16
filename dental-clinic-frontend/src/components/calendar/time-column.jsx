@@ -2,6 +2,8 @@ import React from 'react';
 
 function TimeColumn() {
   const hours = [
+    { time: "08:00", isHalfHour: false },
+    { time: "", isHalfHour: true },
     { time: "09:00", isHalfHour: false },
     { time: "", isHalfHour: true },
     { time: "10:00", isHalfHour: false },
@@ -18,6 +20,13 @@ function TimeColumn() {
     { time: "", isHalfHour: true },
     { time: "16:00", isHalfHour: false },
     { time: "", isHalfHour: true },
+    { time: "17:00", isHalfHour: false },
+    { time: "", isHalfHour: true },
+    { time: "18:00", isHalfHour: false },
+    { time: "", isHalfHour: true },
+    { time: "19:00", isHalfHour: false },
+    { time: "", isHalfHour: true },
+    { time: "20:00", isHalfHour: false },
   ];
 
   return (
