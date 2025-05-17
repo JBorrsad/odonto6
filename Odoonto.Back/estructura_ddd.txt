@@ -80,7 +80,7 @@ Odoonto.Back/src/main/java/odoonto/
 │   │       ├── OdontogramId.java *       # Identificador de odontograma
 │   │       ├── PatientId.java *          # Identificador de paciente
 │   │       ├── MedicalRecordId.java *    # Identificador del historial médico
-│   │       └── AppointmentId.java        # Identificador de cita (pendiente)
+│   │       └── AppointmentId.java *      # Identificador de cita
 │   ├── repository/          # Interfaces de repositorios (puertos - solo interfaces)
 │   │   ├── PatientRepository.java *              # Interfaz para repositorio de pacientes
 │   │   ├── DoctorRepository.java *               # Interfaz para repositorio de doctores
@@ -116,32 +116,29 @@ Odoonto.Back/src/main/java/odoonto/
 ├── application/             # Capa de aplicación - casos de uso
 │   ├── dto/                 # Objetos de transferencia de datos
 │   │   ├── request/         # DTOs para solicitudes
-│   │   │   ├── PatientCreateDTO.java *           # Creación de paciente
-│   │   │   ├── PatientUpdateDTO.java             # Actualización de paciente (pendiente)
-│   │   │   ├── MedicalRecordCreateDTO.java       # Creación de historial médico (pendiente)
-│   │   │   ├── MedicalEntryCreateDTO.java        # Creación de entrada médica (pendiente)
-│   │   │   ├── OdontogramUpdateDTO.java          # Actualización de odontograma (pendiente)
-│   │   │   ├── DoctorCreateDTO.java              # Creación de doctor (pendiente)
-│   │   │   ├── AppointmentCreateDTO.java         # Creación de cita (pendiente)
+│   │   │   ├── PatientCreateDTO.java *           # Creación de paciente│   │   │   ├── PatientUpdateDTO.java *           # Actualización de paciente│   │   │   ├── MedicalRecordCreateDTO.java *     # Creación de historial médico│   │   │   ├── MedicalEntryCreateDTO.java *      # Creación de entrada médica
+│   │   │   ├── OdontogramUpdateDTO.java *        # Actualización de odontograma
+│   │   │   ├── DoctorCreateDTO.java *            # Creación de doctor
+│   │   │   ├── AppointmentCreateDTO.java *       # Creación de cita
 │   │   │   └── LesionCreateDTO.java *            # Creación de lesión
 │   │   └── response/        # DTOs para respuestas
 │   │       ├── PatientDTO.java *                 # DTO de paciente
 │   │       ├── OdontogramDTO.java *              # DTO de odontograma
 │   │       ├── MedicalRecordDTO.java *           # DTO de historial médico
-│   │       ├── DoctorDTO.java                    # DTO de doctor (pendiente)
-│   │       └── AppointmentDTO.java               # DTO de cita (pendiente)
+│   │       ├── DoctorDTO.java *                  # DTO de doctor
+│   │       └── AppointmentDTO.java *             # DTO de cita
 │   ├── port/                # Interfaces de servicios (puertos)
 │   │   ├── in/              # Puertos de entrada (casos de uso)
 │   │   │   ├── patient/     # Casos de uso para pacientes
-│   │   │   │   ├── PatientCreateUseCase.java     # Caso de uso: crear paciente (pendiente) 
-│   │   │   │   ├── PatientUpdateUseCase.java     # Caso de uso: actualizar paciente (pendiente)
-│   │   │   │   ├── PatientDeleteUseCase.java     # Caso de uso: eliminar paciente (pendiente)
-│   │   │   │   ├── PatientQueryUseCase.java      # Caso de uso: consultar paciente (pendiente)
-│   │   │   │   └── PatientOdontogramUseCase.java # Caso de uso: gestionar odontograma del paciente (pendiente)
+│   │   │   │   ├── PatientCreateUseCase.java *   # Caso de uso: crear paciente
+│   │   │   │   ├── PatientUpdateUseCase.java *   # Caso de uso: actualizar paciente
+│   │   │   │   ├── PatientDeleteUseCase.java *   # Caso de uso: eliminar paciente
+│   │   │   │   ├── PatientQueryUseCase.java *    # Caso de uso: consultar paciente
+│   │   │   │   └── PatientOdontogramUseCase.java * # Caso de uso: gestionar odontograma del paciente
 │   │   │   ├── odontogram/  # Casos de uso para odontogramas
-│   │   │   │   ├── OdontogramQueryUseCase.java   # Caso de uso: consultar odontograma (pendiente)
-│   │   │   │   ├── LesionAddUseCase.java         # Caso de uso: añadir lesión (pendiente)
-│   │   │   │   ├── LesionRemoveUseCase.java      # Caso de uso: eliminar lesión (pendiente)
+│   │   │   │   ├── OdontogramQueryUseCase.java * # Caso de uso: consultar odontograma
+│   │   │   │   ├── LesionAddUseCase.java *       # Caso de uso: añadir lesión
+│   │   │   │   ├── LesionRemoveUseCase.java *      # Caso de uso: eliminar lesión
 │   │   │   │   ├── TreatmentAddUseCase.java      # Caso de uso: añadir tratamiento (pendiente)
 │   │   │   │   └── TreatmentRemoveUseCase.java   # Caso de uso: eliminar tratamiento (pendiente)
 │   │   │   ├── medicalrecord/ # Casos de uso para historiales médicos
@@ -159,27 +156,26 @@ Odoonto.Back/src/main/java/odoonto/
 │   │   │       ├── AppointmentCancelUseCase.java # Caso de uso: cancelar cita (pendiente)
 │   │   │       └── AppointmentQueryUseCase.java  # Caso de uso: consultar cita (pendiente)
 │   │   └── out/             # Puertos de salida (para acceso a repositorios)
-│   │       ├── PatientRepositoryPort.java       # Puerto para repositorio de pacientes (pendiente)
-│   │       ├── OdontogramRepositoryPort.java    # Puerto para repositorio de odontogramas (pendiente)
-│   │       ├── MedicalRecordRepositoryPort.java # Puerto para repositorio de historiales (pendiente)
-│   │       ├── DoctorRepositoryPort.java        # Puerto para repositorio de doctores (pendiente)
-│   │       └── AppointmentRepositoryPort.java   # Puerto para repositorio de citas (pendiente)
+│   │       ├── PatientRepositoryPort.java *     # Puerto para repositorio de pacientes
+│   │       ├── OdontogramRepositoryPort.java *  # Puerto para repositorio de odontogramas
+│   │       ├── MedicalRecordRepositoryPort.java * # Puerto para repositorio de historiales
+│   │       ├── DoctorRepositoryPort.java *      # Puerto para repositorio de doctores│   │       └── AppointmentRepositoryPort.java * # Puerto para repositorio de citas
 │   ├── mapper/              # Conversiones entre dominio y DTOs
-│   │   ├── PatientMapper.java                   # Conversión entre Patient y PatientDTO (pendiente)
+│   │   ├── PatientMapper.java *                  # Conversión entre Patient y PatientDTO
 │   │   ├── OdontogramMapper.java *              # Conversión entre Odontogram y OdontogramDTO
-│   │   ├── MedicalRecordMapper.java             # Conversión entre MedicalRecord y MedicalRecordDTO (pendiente)
-│   │   ├── DoctorMapper.java                    # Conversión entre Doctor y DoctorDTO (pendiente)
-│   │   └── AppointmentMapper.java               # Conversión entre Appointment y AppointmentDTO (pendiente)
+│   │   ├── MedicalRecordMapper.java *            # Conversión entre MedicalRecord y MedicalRecordDTO
+│   │   ├── DoctorMapper.java *                   # Conversión entre Doctor y DoctorDTO
+│   │   └── AppointmentMapper.java *              # Conversión entre Appointment y AppointmentDTO
 │   ├── service/             # Implementaciones de servicios (adaptadores)
 │   │   ├── patient/         # Implementaciones para pacientes
-│   │   │   ├── PatientCreateService.java         # Implementación de creación (pendiente)
-│   │   │   ├── PatientUpdateService.java         # Implementación de actualización (pendiente)
-│   │   │   ├── PatientDeleteService.java         # Implementación de eliminación (pendiente)
-│   │   │   ├── PatientQueryService.java          # Implementación de consulta (pendiente)
-│   │   │   └── PatientOdontogramService.java     # Implementación de gestión de odontogramas (pendiente)
+│   │   │   ├── PatientCreateService.java *       # Implementación de creación
+│   │   │   ├── PatientUpdateService.java *       # Implementación de actualización
+│   │   │   ├── PatientDeleteService.java *       # Implementación de eliminación
+│   │   │   ├── PatientQueryService.java *        # Implementación de consulta
+│   │   │   └── PatientOdontogramService.java *   # Implementación de gestión de odontogramas
 │   │   ├── odontogram/      # Implementaciones para odontogramas
-│   │   │   ├── OdontogramQueryService.java       # Implementación de consulta (pendiente)
-│   │   │   ├── LesionAddService.java             # Implementación de añadir lesión (pendiente)
+│   │   │   ├── OdontogramQueryService.java *     # Implementación de consulta
+│   │   │   ├── LesionAddService.java *           # Implementación de añadir lesión
 │   │   │   ├── LesionRemoveService.java          # Implementación de eliminar lesión (pendiente)
 │   │   │   ├── TreatmentAddService.java          # Implementación de añadir tratamiento (pendiente)
 │   │   │   └── TreatmentRemoveService.java       # Implementación de eliminar tratamiento (pendiente)
@@ -198,11 +194,11 @@ Odoonto.Back/src/main/java/odoonto/
 │   │       ├── AppointmentCancelService.java     # Implementación de cancelación (pendiente)
 │   │       └── AppointmentQueryService.java      # Implementación de consulta (pendiente)
 │   └── exceptions/          # Excepciones específicas de la aplicación
-│       ├── PatientNotFoundException.java *      # Paciente no encontrado
-│       ├── DoctorNotFoundException.java         # Doctor no encontrado (pendiente)
-│       ├── OdontogramNotFoundException.java     # Odontograma no encontrado (pendiente)
-│       ├── MedicalRecordNotFoundException.java  # Historial médico no encontrado (pendiente)
-│       └── AppointmentConflictException.java    # Conflicto de citas (pendiente)
+│       ├── PatientNotFoundException.java *       # Paciente no encontrado
+│       ├── DoctorNotFoundException.java *        # Doctor no encontrado
+│       ├── OdontogramNotFoundException.java *    # Odontograma no encontrado
+│       ├── MedicalRecordNotFoundException.java * # Historial médico no encontrado
+│       └── AppointmentConflictException.java *   # Conflicto de citas
 │
 ├── infrastructure/          # Implementaciones técnicas (adaptadores)
 │   ├── persistence/         # Implementaciones de repositorios (adaptadores)

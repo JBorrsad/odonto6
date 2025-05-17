@@ -1,0 +1,34 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Actualización del Árbol de Estructura DDD
+
+Cuando se cree o modifique cualquier clase en el repositorio, se debe actualizar el estado de implementación en el archivo [estructura_ddd.txt](mdc:estructura_ddd.txt).
+
+## Procedimiento:
+
+1. **Identificar la clase**: Determinar la clase que se está creando o modificando
+2. **Localizar en el árbol**: Buscar la entrada correspondiente en estructura_ddd.txt
+3. **Actualizar estado**: 
+   - Si es una implementación nueva, cambiar `(pendiente)` por un `*` al final del nombre
+   - Si se está completando una clase existente, añadir `*` si aún no lo tiene
+   - Si ya está marcada como implementada, mantenerla así
+
+## Ejemplo:
+
+Actualización de:
+```
+│   │   ├── PatientUpdateUseCase.java     # Caso de uso: actualizar paciente (pendiente)
+```
+
+A:
+```
+│   │   ├── PatientUpdateUseCase.java *   # Caso de uso: actualizar paciente
+```
+
+## Seguimiento:
+
+Cuando se solicite "seguir con lo que estás haciendo", revisar [estructura_ddd.txt](mdc:estructura_ddd.txt) para identificar clases pendientes de implementar que sean prioridad según el contexto del trabajo actual.
+

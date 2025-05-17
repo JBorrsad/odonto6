@@ -7,11 +7,13 @@ import org.springframework.web.bind.annotation.*;
 
 import odoonto.application.dto.request.PatientCreateDTO;
 import odoonto.application.dto.response.PatientDTO;
-import odoonto.application.service.PatientService;
-import odoonto.application.exceptions.PatientNotFoundException;
+import odoonto.application.port.in.patient.PatientCreateUseCase;
+import odoonto.application.port.in.patient.PatientDeleteUseCase;
+import odoonto.application.port.in.patient.PatientOdontogramUseCase;
+import odoonto.application.port.in.patient.PatientQueryUseCase;
+import odoonto.application.port.in.patient.PatientUpdateUseCase;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Controlador REST para operaciones con pacientes
@@ -20,11 +22,24 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/patients")
 public class PatientController {
     
-    private final PatientService patientService;
+    private final PatientQueryUseCase patientQueryUseCase;
+    private final PatientCreateUseCase patientCreateUseCase;
+    private final PatientUpdateUseCase patientUpdateUseCase;
+    private final PatientDeleteUseCase patientDeleteUseCase;
+    private final PatientOdontogramUseCase patientOdontogramUseCase;
     
     @Autowired
-    public PatientController(PatientService patientService) {
-        this.patientService = patientService;
+    public PatientController(
+            PatientQueryUseCase patientQueryUseCase,
+            PatientCreateUseCase patientCreateUseCase,
+            PatientUpdateUseCase patientUpdateUseCase,
+            PatientDeleteUseCase patientDeleteUseCase,
+            PatientOdontogramUseCase patientOdontogramUseCase) {
+        this.patientQueryUseCase = patientQueryUseCase;
+        this.patientCreateUseCase = patientCreateUseCase;
+        this.patientUpdateUseCase = patientUpdateUseCase;
+        this.patientDeleteUseCase = patientDeleteUseCase;
+        this.patientOdontogramUseCase = patientOdontogramUseCase;
     }
     
     /**
@@ -33,7 +48,7 @@ public class PatientController {
      */
     @GetMapping
     public ResponseEntity<List<PatientDTO>> getAllPatients() {
-        List<PatientDTO> patients = patientService.getAllPatients();
+        List<PatientDTO> patients = patientQueryUseCase.getAllPatients();
         return ResponseEntity.ok(patients);
     }
     
@@ -44,7 +59,7 @@ public class PatientController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<PatientDTO> getPatientById(@PathVariable String id) {
-        PatientDTO patient = patientService.getPatientById(id);
+        PatientDTO patient = patientQueryUseCase.getPatientById(id);
         return ResponseEntity.ok(patient);
     }
     
@@ -55,7 +70,7 @@ public class PatientController {
      */
     @PostMapping
     public ResponseEntity<PatientDTO> createPatient(@RequestBody PatientCreateDTO patientDTO) {
-        PatientDTO created = patientService.createPatient(patientDTO);
+        PatientDTO created = patientCreateUseCase.createPatient(patientDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
     
@@ -69,7 +84,7 @@ public class PatientController {
     public ResponseEntity<PatientDTO> updatePatient(
             @PathVariable String id, 
             @RequestBody PatientCreateDTO patientDTO) {
-        PatientDTO updated = patientService.updatePatient(id, patientDTO);
+        PatientDTO updated = patientUpdateUseCase.updatePatient(id, patientDTO);
         return ResponseEntity.ok(updated);
     }
     
@@ -80,23 +95,18 @@ public class PatientController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePatient(@PathVariable String id) {
-        patientService.deletePatient(id);
+        patientDeleteUseCase.deletePatient(id);
         return ResponseEntity.noContent().build();
     }
     
     /**
-     * Busca pacientes por nombre o apellido (filtrado en memoria)
+     * Busca pacientes por nombre o apellido
      * @param query Texto a buscar
      * @return Lista de DTOs de pacientes que coinciden con la búsqueda
      */
     @GetMapping("/search")
     public ResponseEntity<List<PatientDTO>> searchPatients(@RequestParam String query) {
-        // Como no hay un método específico, filtramos todos los pacientes
-        String queryLower = query.toLowerCase();
-        List<PatientDTO> patients = patientService.getAllPatients().stream()
-            .filter(p -> p.getNombre().toLowerCase().contains(queryLower) || 
-                     p.getApellido().toLowerCase().contains(queryLower))
-            .collect(Collectors.toList());
+        List<PatientDTO> patients = patientQueryUseCase.searchPatients(query);
         return ResponseEntity.ok(patients);
     }
     
@@ -107,7 +117,7 @@ public class PatientController {
      */
     @GetMapping("/{patientId}/odontogram")
     public ResponseEntity<Object> getPatientOdontogram(@PathVariable String patientId) {
-        return ResponseEntity.ok(patientService.getPatientOdontogram(patientId));
+        return ResponseEntity.ok(patientOdontogramUseCase.getPatientOdontogram(patientId));
     }
     
     /**
@@ -117,6 +127,6 @@ public class PatientController {
      */
     @GetMapping("/{patientId}/medical-record")
     public ResponseEntity<Object> getPatientMedicalRecord(@PathVariable String patientId) {
-        return ResponseEntity.ok(patientService.getPatientMedicalRecord(patientId));
+        return ResponseEntity.ok(patientOdontogramUseCase.getPatientMedicalRecord(patientId));
     }
 } 
