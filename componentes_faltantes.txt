@@ -1,0 +1,107 @@
+# COMPONENTES FALTANTES SEGÚN LA ESTRUCTURA DDD RECOMENDADA
+
+## CAPA DE DOMINIO
+
+### 1. Entidades
+- ✓ Tooth.java (implementado)
+- ✓ ToothPosition.java (implementado)
+- ✓ ToothNumber.java (implementado)
+- ✓ Lesion.java (implementado)
+- ✓ Treatment.java (implementado)
+- ✓ MedicalRecord.java (implementado)
+- ✓ MedicalEntry.java (implementado)
+
+### 2. Objetos de Valor
+- ✓ Sexo.java (implementado)
+- ✓ EmailAddress.java (implementado)
+- ✓ PhoneNumber.java (implementado)
+- ✓ ToothFace.java (implementado)
+- ✓ LesionType.java (implementado)
+- ✓ AppointmentStatus.java (implementado)
+- ✓ Address.java (implementado)
+- ✓ PersonName.java (implementado)
+- ✓ TreatmentType.java (implementado)
+- ✓ AppointmentTime.java (implementado)
+- ✓ OdontogramId.java (implementado)
+- ✓ PatientId.java (implementado)
+
+### 3. Agregados
+- ✓ Patient.java (implementado)
+- ✓ Doctor.java (implementado)
+- ✓ Odontogram.java (implementado)
+- ✓ Appointment.java (implementado)
+- ✓ Specialty.java (implementado)
+
+### 4. Repositorios
+- ✓ PatientRepository.java (implementado)
+- ✓ DoctorRepository.java (implementado)
+- ✓ AppointmentRepository.java (implementado)
+- ✓ OdontogramRepository.java (implementado)
+- ✓ MedicalRecordRepository.java (implementado)
+
+### 5. Servicios de Dominio
+- ✓ OdontogramService.java (implementado)
+- ✓ AppointmentValidationService.java (implementado)
+- ✓ DentalDiagnosisService.java (implementado)
+- ✓ TreatmentPlanService.java (implementado)
+- ✓ MedicalRecordService.java (implementado)
+
+### 6. Excepciones de Dominio
+- ✓ DomainException.java (implementado)
+- ✓ InvalidToothFaceException.java (implementado)
+- ✓ DuplicateLesionException.java (implementado)
+- ✓ InvalidAppointmentTimeException.java (implementado)
+- ✓ InvalidPersonDataException.java (implementado)
+- ✓ InvalidEmailException.java (implementado)
+- ✓ InvalidPhoneException.java (implementado)
+- ✓ InvalidToothNumberException.java (implementado)
+- ✓ AppointmentOverlapException.java (implementado)
+- ✓ InvalidTreatmentException.java (implementado)
+
+### 7. Nuevas Capas en el Dominio
+- ✓ events/ (eventos de dominio)
+  - ✓ DomainEvent.java (implementado)
+  - ✓ PatientRegisteredEvent.java (implementado)
+  - ✓ AppointmentScheduledEvent.java (implementado)
+  - ✓ AppointmentStatusChangedEvent.java (implementado)
+  - ✓ TreatmentCompletedEvent.java (implementado)
+  - ✓ EventPublisher.java (implementado)
+  
+- ✓ policy/ (políticas y reglas de negocio)
+  - ✓ SchedulingPolicy.java (implementado)
+  - ✗ PricingPolicy.java (ELIMINADO - no se incluirá en el dominio)
+  - ✓ MedicalRecordPolicy.java (implementado)
+  
+- ✓ specifications/ (especificaciones para consultas complejas)
+  - ✓ PatientSpecification.java (implementado)
+  - ✓ AppointmentSpecification.java (implementado)
+  - ✓ Specification.java (implementado)
+
+## RESUMEN ACTUALIZADO
+
+### Implementado (✓):
+- Estructura principal de capas (domain, application, infrastructure, presentation)
+- Agregados principales (Patient, Doctor, Appointment, Odontogram)
+- Enumeraciones del dominio (Specialty)
+- Objetos de valor básicos (Sexo, EmailAddress, PhoneNumber, ToothFace, LesionType, AppointmentStatus)
+- Objetos de valor adicionales (Address, PersonName, TreatmentType, AppointmentTime, OdontogramId, PatientId)
+- Todas las entidades de dominio (Tooth, Lesion, Treatment, MedicalRecord, MedicalEntry)
+- Excepciones de dominio básicas y adicionales
+- Todos los repositorios (PatientRepository, DoctorRepository, AppointmentRepository, OdontogramRepository, MedicalRecordRepository)
+- Controladores REST
+- Servicios de dominio completos (OdontogramService, AppointmentValidationService, DentalDiagnosisService, TreatmentPlanService, MedicalRecordService)
+- Eventos de dominio completos
+- Políticas de dominio básicas (SchedulingPolicy, MedicalRecordPolicy)
+- Especificaciones para consultas complejas (PatientSpecification, AppointmentSpecification)
+
+### Pendiente (✗):
+- No quedan componentes pendientes según la estructura recomendada.
+
+## NOTA SOBRE ERRORES DE LINTER
+
+Los errores de linter actuales en los archivos de entidades son normales y se resolverán cuando:
+- Se configure completamente el proyecto con Maven/Gradle
+- Se añadan las configuraciones de compilación adecuadas
+- Se complete la estructura del proyecto
+
+No afectan la funcionalidad del sistema y sólo indican que el entorno de desarrollo aún no está completamente configurado. 

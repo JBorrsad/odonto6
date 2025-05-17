@@ -1,0 +1,216 @@
+# ESTRUCTURA DE PROYECTO DOMAIN-DRIVEN DESIGN PARA ODOONTO.BACK
+
+## ESTRUCTURA ACTUAL (inferida del código visto)
+
+```
+Odoonto.Back/src/main/java/odoonto/api/
+├── domain/                   
+│   ├── models/               # Entidades de dominio mezcladas
+│   │   ├── Doctor.java
+│   │   ├── Patient.java
+│   │   ├── Appointment.java
+│   │   └── Odontogram.java
+│   ├── core/                
+│   │   └── valueobjects/     # Objetos de valor
+│   │       ├── Sexo.java
+│   │       ├── EmailAddress.java
+│   │       ├── PhoneNumber.java
+│   │       ├── ToothFace.java
+│   │       └── LesionType.java
+│   └── repositories/         # Interfaces de repositorios
+│       ├── DoctorRepository.java
+│       ├── PatientRepository.java
+│       └── AppointmentRepository.java
+│
+├── infrastructure/           # Infraestructura mezclada
+│   ├── DataSeeder.java       # Carga de datos iniciales
+│   ├── testers/              # Pruebas de endpoints
+│   │   ├── PatientEndpointTester.java
+│   │   ├── OdontogramEndpointTester.java
+│   │   ├── DoctorEndpointTester.java
+│   │   └── AppointmentEndpointTester.java
+│   ├── jackson/              # Configuración de serialización
+│   ├── EndpointTester.java   # Pruebas de API
+│   └── FirestoreConfig.java  # Configuración de la base de datos
+│
+└── web/                      # Controladores mezclados con servicios
+    └── controllers/          # Controladores REST
+        ├── PatientController.java
+        ├── DoctorController.java
+        └── AppointmentController.java
+
+# Carencias observadas:
+- Falta de DTOs claros
+- Mappers no identificados
+- Confusión entre capas (dominio/infraestructura)
+- Servicios de aplicación mezclados con controladores
+- Manejo de excepciones no estructurado
+```
+
+## ESTRUCTURA RECOMENDADA SEGÚN DDD
+
+```
+Odoonto.Back/src/main/java/odoonto/
+├── domain/                  # La capa de dominio - el núcleo del negocio
+│   ├── model/               # Entidades y agregados de dominio
+│   │   ├── aggregates/      # Agregados (raíces de entidades relacionadas)
+│   │   │   ├── Patient.java     # Paciente (agregado que contiene Odontogram)
+│   │   │   ├── Doctor.java      # Doctor (agregado)
+│   │   │   │   └── Specialty.java  # Especialidad del doctor
+│   │   │   ├── Odontogram.java  # Odontograma (agregado que contiene dientes)
+│   │   │   └── Appointment.java # Cita médica (agregado)
+│   │   │       └── AppointmentStatus.java # Estados de la cita (SCHEDULED, CONFIRMED, CANCELLED, COMPLETED)
+│   │   ├── entities/        # Entidades de dominio (con identidad pero no agregados)
+│   │   │   ├── Tooth.java         # Diente (parte del odontograma)
+│   │   │   │   ├── ToothPosition.java    # Posición del diente en la arcada
+│   │   │   │   └── ToothNumber.java      # Número del diente según nomenclatura
+│   │   │   ├── Lesion.java        # Lesión en un diente
+│   │   │   ├── Treatment.java     # Tratamiento realizado en un diente
+│   │   │   ├── MedicalRecord.java # Historial médico de un paciente
+│   │   │   └── MedicalEntry.java  # Entrada en el historial médico
+│   │   └── valueobjects/    # Objetos de valor inmutables
+│   │       ├── Sexo.java          # Género del paciente (MASCULINO, FEMENINO, OTRO)
+│   │       ├── EmailAddress.java  # Dirección de correo electrónico
+│   │       ├── PhoneNumber.java   # Número de teléfono
+│   │       ├── Address.java       # Dirección postal
+│   │       ├── PersonName.java    # Nombre completo de una persona
+│   │       ├── ToothFace.java     # Cara del diente (VESTIBULAR, LINGUAL, etc)
+│   │       ├── LesionType.java    # Tipo de lesión dental
+│   │       ├── TreatmentType.java # Tipo de tratamiento dental
+│   │       ├── AppointmentTime.java # Horario de cita (inicio, duración)
+│   │       ├── OdontogramId.java  # Identificador de odontograma
+│   │       └── PatientId.java     # Identificador de paciente
+│   ├── repository/          # Interfaces de repositorios (solo interfaces)
+│   │   ├── PatientRepository.java
+│   │   ├── DoctorRepository.java
+│   │   ├── OdontogramRepository.java
+│   │   ├── AppointmentRepository.java
+│   │   └── MedicalRecordRepository.java
+│   ├── service/             # Servicios de dominio (lógica que no pertenece a una entidad)
+│   │   ├── OdontogramService.java         # Lógica específica para odontogramas
+│   │   ├── AppointmentValidationService.java # Validación de citas
+│   │   ├── DentalDiagnosisService.java    # Servicio para diagnóstico dental
+│   │   ├── TreatmentPlanService.java      # Servicio para planificación de tratamientos
+│   │   └── MedicalRecordService.java      # Servicio para gestión de historial médico
+│   ├── events/              # Eventos de dominio
+│   │   ├── DomainEvent.java              # Interface base para eventos
+│   │   ├── PatientRegisteredEvent.java   # Evento cuando se registra un paciente
+│   │   ├── AppointmentScheduledEvent.java # Evento cuando se agenda una cita
+│   │   ├── AppointmentStatusChangedEvent.java # Evento de cambio de estado de cita
+│   │   ├── TreatmentCompletedEvent.java  # Evento cuando se completa un tratamiento
+│   │   └── EventPublisher.java           # Interface para publicar eventos
+│   ├── policy/              # Políticas y reglas de negocio
+│   │   ├── SchedulingPolicy.java         # Reglas para programar citas
+│   │   ├── PricingPolicy.java            # Reglas para establecer precios
+│   │   └── MedicalRecordPolicy.java      # Políticas sobre historiales médicos
+│   ├── specifications/      # Especificaciones para consultas complejas
+│   │   ├── PatientSpecification.java     # Especificaciones para filtrar pacientes
+│   │   ├── AppointmentSpecification.java # Especificaciones para filtrar citas
+│   │   └── Specification.java            # Interface base para especificaciones
+│   └── exceptions/          # Excepciones específicas del dominio
+│       ├── DomainException.java          # Excepción base de dominio
+│       ├── InvalidPersonDataException.java # Datos de persona inválidos
+│       ├── InvalidEmailException.java    # Email con formato inválido
+│       ├── InvalidPhoneException.java    # Teléfono con formato inválido
+│       ├── InvalidToothFaceException.java # Cara de diente inválida
+│       ├── InvalidToothNumberException.java # Número de diente inválido
+│       ├── DuplicateLesionException.java # Lesión duplicada en un diente
+│       ├── InvalidAppointmentTimeException.java # Horario de cita inválido
+│       ├── AppointmentOverlapException.java # Citas superpuestas
+│       └── InvalidTreatmentException.java # Tratamiento inválido
+│
+├── application/             # Capa de aplicación - casos de uso
+│   ├── dto/                 # Objetos de transferencia de datos
+│   │   ├── request/         # DTOs para solicitudes
+│   │   │   ├── PatientCreateDTO.java
+│   │   │   ├── PatientUpdateDTO.java
+│   │   │   ├── DoctorCreateDTO.java
+│   │   │   ├── AppointmentCreateDTO.java
+│   │   │   └── LesionCreateDTO.java
+│   │   └── response/        # DTOs para respuestas
+│   │       ├── PatientDTO.java
+│   │       ├── DoctorDTO.java
+│   │       ├── AppointmentDTO.java
+│   │       └── OdontogramDTO.java
+│   ├── mapper/              # Conversiones entre dominio y DTOs
+│   │   ├── PatientMapper.java
+│   │   ├── DoctorMapper.java
+│   │   ├── AppointmentMapper.java
+│   │   └── OdontogramMapper.java
+│   ├── service/             # Servicios de aplicación (orquestadores)
+│   │   ├── PatientService.java
+│   │   ├── DoctorService.java
+│   │   ├── AppointmentService.java
+│   │   └── OdontogramService.java
+│   └── exceptions/          # Excepciones específicas de la aplicación
+│       ├── PatientNotFoundException.java
+│       ├── DoctorNotFoundException.java
+│       └── AppointmentConflictException.java
+│
+├── infrastructure/          # Implementaciones técnicas
+│   ├── persistence/         # Implementaciones de repositorios
+│   │   ├── firestore/       # Adaptadores para Firestore
+│   │   │   ├── FirestorePatientRepository.java
+│   │   │   ├── FirestoreDoctorRepository.java
+│   │   │   └── FirestoreAppointmentRepository.java
+│   │   └── entity/          # Entidades de persistencia (si son distintas)
+│   │       ├── FirestorePatientEntity.java
+│   │       └── OdontogramDocument.java
+│   ├── config/              # Configuraciones (Spring, etc.)
+│   │   ├── FirestoreConfig.java
+│   │   └── WebConfig.java
+│   ├── security/            # Implementaciones de seguridad
+│   │   └── SecurityConfig.java
+│   ├── testing/             # Testing de infraestructura
+│   │   └── DataSeeder.java  # Carga de datos iniciales
+│   └── messaging/           # Implementaciones de mensajería (si aplica)
+│
+└── interface/               # API y controladores
+    ├── rest/                # API REST
+    │   ├── controller/      # Controladores REST
+    │   │   ├── PatientController.java
+    │   │   ├── DoctorController.java
+    │   │   └── AppointmentController.java
+    │   ├── advice/          # Manejadores de excepciones para REST
+    │   │   └── GlobalExceptionHandler.java
+    │   └── documentation/   # Documentación de API (Swagger, etc.)
+    │       └── SwaggerConfig.java
+    └── graphql/             # GraphQL (si aplica)
+```
+
+## EXPLICACIONES Y RECOMENDACIONES
+
+### 1. DTOs (Data Transfer Objects)
+- **Ubicación correcta**: `application/dto/`
+- **Objetivo**: Transportar datos entre la capa de interfaz y la capa de aplicación
+- **Ejemplo PatientCreateDTO.java**:
+```java
+public class PatientCreateDTO {
+    private String nombre;
+    private String apellido;
+    private String fechaNacimiento;
+    private String sexo;
+    private String telefono;
+    private String email;
+    
+    // getters y setters
+}
+```
+
+### 2. Mappers
+- **Ubicación correcta**: `application/mapper/`
+- **Objetivo**: Convertir entidades de dominio a DTOs y viceversa
+- **Ejemplo PatientMapper.java**:
+```java
+@Mapper(componentModel = "spring")
+public interface PatientMapper {
+    PatientDTO toDTO(Patient patient);
+    Patient toEntity(PatientCreateDTO dto);
+    
+    void updatePatientFromDTO(PatientUpdateDTO dto, @MappingTarget Patient patient);
+}
+```
+
+### 3. Excepciones
+- **Excepciones de Dominio** (`domain/exceptions/`):
+```
