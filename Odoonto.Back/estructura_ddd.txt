@@ -1,0 +1,533 @@
+# ESTRUCTURA DE PROYECTO DOMAIN-DRIVEN DESIGN PARA ODOONTO.BACK
+
+## ESTRUCTURA ACTUAL (inferida del código visto)
+
+```
+Odoonto.Back/src/main/java/odoonto/api/
+├── domain/                   
+│   ├── models/               # Entidades de dominio mezcladas
+│   │   ├── Doctor.java
+│   │   ├── Patient.java
+│   │   ├── Appointment.java
+│   │   └── Odontogram.java
+│   ├── core/                
+│   │   └── valueobjects/     # Objetos de valor
+│   │       ├── Sexo.java
+│   │       ├── EmailAddress.java
+│   │       ├── PhoneNumber.java
+│   │       ├── ToothFace.java
+│   │       └── LesionType.java
+│   └── repositories/         # Interfaces de repositorios
+│       ├── DoctorRepository.java
+│       ├── PatientRepository.java
+│       └── AppointmentRepository.java
+│
+├── infrastructure/           # Infraestructura mezclada
+│   ├── DataSeeder.java       # Carga de datos iniciales
+│   ├── testers/              # Pruebas de endpoints
+│   │   ├── PatientEndpointTester.java
+│   │   ├── OdontogramEndpointTester.java
+│   │   ├── DoctorEndpointTester.java
+│   │   └── AppointmentEndpointTester.java
+│   ├── jackson/              # Configuración de serialización
+│   ├── EndpointTester.java   # Pruebas de API
+│   └── FirestoreConfig.java  # Configuración de la base de datos
+│
+└── web/                      # Controladores mezclados con servicios
+    └── controllers/          # Controladores REST
+        ├── PatientController.java
+        ├── DoctorController.java
+        └── AppointmentController.java
+
+# Carencias observadas:
+- Falta de DTOs claros
+- Mappers no identificados
+- Confusión entre capas (dominio/infraestructura)
+- Servicios de aplicación mezclados con controladores
+- Manejo de excepciones no estructurado
+```
+
+## ESTRUCTURA RECOMENDADA SEGÚN DDD
+
+```
+Odoonto.Back/src/main/java/odoonto/
+├── domain/                  # La capa de dominio - el núcleo del negocio
+│   ├── model/               # Entidades y agregados de dominio
+│   │   ├── aggregates/      # Agregados (raíces de entidades relacionadas)
+│   │   │   ├── Patient.java *            # Paciente (agregado que contiene Odontogram)
+│   │   │   ├── Doctor.java *             # Doctor (agregado)
+│   │   │   │   └── Specialty.java        # Especialidad del doctor (pendiente)
+│   │   │   ├── Odontogram.java *         # Odontograma (agregado que contiene dientes)
+│   │   │   ├── MedicalRecord.java *      # Historial médico (agregado)
+│   │   │   └── Appointment.java *        # Cita médica (agregado)
+│   │   │       └── AppointmentStatus.java # Estados de la cita (pendiente)
+│   │   ├── entities/        # Entidades de dominio (con identidad pero no agregados)
+│   │   │   ├── Tooth.java *              # Diente (parte del odontograma)
+│   │   │   │   └── ToothPosition.java *  # Posición del diente en la arcada
+│   │   │   ├── Lesion.java *             # Lesión en un diente
+│   │   │   ├── Treatment.java *          # Tratamiento realizado en un diente
+│   │   │   └── MedicalEntry.java *       # Entrada en el historial médico
+│   │   └── valueobjects/    # Objetos de valor inmutables
+│   │       ├── Sexo.java *               # Género del paciente (MASCULINO, FEMENINO, OTRO)
+│   │       ├── EmailAddress.java *       # Dirección de correo electrónico
+│   │       ├── PhoneNumber.java *        # Número de teléfono
+│   │       ├── Address.java              # Dirección postal (pendiente)
+│   │       ├── PersonName.java           # Nombre completo de una persona (pendiente)
+│   │       ├── ToothFace.java *          # Cara del diente (VESTIBULAR, LINGUAL, etc)
+│   │       ├── LesionType.java *         # Tipo de lesión dental
+│   │       ├── TreatmentType.java *      # Tipo de tratamiento dental
+│   │       ├── AppointmentTime.java      # Horario de cita (inicio, duración) (pendiente)
+│   │       ├── OdontogramId.java *       # Identificador de odontograma
+│   │       ├── PatientId.java *          # Identificador de paciente
+│   │       ├── MedicalRecordId.java *    # Identificador del historial médico
+│   │       └── AppointmentId.java        # Identificador de cita (pendiente)
+│   ├── repository/          # Interfaces de repositorios (puertos - solo interfaces)
+│   │   ├── PatientRepository.java *              # Interfaz para repositorio de pacientes
+│   │   ├── DoctorRepository.java *               # Interfaz para repositorio de doctores
+│   │   ├── OdontogramRepository.java *           # Interfaz para repositorio de odontogramas
+│   │   ├── MedicalRecordRepository.java *        # Interfaz para repositorio de historiales médicos
+│   │   └── AppointmentRepository.java *          # Interfaz para repositorio de citas
+│   ├── service/             # Servicios de dominio (lógica que no pertenece a una entidad)
+│   │   ├── DentalDiagnosisService.java   # Servicio para diagnóstico dental (pendiente)
+│   │   ├── TreatmentPlanService.java     # Servicio para planificación de tratamientos (pendiente)
+│   │   └── AppointmentValidationService.java # Validación de citas (pendiente)
+│   ├── events/              # Eventos de dominio (todos pendientes)
+│   │   ├── DomainEvent.java              # Interface base para eventos
+│   │   ├── PatientRegisteredEvent.java   # Evento cuando se registra un paciente
+│   │   ├── AppointmentScheduledEvent.java # Evento cuando se agenda una cita
+│   │   ├── AppointmentStatusChangedEvent.java # Evento de cambio de estado de cita
+│   │   ├── TreatmentCompletedEvent.java  # Evento cuando se completa un tratamiento
+│   │   └── EventPublisher.java           # Interface para publicar eventos
+│   ├── policy/              # Políticas y reglas de negocio
+│   │   ├── SchedulingPolicy.java *       # Reglas para programar citas  
+│   │   └── MedicalRecordPolicy.java *    # Políticas sobre historiales médicos
+│   └── exceptions/          # Excepciones específicas del dominio
+│       ├── DomainException.java *                # Excepción base de dominio
+│       ├── InvalidPersonDataException.java *     # Datos de persona inválidos
+│       ├── InvalidEmailException.java *          # Email con formato inválido
+│       ├── InvalidPhoneException.java *          # Teléfono con formato inválido
+│       ├── InvalidToothFaceException.java *      # Cara de diente inválida
+│       ├── InvalidToothNumberException.java *    # Número de diente inválido
+│       ├── DuplicateLesionException.java *       # Lesión duplicada en un diente
+│       ├── InvalidAppointmentTimeException.java * # Horario de cita inválido
+│       ├── AppointmentOverlapException.java      # Citas superpuestas (pendiente)
+│       └── InvalidTreatmentException.java *      # Tratamiento inválido
+│
+├── application/             # Capa de aplicación - casos de uso
+│   ├── dto/                 # Objetos de transferencia de datos
+│   │   ├── request/         # DTOs para solicitudes
+│   │   │   ├── PatientCreateDTO.java *           # Creación de paciente
+│   │   │   ├── PatientUpdateDTO.java             # Actualización de paciente (pendiente)
+│   │   │   ├── MedicalRecordCreateDTO.java       # Creación de historial médico (pendiente)
+│   │   │   ├── MedicalEntryCreateDTO.java        # Creación de entrada médica (pendiente)
+│   │   │   ├── OdontogramUpdateDTO.java          # Actualización de odontograma (pendiente)
+│   │   │   ├── DoctorCreateDTO.java              # Creación de doctor (pendiente)
+│   │   │   ├── AppointmentCreateDTO.java         # Creación de cita (pendiente)
+│   │   │   └── LesionCreateDTO.java *            # Creación de lesión
+│   │   └── response/        # DTOs para respuestas
+│   │       ├── PatientDTO.java *                 # DTO de paciente
+│   │       ├── OdontogramDTO.java *              # DTO de odontograma
+│   │       ├── MedicalRecordDTO.java *           # DTO de historial médico
+│   │       ├── DoctorDTO.java                    # DTO de doctor (pendiente)
+│   │       └── AppointmentDTO.java               # DTO de cita (pendiente)
+│   ├── port/                # Interfaces de servicios (puertos)
+│   │   ├── in/              # Puertos de entrada (casos de uso)
+│   │   │   ├── patient/     # Casos de uso para pacientes
+│   │   │   │   ├── PatientCreateUseCase.java     # Caso de uso: crear paciente (pendiente) 
+│   │   │   │   ├── PatientUpdateUseCase.java     # Caso de uso: actualizar paciente (pendiente)
+│   │   │   │   ├── PatientDeleteUseCase.java     # Caso de uso: eliminar paciente (pendiente)
+│   │   │   │   ├── PatientQueryUseCase.java      # Caso de uso: consultar paciente (pendiente)
+│   │   │   │   └── PatientOdontogramUseCase.java # Caso de uso: gestionar odontograma del paciente (pendiente)
+│   │   │   ├── odontogram/  # Casos de uso para odontogramas
+│   │   │   │   ├── OdontogramQueryUseCase.java   # Caso de uso: consultar odontograma (pendiente)
+│   │   │   │   ├── LesionAddUseCase.java         # Caso de uso: añadir lesión (pendiente)
+│   │   │   │   ├── LesionRemoveUseCase.java      # Caso de uso: eliminar lesión (pendiente)
+│   │   │   │   ├── TreatmentAddUseCase.java      # Caso de uso: añadir tratamiento (pendiente)
+│   │   │   │   └── TreatmentRemoveUseCase.java   # Caso de uso: eliminar tratamiento (pendiente)
+│   │   │   ├── medicalrecord/ # Casos de uso para historiales médicos
+│   │   │   │   ├── MedicalRecordQueryUseCase.java # Caso de uso: consultar historial (pendiente)
+│   │   │   │   ├── MedicalEntryAddUseCase.java   # Caso de uso: añadir entrada (pendiente)
+│   │   │   │   └── MedicalEntryRemoveUseCase.java # Caso de uso: eliminar entrada (pendiente)
+│   │   │   ├── doctor/      # Casos de uso para doctores
+│   │   │   │   ├── DoctorCreateUseCase.java      # Caso de uso: crear doctor (pendiente)
+│   │   │   │   ├── DoctorUpdateUseCase.java      # Caso de uso: actualizar doctor (pendiente)
+│   │   │   │   ├── DoctorDeleteUseCase.java      # Caso de uso: eliminar doctor (pendiente)
+│   │   │   │   └── DoctorQueryUseCase.java       # Caso de uso: consultar doctor (pendiente)
+│   │   │   └── appointment/ # Casos de uso para citas
+│   │   │       ├── AppointmentCreateUseCase.java # Caso de uso: crear cita (pendiente)
+│   │   │       ├── AppointmentUpdateUseCase.java # Caso de uso: actualizar cita (pendiente)
+│   │   │       ├── AppointmentCancelUseCase.java # Caso de uso: cancelar cita (pendiente)
+│   │   │       └── AppointmentQueryUseCase.java  # Caso de uso: consultar cita (pendiente)
+│   │   └── out/             # Puertos de salida (para acceso a repositorios)
+│   │       ├── PatientRepositoryPort.java       # Puerto para repositorio de pacientes (pendiente)
+│   │       ├── OdontogramRepositoryPort.java    # Puerto para repositorio de odontogramas (pendiente)
+│   │       ├── MedicalRecordRepositoryPort.java # Puerto para repositorio de historiales (pendiente)
+│   │       ├── DoctorRepositoryPort.java        # Puerto para repositorio de doctores (pendiente)
+│   │       └── AppointmentRepositoryPort.java   # Puerto para repositorio de citas (pendiente)
+│   ├── mapper/              # Conversiones entre dominio y DTOs
+│   │   ├── PatientMapper.java                   # Conversión entre Patient y PatientDTO (pendiente)
+│   │   ├── OdontogramMapper.java *              # Conversión entre Odontogram y OdontogramDTO
+│   │   ├── MedicalRecordMapper.java             # Conversión entre MedicalRecord y MedicalRecordDTO (pendiente)
+│   │   ├── DoctorMapper.java                    # Conversión entre Doctor y DoctorDTO (pendiente)
+│   │   └── AppointmentMapper.java               # Conversión entre Appointment y AppointmentDTO (pendiente)
+│   ├── service/             # Implementaciones de servicios (adaptadores)
+│   │   ├── patient/         # Implementaciones para pacientes
+│   │   │   ├── PatientCreateService.java         # Implementación de creación (pendiente)
+│   │   │   ├── PatientUpdateService.java         # Implementación de actualización (pendiente)
+│   │   │   ├── PatientDeleteService.java         # Implementación de eliminación (pendiente)
+│   │   │   ├── PatientQueryService.java          # Implementación de consulta (pendiente)
+│   │   │   └── PatientOdontogramService.java     # Implementación de gestión de odontogramas (pendiente)
+│   │   ├── odontogram/      # Implementaciones para odontogramas
+│   │   │   ├── OdontogramQueryService.java       # Implementación de consulta (pendiente)
+│   │   │   ├── LesionAddService.java             # Implementación de añadir lesión (pendiente)
+│   │   │   ├── LesionRemoveService.java          # Implementación de eliminar lesión (pendiente)
+│   │   │   ├── TreatmentAddService.java          # Implementación de añadir tratamiento (pendiente)
+│   │   │   └── TreatmentRemoveService.java       # Implementación de eliminar tratamiento (pendiente)
+│   │   ├── medicalrecord/   # Implementaciones para historiales médicos
+│   │   │   ├── MedicalRecordQueryService.java    # Implementación de consulta (pendiente)
+│   │   │   ├── MedicalEntryAddService.java       # Implementación de añadir entrada (pendiente)
+│   │   │   └── MedicalEntryRemoveService.java    # Implementación de eliminar entrada (pendiente)
+│   │   ├── doctor/          # Implementaciones para doctores
+│   │   │   ├── DoctorCreateService.java          # Implementación de creación (pendiente)
+│   │   │   ├── DoctorUpdateService.java          # Implementación de actualización (pendiente)
+│   │   │   ├── DoctorDeleteService.java          # Implementación de eliminación (pendiente)
+│   │   │   └── DoctorQueryService.java           # Implementación de consulta (pendiente)
+│   │   └── appointment/     # Implementaciones para citas
+│   │       ├── AppointmentCreateService.java     # Implementación de creación (pendiente)
+│   │       ├── AppointmentUpdateService.java     # Implementación de actualización (pendiente)
+│   │       ├── AppointmentCancelService.java     # Implementación de cancelación (pendiente)
+│   │       └── AppointmentQueryService.java      # Implementación de consulta (pendiente)
+│   └── exceptions/          # Excepciones específicas de la aplicación
+│       ├── PatientNotFoundException.java *      # Paciente no encontrado
+│       ├── DoctorNotFoundException.java         # Doctor no encontrado (pendiente)
+│       ├── OdontogramNotFoundException.java     # Odontograma no encontrado (pendiente)
+│       ├── MedicalRecordNotFoundException.java  # Historial médico no encontrado (pendiente)
+│       └── AppointmentConflictException.java    # Conflicto de citas (pendiente)
+│
+├── infrastructure/          # Implementaciones técnicas (adaptadores)
+│   ├── persistence/         # Implementaciones de repositorios (adaptadores)
+│   │   ├── firestore/       # Adaptadores para Firestore
+│   │   │   ├── FirestorePatientRepository.java *     # Adaptador para PatientRepository
+│   │   │   ├── FirestoreOdontogramRepository.java *  # Adaptador para OdontogramRepository
+│   │   │   ├── FirestoreMedicalRecordRepository.java * # Adaptador para MedicalRecordRepository
+│   │   │   ├── FirestoreDoctorRepository.java *      # Adaptador para DoctorRepository
+│   │   │   └── FirestoreAppointmentRepository.java * # Adaptador para AppointmentRepository
+│   │   └── entity/          # Entidades de persistencia (si son distintas)
+│   │       ├── FirestorePatientEntity.java *        # Mapeo de Patient para Firestore
+│   │       ├── FirestoreOdontogramEntity.java *     # Mapeo de Odontogram para Firestore
+│   │       ├── FirestoreMedicalRecordEntity.java *  # Mapeo de MedicalRecord para Firestore
+│   │       ├── FirestoreDoctorEntity.java *         # Mapeo de Doctor para Firestore
+│   │       └── FirestoreAppointmentEntity.java *    # Mapeo de Appointment para Firestore
+│   ├── config/              # Configuraciones (Spring, etc.)
+│   │   ├── FirestoreConfig.java *                  # Configuración de Firestore
+│   │   └── WebConfig.java                          # Configuración web (pendiente)
+│   ├── security/            # Implementaciones de seguridad (pendientes)
+│   │   └── SecurityConfig.java                     # Configuración de seguridad
+│   └── testing/             # Testing de infraestructura
+│       └── DataSeeder.java *                       # Carga de datos iniciales
+│
+└── presentation/            # API y controladores (adaptadores primarios)
+    ├── rest/                # API REST
+    │   ├── controller/      # Controladores REST (adaptadores que usan puertos)
+    │   │   ├── PatientController.java              # Endpoints de pacientes (usa PatientCreateUseCase, etc.)
+    │   │   ├── OdontogramController.java           # Endpoints de odontogramas (usa OdontogramQueryUseCase, etc.)
+    │   │   ├── MedicalRecordController.java        # Endpoints de historiales médicos (usa MedicalRecordQueryUseCase, etc.)
+    │   │   ├── DoctorController.java               # Endpoints de doctores (usa DoctorCreateUseCase, etc.)
+    │   │   └── AppointmentController.java          # Endpoints de citas (usa AppointmentCreateUseCase, etc.)
+    │   └── advice/          # Manejadores de excepciones para REST
+    │       └── GlobalExceptionHandler.java         # Manejo global de excepciones (pendiente)
+    └── documentation/       # Documentación de API (pendiente)
+        └── SwaggerConfig.java                      # Configuración de Swagger
+```
+
+## EXPLICACIONES Y RECOMENDACIONES
+
+### 1. DTOs (Data Transfer Objects)
+- **Ubicación correcta**: `application/dto/`
+- **Objetivo**: Transportar datos entre la capa de interfaz y la capa de aplicación
+- **Ejemplo PatientCreateDTO.java**:
+```java
+public class PatientCreateDTO {
+    private String nombre;
+    private String apellido;
+    private String fechaNacimiento;
+    private String sexo;
+    private String telefono;
+    private String email;
+    
+    // getters y setters
+}
+```
+
+### 2. Mappers
+- **Ubicación correcta**: `application/mapper/`
+- **Objetivo**: Convertir entidades de dominio a DTOs y viceversa
+- **Ejemplo PatientMapper.java**:
+```java
+@Mapper(componentModel = "spring")
+public interface PatientMapper {
+    PatientDTO toDTO(Patient patient);
+    Patient toEntity(PatientCreateDTO dto);
+    
+    void updatePatientFromDTO(PatientUpdateDTO dto, @MappingTarget Patient patient);
+}
+```
+
+### 3. Excepciones
+- **Excepciones de Dominio** (`domain/exceptions/`):
+
+### 4. Entidades de Persistencia
+- **Ubicación correcta**: `infrastructure/persistence/entity/`
+- **Objetivo**: Mapear las entidades de dominio a la estructura específica de la base de datos
+- **Ejemplo FirestorePatientEntity.java**:
+```java
+import com.google.cloud.firestore.annotation.DocumentId;
+import com.google.cloud.firestore.annotation.PropertyName;
+
+public class FirestorePatientEntity {
+    @DocumentId
+    private String id;
+    
+    private String nombre;
+    private String apellido;
+    private String fechaNacimiento;
+    private String sexo;
+    private String telefono;
+    private String email;
+    private Map<String, Object> direccion;
+    private Map<String, Object> odontogramaRef;
+    
+    // getters y setters con anotaciones de Firestore
+    @PropertyName("odontograma_ref")
+    public Map<String, Object> getOdontogramaRef() {
+        return odontogramaRef;
+    }
+}
+```
+
+### 5. Implementaciones de Repositorios
+- **Ubicación correcta**: `infrastructure/persistence/firestore/`
+- **Objetivo**: Implementar las interfaces de repositorio definidas en el dominio
+- **Ejemplo FirestorePatientRepository.java**:
+```java
+@Repository
+public class FirestorePatientRepository implements PatientRepository {
+    private final Firestore firestore;
+    private final CollectionReference patientsCollection;
+    
+    @Autowired
+    public FirestorePatientRepository(Firestore firestore) {
+        this.firestore = firestore;
+        this.patientsCollection = firestore.collection("patients");
+    }
+    
+    @Override
+    public Flux<Patient> findAll() {
+        // implementación
+    }
+    
+    @Override
+    public Mono<Patient> findById(String id) {
+        // implementación
+    }
+    
+    // más implementaciones de métodos
+    
+    // métodos privados para mapeo
+    private Patient mapToPatient(DocumentSnapshot document) {
+        // lógica de mapeo de Firestore a dominio
+    }
+    
+    private FirestorePatientEntity mapToEntity(Patient patient) {
+        // lógica de mapeo de dominio a Firestore
+    }
+}
+```
+
+## PATRÓN DE DISEÑO: ARQUITECTURA HEXAGONAL (PUERTOS Y ADAPTADORES)
+
+Esta actualización de la estructura del proyecto aplica los principios de la Arquitectura Hexagonal (también conocida como Puertos y Adaptadores), que complementa el enfoque de DDD:
+
+### 1. Concepto General
+
+La Arquitectura Hexagonal organiza el código en capas concéntricas:
+1. **Centro**: Dominio y lógica de negocio (completamente independiente)
+2. **Capa intermedia**: Puertos (interfaces) para comunicación con el exterior
+3. **Capa externa**: Adaptadores que implementan los puertos
+
+### 2. Puertos (Interfaces)
+
+#### Puertos de Entrada (In)
+- Definen **casos de uso específicos** para cada operación de la aplicación
+- Ubicados en `application/port/in/`
+- Ejemplos: `PatientCreateUseCase`, `OdontogramQueryUseCase`
+- Utilizados por los controladores REST (adaptadores primarios)
+
+#### Puertos de Salida (Out)
+- Definen interfaces para comunicación con infraestructura externa
+- Ubicados en `application/port/out/` y `domain/repository/`
+- Ejemplos: `PatientRepository`, `PatientRepositoryPort`
+- Implementados por adaptadores secundarios (Firestore, etc.)
+
+### 3. Adaptadores (Implementaciones)
+
+#### Adaptadores Primarios (Driving/UI)
+- Inician la interacción con la aplicación
+- Ejemplos: Controladores REST, UI, CLI
+- Ubicados en `presentation/`
+- Dependen sólo de interfaces (puertos de entrada)
+
+#### Adaptadores Secundarios (Driven/Infrastructure)
+- Implementan la comunicación con sistemas externos
+- Ejemplos: Implementaciones de repositorios
+- Ubicados en `infrastructure/`
+- Implementan los puertos de salida
+
+### 4. Ventajas de este Enfoque
+
+- **Desacoplamiento**: Las capas dependen sólo de abstracciones (interfaces)
+- **Testabilidad**: Facilita pruebas unitarias con mocks
+- **Mantenibilidad**: Facilita cambiar implementaciones sin afectar la lógica de negocio
+- **Flexibilidad**: Permite evolucionar la aplicación de manera independiente
+- **Claridad**: Cada caso de uso está definido explícitamente
+
+### 5. Implementación en el Proyecto
+
+```java
+// Puerto de entrada (caso de uso)
+public interface PatientCreateUseCase {
+    PatientDTO createPatient(PatientCreateDTO patientDTO);
+}
+
+// Adaptador primario (utiliza el puerto)
+@RestController
+public class PatientController {
+    private final PatientCreateUseCase patientCreateUseCase;
+    
+    @Autowired
+    public PatientController(PatientCreateUseCase patientCreateUseCase) {
+        this.patientCreateUseCase = patientCreateUseCase;
+    }
+    
+    @PostMapping("/patients")
+    public ResponseEntity<PatientDTO> createPatient(@RequestBody PatientCreateDTO dto) {
+        return ResponseEntity.ok(patientCreateUseCase.createPatient(dto));
+    }
+}
+
+// Servicio que implementa el caso de uso
+@Service
+public class PatientCreateService implements PatientCreateUseCase {
+    private final PatientRepository patientRepository;
+    private final PatientMapper patientMapper;
+    
+    @Autowired
+    public PatientCreateService(PatientRepository patientRepository, 
+                               PatientMapper patientMapper) {
+        this.patientRepository = patientRepository;
+        this.patientMapper = patientMapper;
+    }
+    
+    @Override
+    public PatientDTO createPatient(PatientCreateDTO dto) {
+        // Validación, mapeo, lógica de dominio, etc.
+        Patient patient = patientMapper.toEntity(dto);
+        Patient saved = patientRepository.save(patient);
+        return patientMapper.toDTO(saved);
+    }
+}
+```
+
+### 6. Diferencia con la Implementación Original
+
+En la implementación original, había servicios monolíticos como `PatientService` que manejaban todas las operaciones relacionadas con pacientes. En este nuevo enfoque, cada caso de uso es tratado como una unidad independiente, con su propia interfaz e implementación.
+
+Esto facilita:
+- Comprender claramente qué puede hacer la aplicación
+- Mantener clases pequeñas y enfocadas
+- Aplicar el principio de responsabilidad única (SRP)
+- Implementar el principio de segregación de interfaces (ISP)
+
+## PATRÓN DE DISEÑO: IDENTIDAD COMPARTIDA ENTRE AGREGADOS
+
+Este proyecto también implementa un patrón de diseño específico para manejar relaciones entre agregados en DDD, especialmente adaptado a bases de datos NoSQL como Firestore.
+
+### Problema
+En DDD estricto, los agregados deben ser independientes y comunicarse a través de identidades (IDs). Sin embargo, esto crea desafíos al trabajar con:
+1. Relaciones 1:1 fuertes (Patient-Odontogram, Patient-MedicalRecord)
+2. Bases de datos NoSQL sin capacidad de joins
+
+### Solución: Identidad Compartida Derivada
+Se implementa una estrategia donde:
+
+1. **Patient** es un agregado con su propio identificador único
+2. **Odontogram** es un agregado cuyo ID se deriva del ID del paciente:
+   ```
+   odontogramId = "odontogram_" + patientId
+   ```
+3. **MedicalRecord** es un agregado cuyo ID se deriva del ID del paciente:
+   ```
+   medicalRecordId = "medical_record_" + patientId
+   ```
+
+### Implementación en el dominio
+```java
+// En Patient.java
+public class Patient {
+    private PatientId id;
+    // Otros atributos y métodos
+    
+    public OdontogramId deriveOdontogramId() {
+        return OdontogramId.fromPatientId(this.id);
+    }
+    
+    public MedicalRecordId deriveMedicalRecordId() {
+        return MedicalRecordId.fromPatientId(this.id);
+    }
+}
+
+// En OdontogramId.java
+public class OdontogramId {
+    private final String value;
+    
+    private OdontogramId(String value) {
+        this.value = value;
+    }
+    
+    public static OdontogramId fromPatientId(PatientId patientId) {
+        return new OdontogramId("odontogram_" + patientId.getValue());
+    }
+    
+    public String getValue() {
+        return value;
+    }
+}
+```
+
+### Implementación en infraestructura (Firestore)
+```java
+// En FirestorePatientRepository.java
+public Mono<Patient> findById(String id) {
+    return Mono.fromFuture(patientsCollection.document(id).get())
+        .map(this::mapToPatient);
+}
+
+// En FirestoreOdontogramRepository.java
+public Mono<Odontogram> findByPatientId(String patientId) {
+    String odontogramId = "odontogram_" + patientId;
+    return Mono.fromFuture(odontogramsCollection.document(odontogramId).get())
+        .map(this::mapToOdontogram);
+}
+```
+
+### Ventajas de este enfoque
+1. **Alineado con DDD**: Mantiene agregados separados pero relacionados
+2. **Optimizado para NoSQL**: Aprovecha la estructura de documentos de Firestore
+3. **Eficiente**: Permite búsquedas directas sin joins ni consultas complejas
+4. **Coherente**: La identidad derivada garantiza consistencia en las relaciones
+5. **Flexible**: Cada agregado puede evolucionar independientemente
+
+### Comparación con alternativas
+1. **Documentos anidados**: Violaría el principio de agregados independientes
+2. **Referencias bidireccionales**: Complicaría la consistencia del dominio
+3. **Relaciones muchos-a-muchos**: Requeriría colecciones intermedias innecesarias
