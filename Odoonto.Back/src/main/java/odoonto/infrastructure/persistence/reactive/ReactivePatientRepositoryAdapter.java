@@ -17,6 +17,8 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Implementación reactiva del repositorio de pacientes usando Firestore
@@ -213,19 +215,109 @@ public class ReactivePatientRepositoryAdapter implements ReactivePatientReposito
      * Mapea un documento de Firestore a una entidad de dominio Patient
      */
     private Patient mapToPatient(DocumentSnapshot document) {
-        FirestorePatientEntity entity = document.toObject(FirestorePatientEntity.class);
-        if (entity == null) {
+        if (!document.exists()) {
             return null;
         }
         
-        // Implementar la conversión de FirestorePatientEntity a Patient
-        Patient patient = new Patient();
-        patient.setId(PatientId.of(entity.getId()));
-        patient.setNombre(entity.getNombre());
-        patient.setApellido(entity.getApellido());
-        // ... mapear otras propiedades
-        
-        return patient;
+        try {
+            String id = document.getId();
+            
+            // Crear un paciente vacío 
+            Patient patient = new Patient();
+            
+            // Asignar ID
+            patient.setId(PatientId.of(id));
+            
+            // Obtener y asignar propiedades de forma segura
+            // Verificar el tipo de cada campo antes de intentar obtenerlo
+            try {
+                // Propiedades básicas
+                if (document.contains("nombre") && document.get("nombre") instanceof String) {
+                    patient.setNombre(document.getString("nombre"));
+                }
+                
+                if (document.contains("apellido") && document.get("apellido") instanceof String) {
+                    patient.setApellido(document.getString("apellido"));
+                }
+                
+                // Fecha de nacimiento
+                if (document.contains("fechaNacimiento") && document.get("fechaNacimiento") instanceof String) {
+                    String fechaNacimientoStr = document.getString("fechaNacimiento");
+                    try {
+                        // Intentar primero el formato simple yyyy-MM-dd
+                        patient.setFechaNacimiento(java.time.LocalDate.parse(fechaNacimientoStr));
+                    } catch (java.time.format.DateTimeParseException e) {
+                        try {
+                            // Si falla, intentar parsear formatos con tiempo (yyyy-MM-ddTHH:mm:ssZ)
+                            // Extraer solo la parte de la fecha (los primeros 10 caracteres)
+                            if (fechaNacimientoStr.length() >= 10) {
+                                String soloFecha = fechaNacimientoStr.substring(0, 10);
+                                patient.setFechaNacimiento(java.time.LocalDate.parse(soloFecha));
+                            }
+                        } catch (Exception ex) {
+                            System.err.println("No se pudo parsear la fecha: " + fechaNacimientoStr);
+                        }
+                    }
+                }
+                
+                // Sexo
+                if (document.contains("sexo") && document.get("sexo") instanceof String) {
+                    String sexoStr = document.getString("sexo");
+                    patient.setSexo(odoonto.domain.model.valueobjects.Sexo.valueOf(sexoStr));
+                }
+                
+                // Teléfono - puede ser un String o un Map
+                if (document.contains("telefono")) {
+                    Object telefono = document.get("telefono");
+                    if (telefono instanceof String) {
+                        // Es un string directo
+                        patient.setTelefono(new odoonto.domain.model.valueobjects.PhoneNumber((String)telefono));
+                    } else if (telefono instanceof Map) {
+                        // Es un mapa, intentar obtener el valor como una cadena
+                        Map<String, Object> telefonoMap = (Map<String, Object>) telefono;
+                        if (telefonoMap.containsKey("value")) {
+                            String telefonoStr = telefonoMap.get("value").toString();
+                            patient.setTelefono(new odoonto.domain.model.valueobjects.PhoneNumber(telefonoStr));
+                        } else {
+                            System.err.println("Mapa de teléfono no tiene campo 'value' para paciente " + id);
+                        }
+                    } else {
+                        System.err.println("Campo teléfono tiene tipo inesperado para paciente " + id + ": " + telefono.getClass().getName());
+                    }
+                }
+                
+                // Email - puede ser un String o un Map
+                if (document.contains("email")) {
+                    Object email = document.get("email");
+                    if (email instanceof String) {
+                        // Es un string directo
+                        patient.setEmail(new odoonto.domain.model.valueobjects.EmailAddress((String)email));
+                    } else if (email instanceof Map) {
+                        // Es un mapa, intentar obtener el valor como una cadena
+                        Map<String, Object> emailMap = (Map<String, Object>) email;
+                        if (emailMap.containsKey("value")) {
+                            String emailStr = emailMap.get("value").toString();
+                            patient.setEmail(new odoonto.domain.model.valueobjects.EmailAddress(emailStr));
+                        } else {
+                            System.err.println("Mapa de email no tiene campo 'value' para paciente " + id);
+                        }
+                    } else {
+                        System.err.println("Campo email tiene tipo inesperado para paciente " + id + ": " + email.getClass().getName());
+                    }
+                }
+                
+            } catch (Exception e) {
+                System.err.println("Error al convertir propiedades del paciente " + id + ": " + e.getMessage());
+                e.printStackTrace();
+                // Si hay error en convertir propiedades, aún devolvemos el paciente con lo que pudimos asignar
+            }
+            
+            return patient;
+        } catch (Exception e) {
+            System.err.println("Error al mapear documento a Patient: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
     }
     
     /**
@@ -236,7 +328,34 @@ public class ReactivePatientRepositoryAdapter implements ReactivePatientReposito
         entity.setId(patient.getIdValue());
         entity.setNombre(patient.getNombre());
         entity.setApellido(patient.getApellido());
-        // ... mapear otras propiedades
+        
+        // Mapear fechaNacimiento a formato ISO
+        if (patient.getFechaNacimiento() != null) {
+            entity.setFechaNacimiento(patient.getFechaNacimiento().toString());
+        }
+        
+        // Mapear sexo a string
+        if (patient.getSexo() != null) {
+            entity.setSexo(patient.getSexo().toString());
+        }
+        
+        // Mapear teléfono y email a string
+        if (patient.getTelefono() != null) {
+            entity.setTelefono(patient.getTelefono().getValue());
+        }
+        
+        if (patient.getEmail() != null) {
+            entity.setEmail(patient.getEmail().getValue());
+        }
+        
+        // Crear referencias al odontograma y al historial médico
+        Map<String, Object> odontogramaRef = new HashMap<>();
+        odontogramaRef.put("id", "odontogram_" + patient.getIdValue());
+        entity.setOdontogramaRef(odontogramaRef);
+        
+        Map<String, Object> historialRef = new HashMap<>();
+        historialRef.put("id", "medical_record_" + patient.getIdValue());
+        entity.setHistorialMedicoRef(historialRef);
         
         return entity;
     }

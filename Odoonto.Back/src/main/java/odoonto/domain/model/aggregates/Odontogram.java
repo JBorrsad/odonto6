@@ -91,13 +91,8 @@ public class Odontogram {
         // Obtener o crear el registro del diente
         ToothRecord toothRecord = teeth.computeIfAbsent(toothId, k -> new ToothRecord());
         
-        // Verificar si ya existe una lesión en esa cara
-        if (toothRecord.getFaces().containsKey(face.getCodigo())) {
-            throw new DuplicateLesionException(toothId, face.getCodigo());
-        }
-        
-        // Añadir la lesión
-        toothRecord.getFaces().put(face.getCodigo(), lesionType);
+        // Verificar si ya existe una lesión en esa cara y añadirla usando el método de ToothRecord
+        toothRecord.addLesion(face.getCodigo(), lesionType);
     }
 
     /**
@@ -112,8 +107,8 @@ public class Odontogram {
         // Si existe el diente en el mapa
         if (teeth.containsKey(toothId)) {
             ToothRecord toothRecord = teeth.get(toothId);
-            // Eliminar la lesión (si existe)
-            toothRecord.getFaces().remove(face.getCodigo());
+            // Eliminar la lesión (si existe) usando el método de ToothRecord
+            toothRecord.removeLesion(face.getCodigo());
             
             // Si el diente ya no tiene lesiones, se elimina del mapa
             if (toothRecord.getFaces().isEmpty()) {
@@ -248,6 +243,27 @@ public class Odontogram {
         
         public void setFaces(Map<String, LesionType> faces) {
             this.faces = faces;
+        }
+        
+        /**
+         * Añade una lesión a una cara específica del diente
+         * @param faceCode Código de la cara
+         * @param lesionType Tipo de lesión
+         * @throws DuplicateLesionException Si ya existe una lesión en esa cara
+         */
+        public void addLesion(String faceCode, LesionType lesionType) {
+            if (faces.containsKey(faceCode)) {
+                throw new DuplicateLesionException("", faceCode);
+            }
+            faces.put(faceCode, lesionType);
+        }
+        
+        /**
+         * Elimina una lesión de una cara específica del diente
+         * @param faceCode Código de la cara
+         */
+        public void removeLesion(String faceCode) {
+            faces.remove(faceCode);
         }
     }
 }

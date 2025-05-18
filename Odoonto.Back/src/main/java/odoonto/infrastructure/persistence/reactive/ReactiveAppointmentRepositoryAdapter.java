@@ -18,6 +18,9 @@ import com.google.api.core.ApiFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * Adaptador que implementa la interfaz reactiva para el repositorio de citas.
@@ -63,7 +66,12 @@ public class ReactiveAppointmentRepositoryAdapter implements ReactiveAppointment
     @Override
     public Mono<Appointment> save(Appointment appointment) {
         return Mono.fromCallable(() -> {
-            ApiFuture<?> future = appointmentsCollection.document(appointment.getId().toString()).set(mapToFirestore(appointment));
+            // Si el ID es nulo, generar un nuevo UUID
+            if (appointment.getId() == null || appointment.getId().trim().isEmpty()) {
+                appointment.setId(java.util.UUID.randomUUID().toString());
+            }
+            
+            ApiFuture<?> future = appointmentsCollection.document(appointment.getId()).set(mapToFirestore(appointment));
             CompletableFuture<Object> completableFuture = new CompletableFuture<>();
             
             future.addListener(() -> {
@@ -264,14 +272,54 @@ public class ReactiveAppointmentRepositoryAdapter implements ReactiveAppointment
             return null;
         }
         
-        // Implementar lógica de mapeo de Firestore a Appointment
-        // Este es un ejemplo simplificado, ajustar según la estructura real de datos
-        return null; // Reemplazar con implementación real
+        try {
+            // Extraer datos del documento
+            String id = document.getId();
+            String patientId = document.getString("patientId");
+            String doctorId = document.getString("doctorId");
+            String dateTimeStr = document.getString("dateTime");
+            Long durationSlotsLong = document.getLong("durationSlots");
+            String statusStr = document.getString("status");
+            String notes = document.getString("notes");
+            
+            // Validar datos esenciales
+            if (patientId == null || doctorId == null || dateTimeStr == null || durationSlotsLong == null) {
+                System.err.println("Error: Documento de cita con datos incompletos - ID: " + id);
+                return null;
+            }
+            
+            // Convertir tipos
+            int durationSlots = durationSlotsLong.intValue();
+            LocalDateTime dateTime = LocalDateTime.parse(dateTimeStr);
+            AppointmentStatus status = (statusStr != null) ? 
+                AppointmentStatus.valueOf(statusStr) : AppointmentStatus.PENDIENTE;
+            
+            // Crear y devolver la cita
+            return new Appointment(id, patientId, doctorId, dateTime, durationSlots, status, notes);
+        } catch (Exception e) {
+            System.err.println("Error al mapear documento a Appointment: " + e.getMessage());
+            return null;
+        }
     }
     
     private Object mapToFirestore(Appointment appointment) {
-        // Implementar lógica de mapeo de Appointment a formato Firestore
-        // Este es un ejemplo simplificado, ajustar según la estructura real de datos
-        return null; // Reemplazar con implementación real
+        if (appointment == null) {
+            return null;
+        }
+        
+        // Crear un mapa con los datos de la cita
+        Map<String, Object> data = new HashMap<>();
+        data.put("patientId", appointment.getPatientId());
+        data.put("doctorId", appointment.getDoctorId());
+        data.put("dateTime", appointment.getDateTime().toString());
+        data.put("durationSlots", appointment.getDurationSlots());
+        data.put("status", appointment.getStatus().toString());
+        
+        // Añadir notas solo si existen
+        if (appointment.getNotes() != null && !appointment.getNotes().trim().isEmpty()) {
+            data.put("notes", appointment.getNotes());
+        }
+        
+        return data;
     }
 } 

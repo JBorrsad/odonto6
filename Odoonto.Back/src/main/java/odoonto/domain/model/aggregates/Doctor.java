@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Agregado raíz que representa un doctor/médico en el sistema.
@@ -39,6 +40,8 @@ public class Doctor {
         if (nombreCompleto == null || nombreCompleto.trim().isEmpty()) {
             throw new DomainException("El nombre del doctor no puede estar vacío");
         }
+        // Generar un ID único automáticamente
+        this.id = UUID.randomUUID().toString();
         this.nombreCompleto = nombreCompleto;
         this.especialidad = especialidad;
         this.horarios = new HashMap<>();

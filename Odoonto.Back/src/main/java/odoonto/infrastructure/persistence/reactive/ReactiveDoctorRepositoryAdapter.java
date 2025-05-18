@@ -88,6 +88,11 @@ public class ReactiveDoctorRepositoryAdapter implements ReactiveDoctorRepository
     
     @Override
     public Mono<Void> deleteById(String id) {
+        // Validar que el ID no sea nulo o vacío
+        if (id == null || id.trim().isEmpty()) {
+            return Mono.error(new IllegalArgumentException("El ID del doctor no puede ser nulo o vacío"));
+        }
+        
         return Mono.fromCallable(() -> {
             ApiFuture<?> future = doctorsCollection.document(id).delete();
             CompletableFuture<Object> completableFuture = new CompletableFuture<>();
@@ -190,18 +195,35 @@ public class ReactiveDoctorRepositoryAdapter implements ReactiveDoctorRepository
         }
         
         try {
-            // Implementación básica que solo crea una instancia vacía
-            // En una implementación real, mapear todos los campos
-            return new Doctor();
+            // Obtener datos del documento
+            String id = document.getId();
+            String nombreCompleto = document.getString("nombreCompleto");
+            String especialidadStr = document.getString("especialidad");
+            
+            // Usar el método fromNombre para convertir a Specialty de manera más robusta
+            Specialty especialidad = Specialty.fromNombre(especialidadStr);
+            
+            // Crear y devolver un nuevo Doctor con los datos obtenidos
+            return new Doctor(id, nombreCompleto, especialidad);
         } catch (Exception e) {
-            // Manejar errores de mapeo de manera segura
+            // Registrar el error y devolver null
+            System.err.println("Error al mapear documento a Doctor: " + e.getMessage());
+            e.printStackTrace(); // Agregar stack trace para más detalle
             return null;
         }
     }
     
     private Map<String, Object> mapToFirestore(Doctor doctor) {
         Map<String, Object> docData = new HashMap<>();
-        // Implementación básica
+        
+        // Guardar los datos del doctor
+        docData.put("nombreCompleto", doctor.getNombreCompleto());
+        if (doctor.getEspecialidad() != null) {
+            docData.put("especialidad", doctor.getEspecialidad().toString());
+        }
+        
+        // Podríamos añadir más campos si es necesario
+        
         return docData;
     }
 } 

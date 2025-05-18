@@ -2,7 +2,9 @@ package odoonto.infrastructure.persistence.reactive;
 
 import odoonto.application.port.out.ReactiveOdontogramRepository;
 import odoonto.domain.model.aggregates.Odontogram;
+import odoonto.domain.model.entities.Lesion;
 import odoonto.domain.model.entities.Tooth;
+import odoonto.domain.model.entities.Treatment;
 import odoonto.domain.model.valueobjects.LesionType;
 import odoonto.domain.model.valueobjects.OdontogramId;
 import odoonto.domain.model.valueobjects.PatientId;
@@ -383,20 +385,146 @@ public class ReactiveOdontogramRepositoryAdapter implements ReactiveOdontogramRe
             return null;
         }
         
-        // Implementar lógica de mapeo de Firestore a Odontogram
-        // Este es un ejemplo simplificado
-        return null; // Reemplazar con implementación real
+        try {
+            String id = document.getId();
+            Odontogram odontogram = new Odontogram();
+            odontogram.setId(OdontogramId.of(id));
+            
+            // Extraer el mapa de dientes
+            Map<String, Map<String, Object>> teethMap = new HashMap<>();
+            if (document.contains("teeth") && document.get("teeth") instanceof Map) {
+                Map<String, Object> docTeeth = (Map<String, Object>) document.get("teeth");
+                for (Map.Entry<String, Object> entry : docTeeth.entrySet()) {
+                    String toothId = entry.getKey();
+                    if (entry.getValue() instanceof Map) {
+                        Map<String, Object> toothData = (Map<String, Object>) entry.getValue();
+                        
+                        // Extraer las caras con sus lesiones
+                        if (toothData.containsKey("faces") && toothData.get("faces") instanceof Map) {
+                            Map<String, Object> facesMap = (Map<String, Object>) toothData.get("faces");
+                            Map<String, LesionType> faces = new HashMap<>();
+                            
+                            for (Map.Entry<String, Object> faceEntry : facesMap.entrySet()) {
+                                String faceId = faceEntry.getKey();
+                                if (faceEntry.getValue() instanceof String) {
+                                    String lesionTypeStr = (String) faceEntry.getValue();
+                                    try {
+                                        LesionType lesionType = LesionType.valueOf(lesionTypeStr);
+                                        faces.put(faceId, lesionType);
+                                    } catch (IllegalArgumentException e) {
+                                        System.err.println("Error al convertir tipo de lesión: " + lesionTypeStr);
+                                    }
+                                }
+                            }
+                            
+                            // Crear el ToothRecord y añadirlo al odontograma
+                            Odontogram.ToothRecord toothRecord = new Odontogram.ToothRecord();
+                            toothRecord.setFaces(faces);
+                            Map<String, Odontogram.ToothRecord> teethRecords = new HashMap<>(odontogram.getTeeth());
+                            teethRecords.put(toothId, toothRecord);
+                            odontogram.setTeeth(teethRecords);
+                        }
+                    }
+                }
+            }
+            
+            return odontogram;
+        } catch (Exception e) {
+            System.err.println("Error al mapear documento a Odontogram: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
     }
     
     private Map<String, Object> mapToFirestore(Odontogram odontogram) {
         Map<String, Object> data = new HashMap<>();
-        // Implementar lógica de mapeo de Odontogram a formato Firestore
+        
+        // Guardar ID del odontograma
+        data.put("id", odontogram.getIdValue());
+        
+        // Guardar referencia al paciente
+        PatientId patientId = odontogram.extractPatientId();
+        if (patientId != null) {
+            data.put("patientId", patientId.getValue());
+        }
+        
+        // Mapear todos los dientes
+        Map<String, Object> teethMap = new HashMap<>();
+        for (Map.Entry<String, Odontogram.ToothRecord> entry : odontogram.getTeeth().entrySet()) {
+            String toothId = entry.getKey();
+            Odontogram.ToothRecord record = entry.getValue();
+            
+            Map<String, Object> toothData = new HashMap<>();
+            
+            // Mapear las caras y lesiones
+            Map<String, Object> facesMap = new HashMap<>();
+            for (Map.Entry<String, LesionType> faceEntry : record.getFaces().entrySet()) {
+                String faceId = faceEntry.getKey();
+                LesionType lesionType = faceEntry.getValue();
+                facesMap.put(faceId, lesionType.toString());
+            }
+            
+            toothData.put("faces", facesMap);
+            teethMap.put(toothId, toothData);
+        }
+        
+        data.put("teeth", teethMap);
+        data.put("lastUpdated", System.currentTimeMillis());
+        
         return data;
     }
     
     private Map<String, Object> mapToothToFirestore(Tooth tooth) {
         Map<String, Object> data = new HashMap<>();
-        // Implementar lógica de mapeo de Tooth a formato Firestore
+        
+        if (tooth == null) {
+            return data;
+        }
+        
+        // Datos básicos del diente
+        data.put("id", tooth.getId());
+        data.put("position", tooth.getPosition().name());
+        
+        // Mapear lesiones
+        Map<String, Object> lesionsMap = new HashMap<>();
+        for (Map.Entry<String, Lesion> entry : tooth.getLesions().entrySet()) {
+            String faceCode = entry.getKey();
+            Lesion lesion = entry.getValue();
+            
+            Map<String, Object> lesionData = new HashMap<>();
+            lesionData.put("type", lesion.getType().name());
+            lesionData.put("face", lesion.getFace().name());
+            lesionData.put("recordedAt", lesion.getRecordedAt().toString());
+            
+            if (lesion.getNotes() != null) {
+                lesionData.put("notes", lesion.getNotes());
+            }
+            
+            lesionsMap.put(faceCode, lesionData);
+        }
+        data.put("lesions", lesionsMap);
+        
+        // Mapear tratamientos si hay
+        if (tooth.hasTreatments()) {
+            List<Map<String, Object>> treatmentsList = new ArrayList<>();
+            for (Treatment treatment : tooth.getTreatments()) {
+                Map<String, Object> treatmentData = new HashMap<>();
+                treatmentData.put("id", treatment.getId());
+                treatmentData.put("description", treatment.getDescription());
+                treatmentData.put("doctorId", treatment.getDoctorId());
+                treatmentData.put("performedAt", treatment.getPerformedAt().toString());
+                treatmentData.put("completed", treatment.isCompleted());
+                treatmentData.put("cost", treatment.getCost());
+                
+                if (treatment.getNotes() != null) {
+                    treatmentData.put("notes", treatment.getNotes());
+                }
+                
+                treatmentsList.add(treatmentData);
+            }
+            data.put("treatments", treatmentsList);
+        }
+        
         return data;
     }
 } 

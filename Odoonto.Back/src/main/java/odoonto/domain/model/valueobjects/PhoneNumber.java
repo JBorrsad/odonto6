@@ -42,7 +42,7 @@ public class PhoneNumber {
      * @return El número de teléfono formateado
      */
     public String getFormattedValue() {
-        // Implementar formato según necesidades (por ejemplo, +XX XXX XXX XXX)
+        
         return value;
     }
     

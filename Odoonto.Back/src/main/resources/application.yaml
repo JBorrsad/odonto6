@@ -27,22 +27,15 @@ spring:
       - com.google.cloud.spring.autoconfigure.datastore.GcpDatastoreAutoConfiguration
       - com.google.cloud.spring.autoconfigure.vision.GcpVisionAutoConfiguration
 
-# Configuración de logging para depuración
+# Configuración de logging
 logging:
   level:
     root: INFO
-    org.springframework: DEBUG
-    org.springframework.web: DEBUG
-    org.springframework.data: DEBUG
-    com.google.cloud.spring: DEBUG
-    com.google.cloud.firestore: DEBUG
-    odoonto.api: DEBUG
-    Odoonto.Api: DEBUG
 
 # Mostrar errores de Spring
 server:
   error:
     include-message: always
     include-binding-errors: always
-    include-stacktrace: always
-    include-exception: true
+    include-stacktrace: on_param
+    include-exception: false
