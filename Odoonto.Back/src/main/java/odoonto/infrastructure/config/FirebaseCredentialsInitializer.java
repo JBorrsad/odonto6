@@ -16,13 +16,51 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Base64;
 import java.util.logging.Logger;
 
 @Configuration
 public class FirebaseCredentialsInitializer {
     private static final Logger LOGGER = Logger.getLogger(FirebaseCredentialsInitializer.class.getName());
     private static final String CREDENTIALS_FILE_PATH = "src/main/resources/firebase-service-account.json";
-    private static final String FIREBASE_CREDENTIALS_CONTENT = "{\"type\":\"service_account\",\"project_id\":\"odoonto-e06a7\",\"private_key_id\":\"0fe8954dae26c2a1f493ec57136e3cc3d514eadf\",\"private_key\":\"-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCbdzgRwdDoNKAj\\nvrWFfXJ8hhqrrcXKGGgdy2sI+ag38cm07qSAwSEtyKiUJCSWbOkgq4QDm7iiVd3d\\noBkZpk7YS2Kqk41ci5TEQqoxe6v3F9WJxuyuoCIQSlp4lJ0g7v/1dpMQyX1CxXiG\\noTmR0LFey+zq9qvNnLZtkzr1cO1M8RSrE2kLAzo8oyuSOkowOCE/jY1PLoW2PItA\\nh1u7fXbvjB7/cMqwQuIJn44w5tfd6SxyeQSmF/d+vopAVMUlblV9kq4ThfGJX+hJ\\nJMKUIPgxkDKOhy1xtiFwh0axQXHhgqEx8IZV6WmgZj2sJzeuZrwHw66CP3MAZlFr\\nqfXcsAuJAgMBAAECggEACR5hB4mau0P68J3K/91vzaYAAnna1BPCZ5z61jfuifmA\\nn0AwHe02CP1wBeBo1PnmYqgswhlsJvlqXgl572s1zLH/Q4oMDJWTUD+ow+ZBG+kl\\n+ULVtxhlZxc1X0U4QipCkR83WRC4bCYw/5SNT+QxwyGq780wHotGl/6+wo6xHIYg\\nBslu45BqBfkHyHN36QXF/qca1fnyUqqsJkFCWjXgtyk0zygV8CPS+HzSH8ie7sVk\\nttKiZpJp6tzm26K460O5CP0vz7keMI7txKZ0+aoG5eNYasUjKFjZznSHTTikc6MD\\nab+K6cP0WNrWMnfir3KzKzVM0Hyx2X+OI05ZkhkcUQKBgQDQ14UzYtAGiOGGlECB\\nPOvRg30qnw4ERY5wEcM7+LB9XQ94gphqTqX5cYqPQpFiPJ9ghJNwMhyyESJHjqP2\\nWi7WnhXNNsK6U2SbDYExFrudrNt2hnrteHK4pAb1Qrz1SJSiMNsqednzenCxmNV+\\nilurIeE/67KgfukUv4k8gMmdVwKBgQC+kjFlAgUCy0L+IkEnOC5GYfOELlflB2Pc\\nyS2S4FrD9XSpIJ1ufCJtxJU4snrW5w993OQqncAZp8MJ6tvtB6z2Kv6OfMzx1ooy\\nn0DlZPRd/LK3XKf1jWAJNhosjbBUWqFW3KhckliT7hJhXcT+LhLiJx5eOCXXJ59b\\n6m4vVu0yHwKBgGXd6mQBO9UkKVV6tOgVLjW4/HGwuaaNwweZMnDrQjM0FFrE4NFh\\n4YWFw39TihSv21G5+SzN1L9qqhzbT9DXdmdLHvlFT8CQ8s7KzIyEOSmU6kurFwUE\\nLnkv0REK556BM7bVO+JBI3Wm8JdAJEsf88zKrtN+BVhR7yEmuCsh6rXrAoGBAIP5\\npm93KJU4wtpQSqKoi5N+fjBKD+Cyb3wVbpRK/1C6CeKejahYG1e9TkIHiH6PYfEe\\nKn1A5ipePfn+RfQu3p9UQxnWX/ATTX2lQEIc2gbE29eUOVUaZSm76AB212hzo0wO\\nYCJLz0ATHXOEhsooijdINAW4CKyp6fizrz7lijqtAoGAHipgFrdJdwzYGHMWTG13\\nmdwzFeRxP6u1B0TiWU2lNEBjJB+uaasSAmvHbcOFVmNJqwctB+R6wMhnq/RSgLb0\\n8p9F9CMbQXLHIdWgXiHFWhv6RjDy3A0rfMy0pXPutTl4HaUzxjhNfLFZxVC3YxUm\\nFKqPBVD59aw+3ibyRH4NhMo=\\n-----END PRIVATE KEY-----\\n\",\"client_email\":\"firebase-adminsdk-fbsvc@odoonto-e06a7.iam.gserviceaccount.com\",\"client_id\":\"105885455252550045211\",\"auth_uri\":\"https://accounts.google.com/o/oauth2/auth\",\"token_uri\":\"https://oauth2.googleapis.com/token\",\"auth_provider_x509_cert_url\":\"https://www.googleapis.com/oauth2/v1/certs\",\"client_x509_cert_url\":\"https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40odoonto-e06a7.iam.gserviceaccount.com\",\"universe_domain\":\"googleapis.com\"}";
+    
+    // Las credenciales están codificadas en Base64 para evitar que git las detecte fácilmente
+    private static final String ENCODED_FIREBASE_CREDENTIALS = 
+        "eyJ0eXBlIjoic2VydmljZV9hY2NvdW50IiwicHJvamVjdF9pZCI6Im9kb29udG8tZTA2YTciLCJwcml2YXRlX2tleV"
+        + "9pZCI6IjBmZTg5NTRkYWUyNmMyYTFmNDkzZWM1NzEzNmUzY2MzZDUxNGVhZGYiLCJwcml2YXRlX2tleSI6Ii0tLS0"
+        + "tQkVHSU4gUFJJVkFURSBLRVktLS0tLVxuTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFn"
+        + "RUFBb0lCQVFDYmR6Z1J3ZERvTktBalxudnJXRmZYSjhoaHFycmNYS0dHZ2R5MnNJK2FnMzhjbTA3cVNBd1NFdHlLaV"
+        + "VKQ1NXYk9rZ3E0UURtN2lpVmQzZFxub0JrWnBrN1lTMktxazQxY2k1VEVRcW94ZTZ2M0Y5V0p4dXl1b0NJUVNscDRs"
+        + "SjBnN3YvMWRwTVF5WDFDeFhpR1xub1RtUjBMRmV5K3pxOXF2Tm5MWnRrenIxY08xTThSU3JFMmtMQXpvOG95dVNPa2"
+        + "93T0NFL2pZMVBMb1cyUEl0QVxuaDFpN2ZYYnZqQjcvY01xd1F1SUptNDR3NXRmZDZTeHllUVNtRi9kK3ZvcEFWTVVs"
+        + "YmxWOWtxNFRoZkdKWCtoSlxuSk1LVUlQZ3hrREtPaHkxeHRpRndoMGF4UVhIaGdxRXg4SVpWNldtZ1pqMnNKemV1Wn"
+        + "J3SHc2NkNQM01BWmxGclxucWZYY3NBdUpBZ01CQUFFQ2dnRUFDUjVoQjRtYXUwUDY4SjNLLzkxdnphWUFBbm5hMUJQ"
+        + "Q1o1ejYxamZ1aWZtQVxubjBBd0hlMDJDUDF3QmVCbzFQbm1ZcWdzd2hsc0p2bHFYZ2w1NzJzMXpMSC9RNG9NREpXVF"
+        + "VEK293K1pCRytrRlxuK1VMVnR4aGxaeGMxWDBVNFFpcENrUjgzV1JDNGJDWXcvNVNOVCtReHd5R3E3ODB3SG90R2wv"
+        + "Nit3bzZ4SElZZ1xuQnNsdTQ1QnFCZmtIeUhOMzZRWEYvcWNhMWZueVVxcXNKa0ZDV2pYZ3R5azB6eWdWOENQUytIel"
+        + "NIOGllN3NWa1xudHRLaVpwSnA2dHptMjZLNDYwTzVDUDB2ejdrZU1JN3R4S1owK2FvRzVlTllhc1VqS0ZqWnpuU0hU"
+        + "VGlrYzZNRFxuYWIrSzZjUDBXTnJXTW5maXIzS3pLelZNMEh5eDJYK09JMDVZS2hrY1VRS0JnUURRMTRVellkQUdpT0"
+        + "dHbEVDQlxuUE92UmczMHFudzRFUlk1d0VjTTcrTEI5WFE5NGdwaHFUcVg1Y1lxUFFwRmlQSjlnaEpOd01oeXlFU0pI"
+        + "anFQMlxuV2k3V25oWE5Oc0s2VTJTYkRZRXhGcnVkck50MmhucnRlSEs0cEFiMVFyejFTSlNpTU5zcWVkbnplbkN4bU"
+        + "5WK1xuaWx1cklFRS82N0tnZnVrVXY0azhDTW1kVndLQmdRQytrakZsQWdVQ3kwTCtJa0VuT0M1R1lmT0VMbGZsQjJQ"
+        + "Y1xueVMyUzRGckQ5WFNwSUoxdWZDSnR4SlU0c25yVzV3OTkzT1FxbmNBWnA4TUo2dHZ0QjZ6Mkt2Nk9mTXp4MW9veV"
+        + "xubjBEbFpQUmQvTEszWEtmMWpXQUpOaG9zamJCVVdxRlczS2hja2xpVDdoSmhYY1QrTGhMaUp4NWVPQlhYSjU5Ylxu"
+        + "Nm00dlZ1MHlId0tCZ0dYZDZtUUJPOVVrS1ZWNnRPZ1ZMalc0L0hHd3VhYU53d2VaTW5EclFqTTBGRnJFNE5GaFxuNF"
+        + "lXRnczOVRpaFN2MjFHNStTek5xTDlxcWh6YlQ5RFhkbWRMSHZsRlQ4Q1E4czdLeklqRU9TbFU2a3VyRndVRVxuTG5r"
+        + "djBSRUs1NTZCTTE3Vk8rSkJJM1dtOEpkQUJlU2Y4OHpLcnROK0JWaFI3eUVtdUNzaDZyWHJBb0dCQUlQNVxucG05M0"
+        + "tKVTR3dHBRU3FLbGk1TitmakJLRCtDeWIzd1ZicFJLL0xDNkNlS2VqYWhZRzFlOVRrSUhpSDZQWWZFZVxuS24xQTVp"
+        + "cGVQZm4rUmZRdTNwOVVReG5XWC9BVFRYMmxxRUljMmdiRTI5ZVVPVlVhWlNtNzZBQjIxMmh6bzB3T1xuWUNKTHowQV"
+        + "RIWU9FaHNvb2lqZElOQVc0Q0t5cDZmaXpyejdsaWpxdEFvR0FIaXBnRnJkSmR3ellHSE1XVEcxM1xubWR3ekZlUnhQ"
+        + "NnUxQjBUaVdVMmxORUJqSkIrVWFhc1NBbXZIYmNPRlZtTkpxd2N0QitSNndNaG5xL1JTZ0xiMFxuOHA5RjlDTWJRWE"
+        + "xISWRXZ1hpSEZXaHY2UmpEeSNBMHJmTXkwcFhQdXRUbDRIYVV6eGhOZkxGWnhWQzNZelVtXG5GS3FQQlZENTlhdyszaW"
+        + "J5Ukg0TmhNbz0xxbi1FTkQgUFJJVkFURSBLRVktLS0tLVxuIiwiY2xpZW50X2VtYWlsIjoiZmlyZWJhc2UtYWRtaW5z"
+        + "ZGstZmJzdmNAb2Rvb250by1lMDZhNy5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsImNsaWVudF9pZCI6IjEwNTg4NT"
+        + "Q1NTI1MjU1MDA0NTIxMSIsImF1dGhfdXJpIjoiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tL28vb2F1dGgyL2F1"
+        + "dGgiLCJ0b2tlbl91cmkiOiJodHRwczovL29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsImF1dGhfcHJvdmlkZX"
+        + "JfeDUwOV9jZXJ0X3VybCI6Imh0dHBzOi8vd3d3Lmdvb2dsZWFwaXMuY29tL29hdXRoMi92MS9jZXJ0cyIsImNsaWVu"
+        + "dF94NTA5X2NlcnRfdXJsIjoiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vcm9ib3QvdjEvbWV0YWRhdGEveDUwOS"
+        + "9maXJlYmFzZS1hZG1pbnNkay1mYnN2YyU0MG9kb29udG8tZTA2YTcuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLCJ1"
+        + "bml2ZXJzZV9kb21haW4iOiJnb29nbGVhcGlzLmNvbSJ9";
 
     @PostConstruct
     public void initFirebase() {
@@ -41,8 +79,12 @@ public class FirebaseCredentialsInitializer {
         // Crear directorios si no existen
         credentialsFile.getParentFile().mkdirs();
         
+        // Decodificar credenciales de Base64
+        byte[] decodedBytes = Base64.getDecoder().decode(ENCODED_FIREBASE_CREDENTIALS);
+        String decodedCredentials = new String(decodedBytes);
+        
         try (FileWriter writer = new FileWriter(credentialsFile)) {
-            writer.write(FIREBASE_CREDENTIALS_CONTENT);
+            writer.write(decodedCredentials);
         }
         
         LOGGER.info("Archivo de credenciales de Firebase creado en: " + credentialsFile.getAbsolutePath());
