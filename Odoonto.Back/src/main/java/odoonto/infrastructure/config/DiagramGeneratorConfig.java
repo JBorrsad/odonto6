@@ -1,6 +1,6 @@
 package odoonto.infrastructure.config;
 
-import odoonto.infrastructure.tools.DDDDiagramGenerator;
+import odoonto.documentation.plantuml.tools.DDDDiagramGenerator;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;

@@ -391,38 +391,43 @@ public class ReactiveOdontogramRepositoryAdapter implements ReactiveOdontogramRe
             odontogram.setId(OdontogramId.of(id));
             
             // Extraer el mapa de dientes
-            Map<String, Map<String, Object>> teethMap = new HashMap<>();
             if (document.contains("teeth") && document.get("teeth") instanceof Map) {
+                @SuppressWarnings("unchecked")
                 Map<String, Object> docTeeth = (Map<String, Object>) document.get("teeth");
-                for (Map.Entry<String, Object> entry : docTeeth.entrySet()) {
-                    String toothId = entry.getKey();
-                    if (entry.getValue() instanceof Map) {
-                        Map<String, Object> toothData = (Map<String, Object>) entry.getValue();
-                        
-                        // Extraer las caras con sus lesiones
-                        if (toothData.containsKey("faces") && toothData.get("faces") instanceof Map) {
-                            Map<String, Object> facesMap = (Map<String, Object>) toothData.get("faces");
-                            Map<String, LesionType> faces = new HashMap<>();
+                
+                if (docTeeth != null) {
+                    for (Map.Entry<String, Object> entry : docTeeth.entrySet()) {
+                        String toothId = entry.getKey();
+                        if (entry.getValue() instanceof Map) {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> toothData = (Map<String, Object>) entry.getValue();
                             
-                            for (Map.Entry<String, Object> faceEntry : facesMap.entrySet()) {
-                                String faceId = faceEntry.getKey();
-                                if (faceEntry.getValue() instanceof String) {
-                                    String lesionTypeStr = (String) faceEntry.getValue();
-                                    try {
-                                        LesionType lesionType = LesionType.valueOf(lesionTypeStr);
-                                        faces.put(faceId, lesionType);
-                                    } catch (IllegalArgumentException e) {
-                                        System.err.println("Error al convertir tipo de lesión: " + lesionTypeStr);
+                            // Extraer las caras con sus lesiones
+                            if (toothData.containsKey("faces") && toothData.get("faces") instanceof Map) {
+                                @SuppressWarnings("unchecked")
+                                Map<String, Object> facesMap = (Map<String, Object>) toothData.get("faces");
+                                Map<String, LesionType> faces = new HashMap<>();
+                                
+                                for (Map.Entry<String, Object> faceEntry : facesMap.entrySet()) {
+                                    String faceId = faceEntry.getKey();
+                                    if (faceEntry.getValue() instanceof String) {
+                                        String lesionTypeStr = (String) faceEntry.getValue();
+                                        try {
+                                            LesionType lesionType = LesionType.valueOf(lesionTypeStr);
+                                            faces.put(faceId, lesionType);
+                                        } catch (IllegalArgumentException e) {
+                                            System.err.println("Error al convertir tipo de lesión: " + lesionTypeStr);
+                                        }
                                     }
                                 }
+                                
+                                // Crear el ToothRecord y añadirlo al odontograma
+                                Odontogram.ToothRecord toothRecord = new Odontogram.ToothRecord();
+                                toothRecord.setFaces(faces);
+                                Map<String, Odontogram.ToothRecord> teethRecords = new HashMap<>(odontogram.getTeeth());
+                                teethRecords.put(toothId, toothRecord);
+                                odontogram.setTeeth(teethRecords);
                             }
-                            
-                            // Crear el ToothRecord y añadirlo al odontograma
-                            Odontogram.ToothRecord toothRecord = new Odontogram.ToothRecord();
-                            toothRecord.setFaces(faces);
-                            Map<String, Odontogram.ToothRecord> teethRecords = new HashMap<>(odontogram.getTeeth());
-                            teethRecords.put(toothId, toothRecord);
-                            odontogram.setTeeth(teethRecords);
                         }
                     }
                 }

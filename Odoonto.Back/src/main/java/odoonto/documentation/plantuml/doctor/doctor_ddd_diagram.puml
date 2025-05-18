@@ -1,0 +1,83 @@
+@startuml
+title Arquitectura DDD: Doctor
+
+' Configuración básica
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+scale max 1024 width
+left to right direction
+
+' Definición de paquetes y colores básicos
+package "Presentation" as presentation #lightgray {
+  class DoctorController {
+    + getAllDoctors()
+    + getDoctorById()
+  }
+  class GlobalExceptionHandler {
+    + handleDoctorNotFound()
+  }
+}
+
+package "Application" as application #lightgreen {
+  class DoctorCreateService {
+    + createDoctor()
+  }
+  class DoctorQueryService {
+    + findById()
+    + findAll()
+  }
+  class DoctorDTO {
+    - id
+    - name
+  }
+}
+
+package "Domain" as domain #lightblue {
+  class Doctor {
+    - id
+    - name
+    - specialty
+  }
+  class Specialty {
+    - name
+  }
+  interface DoctorRepository {
+    + save()
+    + findById()
+  }
+}
+
+package "Infrastructure" as infrastructure #lightyellow {
+  class DoctorRepositoryAdapter {
+    - firestore
+    + save()
+    + findById()
+  }
+  class FirestoreDoctorEntity {
+    - id
+    - nombre
+  }
+}
+
+' Dependencias entre capas
+presentation --> application
+application --> domain
+infrastructure --> domain
+infrastructure --> application
+
+' Relaciones entre clases
+DoctorController --> DoctorQueryService
+DoctorController --> DoctorCreateService
+DoctorCreateService --> DoctorRepository
+DoctorQueryService --> DoctorRepository
+DoctorRepositoryAdapter ..|> DoctorRepository
+Doctor --> Specialty
+DoctorRepositoryAdapter --> FirestoreDoctorEntity
+
+legend right
+  Arquitectura Domain-Driven Design
+  Entidad: Doctor
+endlegend
+
+@enduml

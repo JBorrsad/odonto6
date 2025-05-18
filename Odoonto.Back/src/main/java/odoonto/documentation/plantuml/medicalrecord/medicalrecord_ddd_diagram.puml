@@ -1,0 +1,223 @@
+@startuml
+
+title Arquitectura DDD: MedicalRecord
+
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+scale max 1024 width
+left to right direction
+
+package "Presentation" as presentation #lightgray {
+  class MedicalRecordController {
+    - medicalRecordQueryUseCase: MedicalRecordQueryUseCase
+    - medicalEntryAddUseCase: MedicalEntryAddUseCase
+
+    + getMedicalRecordById()
+    + getAllMedicalRecords()
+    .. más métodos ..
+  }
+}
+
+package "Application" as application #lightgreen {
+  class MedicalRecordCreateDTO {
+    - patientId: str
+    - allergies: List<str>
+    .. más campos ..
+
+    + getPatientId()
+    + setPatientId()
+    .. más métodos ..
+  }
+  class MedicalRecordDTO {
+    - id: str
+    - patientId: str
+    .. más campos ..
+
+    + getId()
+    + setId()
+    .. más métodos ..
+  }
+  class MedicalRecordNotFoundException
+  class MedicalRecordMapper {
+    + toDTO()
+    - mapNotesToEntryDTOs()
+    .. más métodos ..
+  }
+  interface MedicalRecordCreateUseCase {
+    ~ createMedicalRecord()
+  }
+  interface MedicalRecordQueryUseCase {
+    ~ findById()
+    ~ findByPatientId()
+    .. más métodos ..
+  }
+  interface ReactiveMedicalRecordRepository {
+    ~ findAll()
+    ~ findById()
+    .. más métodos ..
+  }
+  class MedicalRecordCreateService {
+    - medicalRecordRepository: ReactiveMedicalRecordRepository
+    - patientRepository: ReactivePatientRepository
+    .. más campos ..
+
+    + createMedicalRecord()
+  }
+  class MedicalRecordQueryService {
+    - medicalRecordRepository: ReactiveMedicalRecordRepository
+    - medicalRecordMapper: MedicalRecordMapper
+
+    + findById()
+    + findByPatientId()
+    .. más métodos ..
+  }
+}
+
+package "Domain" as domain #lightblue {
+  class MedicalRecord {
+    - id: UUID
+    - patientId: UUID
+    .. más campos ..
+
+    + getId()
+    + getPatientId()
+    .. más métodos ..
+  }
+  class MedicalRecord {
+    - id: MedicalRecordId
+    - createdAt: LocalDateTime
+    .. más campos ..
+
+    + addEntry()
+    + getEntries()
+    .. más métodos ..
+  }
+  class MedicalRecordId {
+    - value: str
+
+    + of()
+    + generate()
+    .. más métodos ..
+  }
+  class MedicalRecordPolicy {
+    - MAX_ENTRY_TITLE_LENGTH: int
+    - MAX_ENTRY_CONTENT_LENGTH: int
+    .. más campos ..
+
+    + validateMedicalEntry()
+    + canAddEntry()
+    .. más métodos ..
+  }
+  class MedicalRecordService {
+    - policy: MedicalRecordPolicy
+
+    + addEntry()
+    + getEntriesInDateRange()
+    .. más métodos ..
+  }
+  class MedicalRecordSummary {
+    - patientId: str
+    - totalEntries: int
+    .. más campos ..
+
+    + getPatientId()
+    + setPatientId()
+    .. más métodos ..
+  }
+  class MedicalRecord {
+    - id: UUID
+    - patientId: UUID
+    .. más campos ..
+
+    + getId()
+    + getPatientId()
+    .. más métodos ..
+  }
+  class MedicalRecord {
+    - id: MedicalRecordId
+    - createdAt: LocalDateTime
+    .. más campos ..
+
+    + addEntry()
+    + getEntries()
+    .. más métodos ..
+  }
+  class MedicalRecordId {
+    - value: str
+
+    + of()
+    + generate()
+    .. más métodos ..
+  }
+  class MedicalRecordPolicy {
+    - MAX_ENTRY_TITLE_LENGTH: int
+    - MAX_ENTRY_CONTENT_LENGTH: int
+    .. más campos ..
+
+    + validateMedicalEntry()
+    + canAddEntry()
+    .. más métodos ..
+  }
+  class MedicalRecordService {
+    - policy: MedicalRecordPolicy
+
+    + addEntry()
+    + getEntriesInDateRange()
+    .. más métodos ..
+  }
+  class MedicalRecordSummary {
+    - patientId: str
+    - totalEntries: int
+    .. más campos ..
+
+    + getPatientId()
+    + setPatientId()
+    .. más métodos ..
+  }
+}
+
+package "Infrastructure" as infrastructure #lightyellow {
+  class FirestoreMedicalRecordEntity {
+    - id: str
+    - patientId: str
+    .. más campos ..
+
+    + getId()
+    + setId()
+    .. más métodos ..
+  }
+  class ReactiveMedicalRecordRepositoryAdapter {
+    - medicalRecordsCollection: CollReference
+
+    + findAll()
+    + findById()
+    .. más métodos ..
+  }
+}
+
+' Dependencias entre capas de arquitectura
+presentation --> application
+application --> domain
+infrastructure --> domain
+infrastructure --> application
+
+' Relaciones entre clases principales
+MedicalRecord --> MedicalRecordId
+MedicalRecord --> MedicalRecordId
+ReactiveMedicalRecordRepositoryAdapter ..|> ReactiveMedicalRecordRepository
+MedicalRecordController --> MedicalRecordQueryUseCase
+MedicalRecordCreateService ..|> MedicalRecordCreateUseCase
+MedicalRecordQueryService ..|> MedicalRecordQueryUseCase
+MedicalRecordQueryService --> ReactiveMedicalRecordRepository
+MedicalRecordService --> MedicalRecordPolicy
+MedicalRecordCreateService --> ReactiveMedicalRecordRepository
+MedicalRecordQueryService --> MedicalRecordMapper
+MedicalRecordCreateService --> MedicalRecordMapper
+MedicalRecordService --> MedicalRecordPolicy
+legend right
+  Arquitectura Domain-Driven Design
+  Entidad: MedicalRecord
+endlegend
+
+@enduml

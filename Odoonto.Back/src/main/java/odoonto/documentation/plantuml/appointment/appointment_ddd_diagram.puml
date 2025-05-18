@@ -1,0 +1,311 @@
+@startuml Appointment - Architecture
+
+' Configuración de diseño
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+scale max 1024 width
+left to right direction
+skinparam packageStyle rectangle
+skinparam classBorderColor black
+skinparam packageBorderColor black
+skinparam nodesep 20
+skinparam ranksep 30
+title Arquitectura DDD: Appointment
+
+package "Presentation" as presentation #lightgray {
+  together {
+    layout_as_sketch
+    class AppointmentController {
+      - appointmentService: AppointmentService
+
+      + createAppointment(...): Mono<AppointmentDTO>
+      + updateAppointment(...): Mono<AppointmentDTO>
+      .. 7 más ..
+    }
+  }
+
+}
+
+package "Application" as application #lightgreen {
+  together {
+    layout_as_sketch
+    class AppointmentDTO {
+      - id: str
+      - patientId: str
+      - doctorId: str
+      .. 7 más ..
+
+      + getId(): str
+      .. 19 más ..
+    }
+    class AppointmentCreateDTO {
+      - doctorId: str
+      - patientId: str
+      .. 4 más ..
+
+      + getDoctorId(): str
+      .. 11 más ..
+    }
+    class ReactiveAppointmentValidationService {
+      - appointmentRepository: ReactiveAppointmentRepository
+      - doctorRepository: ReactiveDoctorRepository
+      .. 4 más ..
+
+      + validateNewAppointment(...): Mono<Void>
+      + validateAppointmentUpdate(...): Mono<Void>
+      .. 3 más ..
+    }
+    class AppointmentService {
+      - appointmentRepository: ReactiveAppointmentRepository
+      - patientRepository: ReactivePatientRepository
+      .. 2 más ..
+
+      + createAppointment(...): Mono<AppointmentDTO>
+      + updateAppointment(...): Mono<AppointmentDTO>
+      .. 4 más ..
+    }
+  }
+
+  together {
+    layout_as_sketch
+    interface ReactiveAppointmentRepository {
+      .. 9 más ..
+    }
+    class AppointmentQueryService {
+      - appointmentRepository: ReactiveAppointmentRepository
+      - appointmentMapper: AppointmentMapper
+
+      + findById(...): Mono<AppointmentDTO>
+      + findAll(): Flux<AppointmentDTO>
+      .. 2 más ..
+    }
+    class AppointmentCreateService {
+      - appointmentRepository: ReactiveAppointmentRepository
+      - doctorRepository: ReactiveDoctorRepository
+      .. 2 más ..
+
+      + createAppointment(...): Mono<AppointmentDTO>
+    }
+    class AppointmentUpdateService {
+      - appointmentRepository: ReactiveAppointmentRepository
+      - doctorRepository: ReactiveDoctorRepository
+      .. 2 más ..
+
+      + updateAppointment(...): Mono<AppointmentDTO>
+    }
+  }
+
+  together {
+    layout_as_sketch
+    interface AppointmentQueryUseCase {
+      .. 4 más ..
+    }
+    class AppointmentMapper {
+      + toDTO(...): AppointmentDTO
+      .. 2 más ..
+    }
+    class AppointmentCancelService {
+      - appointmentRepository: ReactiveAppointmentRepository
+
+      + cancelAppointment(...): Mono<Void>
+    }
+    interface AppointmentCancelUseCase {
+      ~ cancelAppointment(...): Mono<Void>
+    }
+  }
+
+  together {
+    layout_as_sketch
+    interface AppointmentCreateUseCase {
+      ~ createAppointment(...): Mono<AppointmentDTO>
+    }
+    interface AppointmentUpdateUseCase {
+      ~ updateAppointment(...): Mono<AppointmentDTO>
+    }
+    class AppointmentConflictException {
+    }
+  }
+
+}
+
+package "Domain" as domain #lightblue {
+  together {
+    layout_as_sketch
+    class Appointment {
+      - id: str
+      - patientId: str
+      - doctorId: str
+      .. 4 más ..
+
+      - validateAppointmentTime(...)
+      .. 25 más ..
+    }
+    class Appointment {
+      - id: str
+      - patientId: str
+      - doctorId: str
+      .. 4 más ..
+
+      - validateAppointmentTime(...)
+      .. 25 más ..
+    }
+    class AppointmentTime {
+      - startDateTime: LocalDateTime
+      - durationMinutes: int
+
+      - validateStartDateTime(...)
+      .. 9 más ..
+    }
+    class AppointmentTime {
+      - startDateTime: LocalDateTime
+      - durationMinutes: int
+
+      - validateStartDateTime(...)
+      .. 9 más ..
+    }
+    class AppointmentScheduledEvent {
+      - appointmentId: str
+      - patientId: str
+      - doctorId: str
+      .. 2 más ..
+
+      + getAppointmentId(): str
+      .. 5 más ..
+    }
+  }
+
+  together {
+    layout_as_sketch
+    class AppointmentStatusChangedEvent {
+      - appointmentId: str
+      .. 4 más ..
+
+      + getAppointmentId(): str
+      .. 5 más ..
+    }
+    class AppointmentScheduledEvent {
+      - appointmentId: str
+      - patientId: str
+      - doctorId: str
+      .. 2 más ..
+
+      + getAppointmentId(): str
+      .. 5 más ..
+    }
+    class AppointmentStatusChangedEvent {
+      - appointmentId: str
+      .. 4 más ..
+
+      + getAppointmentId(): str
+      .. 5 más ..
+    }
+    class AppointmentOverlapException {
+      - appointmentId1: str
+      - appointmentId2: str
+      - doctorId: str
+      .. 1 más ..
+
+      + getAppointmentId1(): str
+      .. 5 más ..
+    }
+    class AppointmentOverlapException {
+      - appointmentId1: str
+      - appointmentId2: str
+      - doctorId: str
+      .. 1 más ..
+
+      + getAppointmentId1(): str
+      .. 5 más ..
+    }
+  }
+
+  together {
+    layout_as_sketch
+    class AppointmentSpecification {
+      + byDoctor(...): Specification<Appointment>
+      .. 8 más ..
+    }
+    class AppointmentSpecification {
+      + byDoctor(...): Specification<Appointment>
+      .. 8 más ..
+    }
+    class AppointmentId {
+      - value: str
+
+      + generate(): AppointmentId
+      .. 6 más ..
+    }
+    class AppointmentId {
+      - value: str
+
+      + generate(): AppointmentId
+      .. 6 más ..
+    }
+    class InvalidAppointmentTimeException {
+    }
+  }
+
+  together {
+    layout_as_sketch
+    class InvalidAppointmentTimeException {
+    }
+    class DoctorSchedule {
+      .. 4 más ..
+      + isTimeInSchedule(...): boolean
+      .. 8 más ..
+    }
+  }
+
+}
+
+package "Infrastructure" as infrastructure #lightyellow {
+  together {
+    layout_as_sketch
+    class FirestoreAppointmentEntity {
+      - id: str
+      - patientId: str
+      - doctorId: str
+      .. 6 más ..
+
+      + getId(): str
+      .. 17 más ..
+    }
+    class ReactiveAppointmentRepositoryAdapter {
+      - appointmentsCollection: CollReference
+
+      + findById(...): Mono<Appointment>
+      .. 11 más ..
+    }
+  }
+
+}
+
+' Dependencias entre capas de arquitectura
+presentation --> application
+application --> domain
+infrastructure --> domain
+infrastructure --> application
+
+' Relaciones entre clases principales
+ReactiveAppointmentRepositoryAdapter ..|> ReactiveAppointmentRepository : implements
+AppointmentController --> AppointmentService
+AppointmentCancelService ..|> AppointmentCancelUseCase : implements
+AppointmentUpdateService ..|> AppointmentUpdateUseCase : implements
+AppointmentQueryService ..|> AppointmentQueryUseCase : implements
+AppointmentCreateService ..|> AppointmentCreateUseCase : implements
+AppointmentCreateService --> ReactiveAppointmentRepository
+AppointmentCancelService --> ReactiveAppointmentRepository
+AppointmentCreateService --> AppointmentMapper
+AppointmentUpdateService --> ReactiveAppointmentRepository
+ReactiveAppointmentValidationService --> ReactiveAppointmentRepository
+AppointmentQueryService --> ReactiveAppointmentRepository
+AppointmentUpdateService --> AppointmentMapper
+AppointmentService --> ReactiveAppointmentRepository
+AppointmentService --> AppointmentMapper
+legend right
+  **Arquitectura Domain-Driven Design**
+  Entidad principal: Appointment
+endlegend
+
+@enduml

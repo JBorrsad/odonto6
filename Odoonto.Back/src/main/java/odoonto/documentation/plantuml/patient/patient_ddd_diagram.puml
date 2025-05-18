@@ -1,0 +1,615 @@
+@startuml Patient - Diagrama DDD End-to-End
+
+!theme plain
+' Configuración para limitar el ancho y organizar mejor las entidades
+skinparam maxMessageSize 150
+skinparam wrapWidth 200
+skinparam packageStyle rectangle
+skinparam defaultTextAlignment center
+skinparam packageTitleAlignment center
+scale max 1024 width
+top to bottom direction
+skinparam Stereotype {
+  BackgroundColor white
+  BorderColor black
+}
+skinparam StereotypeN {
+  BackgroundColor white
+  BorderColor black
+}
+skinparam UseCaseStereotype {
+  FontColor black
+  FontName Verdana
+}
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam groupInheritance 3
+skinparam nodesep 40
+skinparam ranksep 60
+skinparam dpi 300
+
+title Arquitectura DDD para la entidad Patient
+
+legend top
+  Diagrama de arquitectura DDD para Patient
+  Las capas están organizadas verticalmente, de arriba hacia abajo:
+  * Dominio: Contiene las entidades y objetos de valor
+  * Aplicación: Contiene los casos de uso
+  * Infraestructura: Contiene implementaciones técnicas
+  * Presentación: Contiene controladores y DTOs
+endlegend
+
+package "Domain" as domain #e1f5fe {
+  together {
+  class Patient {
+    .. 10 más ..
+
+    + updateOdontogram(Odontogram odontogram): void
+    + deriveOdontogramId(): OdontogramId
+    + deriveMedicalRecordId(): MedicalRecordId
+    + addAppointmentId(String appointmentId): void
+    .. 27 más ..
+  }
+  class Patient {
+    .. 10 más ..
+
+    + updateOdontogram(Odontogram odontogram): void
+    + deriveOdontogramId(): OdontogramId
+    + deriveMedicalRecordId(): MedicalRecordId
+    + addAppointmentId(String appointmentId): void
+    .. 27 más ..
+  }
+  class MedicalRecord {
+    - id: MedicalRecordId
+    - createdAt: LocalDateTime
+    - entries: List<MedicalEntry>
+    - lastUpdated: LocalDate
+    - allergies: List<String>
+    - medicalConditions: List<String>
+    - explicitChecks: Map<String,Boolean>
+
+    + addEntry(MedicalEntry entry): void
+    + extractPatientId(): PatientId
+    + addAllergy(String allergy): void
+    + addMedicalCondition(String condition): void
+    .. 16 más ..
+  }
+  class MedicalRecordSummary {
+    .. 9 más ..
+
+    .. 18 más ..
+  }
+  class MedicalRecord {
+    - id: MedicalRecordId
+    - createdAt: LocalDateTime
+    - entries: List<MedicalEntry>
+    - lastUpdated: LocalDate
+    - allergies: List<String>
+    - medicalConditions: List<String>
+    - explicitChecks: Map<String,Boolean>
+
+    + addEntry(MedicalEntry entry): void
+    + extractPatientId(): PatientId
+    + addAllergy(String allergy): void
+    + addMedicalCondition(String condition): void
+    .. 16 más ..
+  }
+  }
+
+  together {
+  class MedicalRecordSummary {
+    .. 9 más ..
+
+    .. 18 más ..
+  }
+  class MedicalRecord {
+    - id: UUID
+    - patientId: UUID
+    - createdAt: LocalDateTime
+    - lastUpdatedAt: LocalDateTime
+    - notes: List<MedicalNote>
+    - diagnoses: List<Diagnosis>
+    - treatments: List<Treatment>
+
+    + addNote(MedicalNote note): void
+    + addDiagnosis(Diagnosis diagnosis): void
+    + addTreatment(Treatment treatment): void
+    + toString(): String
+    .. 7 más ..
+  }
+  class MedicalRecord {
+    - id: UUID
+    - patientId: UUID
+    - createdAt: LocalDateTime
+    - lastUpdatedAt: LocalDateTime
+    - notes: List<MedicalNote>
+    - diagnoses: List<Diagnosis>
+    - treatments: List<Treatment>
+
+    + addNote(MedicalNote note): void
+    + addDiagnosis(Diagnosis diagnosis): void
+    + addTreatment(Treatment treatment): void
+    + toString(): String
+    .. 7 más ..
+  }
+  class MedicalEntry {
+    - id: String
+    - type: String
+    - description: String
+    - doctorId: String
+    - recordedAt: LocalDateTime
+    - notes: String
+
+    + addNotes(String notes): void
+    .. 6 más ..
+  }
+  class PatientRegisteredEvent {
+    - patientId: String
+    - name: String
+    - lastName: String
+    - documentNumber: String
+    - email: String
+
+    + toString(): String
+    .. 5 más ..
+  }
+  }
+
+  together {
+  class MedicalRecordPolicy {
+    - MAX_ENTRY_TITLE_LENGTH: int
+    - MAX_ENTRY_CONTENT_LENGTH: int
+    - MAX_DAYS_TO_MODIFY_ENTRY: int
+    - REQUIRED_ALLERGIES_CHECK: List<String>
+    - REQUIRED_MEDICAL_CONDITIONS_CHECK: List<String>
+
+    + validateMedicalEntry(MedicalEntry entry): void
+    + canAddEntry(MedicalRecord record, MedicalEntry entry): boolean
+    + canModifyEntry(MedicalEntry entry): boolean
+    + requiresUpdate(MedicalRecord record): boolean
+    .. 2 más ..
+  }
+  class PatientRegisteredEvent {
+    - patientId: String
+    - name: String
+    - lastName: String
+    - documentNumber: String
+    - email: String
+
+    + toString(): String
+    .. 5 más ..
+  }
+  class MedicalRecordId {
+    - value: String
+
+    + of(String value): MedicalRecordId
+    + generate(): MedicalRecordId
+    + fromPatientId(PatientId patientId): MedicalRecordId
+    + extractPatientId(): PatientId
+    .. 5 más ..
+  }
+  class MedicalRecordId {
+    - value: String
+
+    + of(String value): MedicalRecordId
+    + generate(): MedicalRecordId
+    + fromPatientId(PatientId patientId): MedicalRecordId
+    + extractPatientId(): PatientId
+    .. 5 más ..
+  }
+  class MedicalNote {
+    - id: UUID
+    - content: String
+    - createdAt: LocalDateTime
+    - doctorId: UUID
+
+    + getId(): UUID
+    + getContent(): String
+    + getCreatedAt(): LocalDateTime
+    + getDoctorId(): UUID
+  }
+  }
+
+  together {
+  class MedicalRecordService {
+    - policy: MedicalRecordPolicy
+
+    + addEntry(MedicalRecord record, MedicalEntry entry): MedicalRecord
+    + searchEntries(MedicalRecord record, String searchText): List<MedicalEntry>
+    + hasAllergy(MedicalRecord record, String allergyName): boolean
+    + generateSummary(MedicalRecord record): MedicalRecordSummary
+    .. 3 más ..
+  }
+  class MedicalNote {
+    - id: UUID
+    - content: String
+    - createdAt: LocalDateTime
+    - doctorId: UUID
+
+    + getId(): UUID
+    + getContent(): String
+    + getCreatedAt(): LocalDateTime
+    + getDoctorId(): UUID
+  }
+  class MedicalRecordService {
+    - policy: MedicalRecordPolicy
+
+    + addEntry(MedicalRecord record, MedicalEntry entry): MedicalRecord
+    + searchEntries(MedicalRecord record, String searchText): List<MedicalEntry>
+    + hasAllergy(MedicalRecord record, String allergyName): boolean
+    + generateSummary(MedicalRecord record): MedicalRecordSummary
+    .. 3 más ..
+  }
+  class PatientId {
+    - value: String
+
+    + of(String value): PatientId
+    + generate(): PatientId
+    + equals(Object o): boolean
+    + hashCode(): int
+    .. 2 más ..
+  }
+  class PatientSpecification {
+    + nameOrLastNameContains(String term): Specification<Patient>
+    + bySexo(Sexo sexo): Specification<Patient>
+    + byAgeRange(Integer minAge, Integer maxAge): Specification<Patient>
+    + withPendingAppointments(): Specification<Patient>
+    .. 3 más ..
+  }
+  }
+
+  together {
+  class PatientId {
+    - value: String
+
+    + of(String value): PatientId
+    + generate(): PatientId
+    + equals(Object o): boolean
+    + hashCode(): int
+    .. 2 más ..
+  }
+  class PatientSpecification {
+    + nameOrLastNameContains(String term): Specification<Patient>
+    + bySexo(Sexo sexo): Specification<Patient>
+    + byAgeRange(Integer minAge, Integer maxAge): Specification<Patient>
+    + withPendingAppointments(): Specification<Patient>
+    .. 3 más ..
+  }
+  }
+}
+
+package "Application" as application #e0f7fa {
+  together {
+  class PatientUpdateDTO {
+    .. 8 más ..
+
+    .. 16 más ..
+  }
+  class PatientDTO {
+    .. 8 más ..
+
+    .. 16 más ..
+  }
+  class PatientCreateDTO {
+    - nombre: String
+    - apellido: String
+    - fechaNacimiento: LocalDate
+    - sexo: String
+    - email: String
+    - telefono: String
+    - direccion: AddressDTO
+
+    .. 14 más ..
+  }
+  class MedicalEntryCreateDTO {
+    - medicalRecordId: String
+    - type: String
+    - description: String
+    - doctorId: String
+    - date: LocalDate
+    - notes: String
+
+    .. 12 más ..
+  }
+  class MedicalRecordDTO {
+    - id: String
+    - patientId: String
+    - allergies: List<String>
+    - medicalConditions: List<String>
+    - entries: List<MedicalEntryDTO>
+    - lastUpdated: LocalDate
+
+    .. 12 más ..
+  }
+  }
+
+  together {
+  class MedicalEntryDTO {
+    - id: String
+    - type: String
+    - description: String
+    - doctorId: String
+    - date: LocalDate
+    - notes: String
+
+    .. 12 más ..
+  }
+  interface ReactiveMedicalRecordRepository {
+    .. 17 más ..
+  }
+  class MedicalEntryCreateDTO {
+    - type: String
+    - description: String
+    - doctorId: String
+    - date: LocalDate
+    - notes: String
+
+    .. 10 más ..
+  }
+  class MedicalRecordCreateDTO {
+    - patientId: String
+    - allergies: List<String>
+    - medicalConditions: List<String>
+    - entries: List<MedicalEntryCreateDTO>
+
+    .. 8 más ..
+  }
+  interface ReactivePatientRepository {
+    .. 9 más ..
+  }
+  }
+
+  together {
+  class PatientOdontogramService {
+    - patientRepository: ReactivePatientRepository
+    - odontogramRepository: ReactiveOdontogramRepository
+    - medicalRecordRepository: ReactiveMedicalRecordRepository
+    - odontogramMapper: OdontogramMapper
+    - medicalRecordMapper: MedicalRecordMapper
+
+    + getPatientOdontogram(String patientId): Mono<Odontogram>
+    + getPatientOdontogramDTO(String patientId): Mono<OdontogramDTO>
+    + getPatientMedicalRecordDTO(String patientId): Mono<MedicalRecordDTO>
+    + getPatientMedicalRecord(String patientId): Mono<MedicalRecordId>
+  }
+  class MedicalRecordMapper {
+    + toDTO(MedicalRecord medicalRecord): MedicalRecordDTO
+    .. 6 más ..
+  }
+  class MedicalRecordQueryService {
+    - medicalRecordRepository: ReactiveMedicalRecordRepository
+    - medicalRecordMapper: MedicalRecordMapper
+
+    + findById(String medicalRecordId): Mono<MedicalRecordDTO>
+    + findByPatientId(String patientId): Mono<MedicalRecordDTO>
+    + findAll(): Flux<MedicalRecordDTO>
+    + existsById(String medicalRecordId): Mono<Boolean>
+    + existsByPatientId(String patientId): Mono<Boolean>
+  }
+  interface MedicalRecordQueryUseCase {
+    ~ findById(String medicalRecordId): Mono<MedicalRecordDTO>
+    ~ findByPatientId(String patientId): Mono<MedicalRecordDTO>
+    ~ findAll(): Flux<MedicalRecordDTO>
+    ~ existsById(String medicalRecordId): Mono<Boolean>
+    ~ existsByPatientId(String patientId): Mono<Boolean>
+  }
+  class PatientQueryService {
+    - patientRepository: ReactivePatientRepository
+    - patientMapper: PatientMapper
+
+    + getAllPatients(): Flux<PatientDTO>
+    + getPatientById(String id): Mono<PatientDTO>
+    + searchPatients(String searchQuery): Flux<PatientDTO>
+  }
+  }
+
+  together {
+  interface PatientOdontogramUseCase {
+    ~ getPatientOdontogram(String patientId): Mono<Odontogram>
+    ~ getPatientOdontogramDTO(String patientId): Mono<OdontogramDTO>
+    ~ getPatientMedicalRecord(String patientId): Mono<MedicalRecordId>
+    ~ getPatientMedicalRecordDTO(String patientId): Mono<MedicalRecordDTO>
+  }
+  class MedicalRecordCreateService {
+    - medicalRecordRepository: ReactiveMedicalRecordRepository
+    - patientRepository: ReactivePatientRepository
+    - medicalRecordMapper: MedicalRecordMapper
+
+    + createMedicalRecord(MedicalRecordCreateDTO createDTO): Mono<MedicalRecordDTO>
+  }
+  class PatientMapper {
+    + toDTO(Patient patient): PatientDTO
+    + toEntity(PatientCreateDTO dto): Patient
+    + updateEntityFromDTO(PatientCreateDTO dto, Patient patient): Patient
+  }
+  interface PatientQueryUseCase {
+    ~ getAllPatients(): Flux<PatientDTO>
+    ~ getPatientById(String id): Mono<PatientDTO>
+    ~ searchPatients(String searchQuery): Flux<PatientDTO>
+  }
+  class PatientCreateService {
+    - patientRepository: ReactivePatientRepository
+    - patientMapper: PatientMapper
+
+    + createPatient(PatientCreateDTO patientDTO): Mono<PatientDTO>
+  }
+  }
+
+  together {
+  class PatientUpdateService {
+    - patientRepository: ReactivePatientRepository
+    - patientMapper: PatientMapper
+
+    + updatePatient(String id, PatientCreateDTO patientDTO): Mono<PatientDTO>
+  }
+  class MedicalEntryAddService {
+    - medicalRecordRepository: ReactiveMedicalRecordRepository
+
+    + addEntry(String medicalRecordId, MedicalEntryCreateDTO entryDTO): Mono<Void>
+  }
+  class MedicalEntryRemoveService {
+    - medicalRecordRepository: ReactiveMedicalRecordRepository
+
+    + removeEntry(String medicalRecordId, String entryId): Mono<Void>
+  }
+  class PatientDeleteService {
+    - patientRepository: ReactivePatientRepository
+
+    + deletePatient(String id): Mono<Void>
+  }
+  interface MedicalEntryAddUseCase {
+    ~ addEntry(String medicalRecordId, MedicalEntryCreateDTO entry): Mono<Void>
+  }
+  }
+
+  together {
+  interface MedicalEntryRemoveUseCase {
+    ~ removeEntry(String medicalRecordId, String entryId): Mono<Void>
+  }
+  interface MedicalRecordCreateUseCase {
+    ~ createMedicalRecord(MedicalRecordCreateDTO createDTO): Mono<MedicalRecordDTO>
+  }
+  interface PatientCreateUseCase {
+    ~ createPatient(PatientCreateDTO patientDTO): Mono<PatientDTO>
+  }
+  interface PatientDeleteUseCase {
+    ~ deletePatient(String id): Mono<Void>
+  }
+  interface PatientUpdateUseCase {
+    ~ updatePatient(String id, PatientCreateDTO patientDTO): Mono<PatientDTO>
+  }
+  }
+
+  together {
+  class MedicalRecordNotFoundException {
+  }
+  class PatientNotFoundException {
+  }
+  }
+}
+
+package "Infrastructure" as infrastructure #f1f8e9 {
+  together {
+  class FirestorePatientEntity {
+    .. 10 más ..
+
+    .. 20 más ..
+  }
+  class ReactiveMedicalRecordRepositoryAdapter {
+    - medicalRecordsCollection: CollectionReference
+
+    + findAll(): Flux<MedicalRecord>
+    + findById(UUID id): Mono<MedicalRecord>
+    + findByPatientId(UUID patientId): Mono<MedicalRecord>
+    + save(MedicalRecord medicalRecord): Mono<MedicalRecord>
+    .. 12 más ..
+  }
+  class FirestoreMedicalRecordEntity {
+    - id: String
+    - patientId: String
+    - entries: List<FirestoreMedicalEntryEntity>
+    - fechaCreacion: String
+    - fechaActualizacion: String
+
+    .. 10 más ..
+  }
+  }
+
+  together {
+  class ReactivePatientRepositoryAdapter {
+    - COLLECTION_NAME: String
+    - patientsCollection: CollectionReference
+
+    + findById(String id): Mono<Patient>
+    + findById(PatientId patientId): Mono<Patient>
+    + save(Patient patient): Mono<Patient>
+    + deleteById(String id): Mono<Void>
+    .. 7 más ..
+  }
+  class FirestoreMedicalEntryEntity {
+    - date: String
+    - description: String
+    - doctorId: String
+    - type: String
+
+    .. 8 más ..
+  }
+  }
+}
+
+package "Presentation" as presentation #fff8e1 {
+  together {
+  class PatientController {
+    - patientQueryUseCase: PatientQueryUseCase
+    - patientCreateUseCase: PatientCreateUseCase
+    - patientUpdateUseCase: PatientUpdateUseCase
+    - patientDeleteUseCase: PatientDeleteUseCase
+
+    + createPatient(PatientCreateDTO patientDTO): Mono<PatientDTO>
+    + updatePatient(String id, PatientCreateDTO patientDTO): Mono<PatientDTO>
+    + deletePatient(String id): Mono<Void>
+    + searchPatients(String query): Flux<PatientDTO>
+    .. 2 más ..
+  }
+  class MedicalRecordController {
+    - medicalRecordQueryUseCase: MedicalRecordQueryUseCase
+    - medicalEntryAddUseCase: MedicalEntryAddUseCase
+
+    + getMedicalRecordById(String id): Mono<MedicalRecordDTO>
+    + getAllMedicalRecords(): Flux<MedicalRecordDTO>
+    + addMedicalEntry(String id, String entryDescription): Mono<Void>
+    + getPatientMedicalRecord(String patientId): Mono<MedicalRecordDTO>
+  }
+  }
+}
+
+' Dependencias entre capas
+presentation -[thickness=2]-> application
+application -[thickness=2]-> domain
+infrastructure -[thickness=2]-> domain
+infrastructure -[thickness=2]-> application
+
+' Relaciones entre clases
+ReactiveMedicalRecordRepositoryAdapter ..|> ReactiveMedicalRecordRepository : implements
+ReactivePatientRepositoryAdapter ..|> ReactivePatientRepository : implements
+MedicalRecordController --> MedicalRecordQueryUseCase : has
+MedicalRecordController --> MedicalEntryAddUseCase : has
+PatientController --> PatientQueryUseCase : has
+PatientController --> PatientCreateUseCase : has
+PatientController --> PatientUpdateUseCase : has
+PatientController --> PatientDeleteUseCase : has
+MedicalEntryAddService --> ReactiveMedicalRecordRepository : has
+MedicalEntryAddService ..|> MedicalEntryAddUseCase : implements
+MedicalEntryRemoveService --> ReactiveMedicalRecordRepository : has
+MedicalEntryRemoveService ..|> MedicalEntryRemoveUseCase : implements
+MedicalRecordCreateService --> ReactiveMedicalRecordRepository : has
+MedicalRecordCreateService --> ReactivePatientRepository : has
+MedicalRecordCreateService --> MedicalRecordMapper : has
+MedicalRecordCreateService ..|> MedicalRecordCreateUseCase : implements
+MedicalRecordQueryService --> ReactiveMedicalRecordRepository : has
+MedicalRecordQueryService --> MedicalRecordMapper : has
+MedicalRecordQueryService ..|> MedicalRecordQueryUseCase : implements
+PatientCreateService --> ReactivePatientRepository : has
+PatientCreateService --> PatientMapper : has
+PatientCreateService ..|> PatientCreateUseCase : implements
+PatientDeleteService --> ReactivePatientRepository : has
+PatientDeleteService ..|> PatientDeleteUseCase : implements
+PatientOdontogramService --> ReactivePatientRepository : has
+PatientOdontogramService --> ReactiveMedicalRecordRepository : has
+PatientOdontogramService --> MedicalRecordMapper : has
+PatientOdontogramService ..|> PatientOdontogramUseCase : implements
+PatientQueryService --> ReactivePatientRepository : has
+PatientQueryService --> PatientMapper : has
+PatientQueryService ..|> PatientQueryUseCase : implements
+PatientUpdateService --> ReactivePatientRepository : has
+PatientUpdateService --> PatientMapper : has
+PatientUpdateService ..|> PatientUpdateUseCase : implements
+Patient --> PatientId : has
+MedicalRecord --> MedicalRecordId : has
+MedicalRecordService --> MedicalRecordPolicy : has
+Patient --> PatientId : has
+MedicalRecord --> MedicalRecordId : has
+MedicalRecordService --> MedicalRecordPolicy : has
+
+@enduml

@@ -3,7 +3,10 @@ package odoonto;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import java.util.Scanner;
-import odoonto.infrastructure.tools.DDDDiagramGenerator;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Set;
+import odoonto.documentation.plantuml.tools.DDDDiagramGenerator;
 
 /**
  * Clase principal de la aplicación Odoonto.
@@ -68,48 +71,97 @@ public class OdoontoApplication {
      */
     private static void generateDiagramsOnly() {
         try (Scanner scanner = new Scanner(System.in)) {
-            System.out.println("\n--- GENERACIÓN DE DIAGRAMAS ---");
-            System.out.println("Seleccione la entidad para generar el diagrama:");
-            System.out.println("1. Paciente");
-            System.out.println("2. Odontograma");
-            System.out.println("3. Doctor");
-            System.out.println("4. Cita");
-            System.out.println("5. Historial Médico");
-            System.out.println("\nIngrese el número de la entidad: ");
+            boolean exitMenu = false;
             
-            String entityOption = scanner.nextLine().trim();
-            String entityFilter = "";
-            
-            switch (entityOption) {
-                case "1":
-                    entityFilter = "Patient";
-                    break;
-                case "2":
-                    entityFilter = "Odontogram";
-                    break;
-                case "3":
-                    entityFilter = "Doctor";
-                    break;
-                case "4":
-                    entityFilter = "Appointment";
-                    break;
-                case "5":
-                    entityFilter = "MedicalRecord";
-                    break;
-                default:
-                    System.out.println("\nEntidad no válida. Utilizando Paciente por defecto.");
-                    entityFilter = "Patient";
-                    break;
+            while (!exitMenu) {
+                // Detectar entidades automáticamente
+                Set<String> detectedEntities = DDDDiagramGenerator.detectAllEntities();
+                List<String> entities = new ArrayList<>(detectedEntities);
+                
+                // Agregar opción "Todas las entidades" al inicio
+                entities.add(0, "TODAS LAS ENTIDADES");
+                entities.add("Salir");
+                
+                System.out.println("\n--- GENERACIÓN DE DIAGRAMAS ---");
+                System.out.println("Entidades detectadas en el proyecto:");
+                
+                // Mostrar menú dinámico con todas las entidades detectadas
+                for (int i = 0; i < entities.size(); i++) {
+                    String entityName = entities.get(i);
+                    System.out.println((i + 1) + ". " + (i == 0 ? entityName : 
+                                       (i == entities.size() - 1 ? entityName : formatEntityName(entityName))));
+                }
+                
+                System.out.println("\nIngrese el número de la entidad o 'q' para salir: ");
+                
+                String entityOption = scanner.nextLine().trim();
+                
+                // Salir si se presiona 'q'
+                if (entityOption.equalsIgnoreCase("q")) {
+                    exitMenu = true;
+                    System.out.println("Saliendo del generador de diagramas...");
+                    continue;
+                }
+                
+                try {
+                    int option = Integer.parseInt(entityOption);
+                    
+                    if (option < 1 || option > entities.size()) {
+                        System.out.println("\nOpción no válida. Por favor, seleccione una opción válida.");
+                        continue;
+                    }
+                    
+                    String selectedEntity = entities.get(option - 1);
+                    
+                    if (option == 1) {
+                        // Generar diagramas para todas las entidades
+                        System.out.println("\nGenerando diagramas para todas las entidades...");
+                        DDDDiagramGenerator.generateDiagramsForAllEntities();
+                        System.out.println("\nTodos los diagramas generados exitosamente.");
+                    } else if (option == entities.size()) {
+                        // Salir del menú
+                        exitMenu = true;
+                        System.out.println("Saliendo del generador de diagramas...");
+                    } else {
+                        // Generar diagrama para la entidad seleccionada
+                        System.out.println("\nGenerando diagrama para entidad: " + selectedEntity);
+                        DDDDiagramGenerator.generateDiagramForEntity(selectedEntity);
+                        System.out.println("\nDiagrama generado exitosamente.");
+                    }
+                } catch (NumberFormatException e) {
+                    System.out.println("\nEntrada no válida. Por favor, ingrese un número o 'q' para salir.");
+                }
+                
+                if (!exitMenu) {
+                    System.out.println("\n¿Desea generar otro diagrama? (s/n): ");
+                    String continueOption = scanner.nextLine().trim().toLowerCase();
+                    exitMenu = !continueOption.equals("s");
+                }
             }
             
-            try {
-                System.out.println("\nGenerando diagrama para entidad: " + entityFilter);
-                DDDDiagramGenerator.generateDiagramForEntity(entityFilter);
-                System.out.println("\nDiagrama generado exitosamente. Saliendo...");
-            } catch (Exception e) {
-                System.err.println("\nError al generar el diagrama: " + e.getMessage());
-                e.printStackTrace();
-            }
+            System.out.println("\nSaliendo...");
+        } catch (Exception e) {
+            System.err.println("\nError al generar diagrama: " + e.getMessage());
+            e.printStackTrace();
         }
+    }
+    
+    /**
+     * Formatea el nombre de la entidad para mostrarlo en el menú
+     */
+    private static String formatEntityName(String entityName) {
+        // Convertir CamelCase a formato más legible
+        StringBuilder formatted = new StringBuilder(entityName.length() + 10);
+        char[] chars = entityName.toCharArray();
+        
+        for (int i = 0; i < chars.length; i++) {
+            // Si es la primera letra o la letra anterior es minúscula y esta es mayúscula
+            if (i == 0 || (Character.isLowerCase(chars[i-1]) && Character.isUpperCase(chars[i]))) {
+                if (i > 0) formatted.append(" ");
+            }
+            formatted.append(chars[i]);
+        }
+        
+        return formatted.toString();
     }
 } 

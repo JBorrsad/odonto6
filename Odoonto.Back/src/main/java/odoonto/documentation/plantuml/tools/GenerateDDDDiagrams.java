@@ -1,4 +1,4 @@
-package odoonto.infrastructure.tools;
+package odoonto.documentation.plantuml.tools;
 
 /**
  * Clase utilitaria para facilitar la generación de diagramas DDD

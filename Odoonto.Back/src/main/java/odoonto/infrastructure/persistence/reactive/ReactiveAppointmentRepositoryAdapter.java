@@ -29,7 +29,6 @@ import java.util.HashMap;
 @Component
 public class ReactiveAppointmentRepositoryAdapter implements ReactiveAppointmentRepository {
 
-    private final Firestore firestore;
     private final CollectionReference appointmentsCollection;
 
     /**
@@ -37,7 +36,6 @@ public class ReactiveAppointmentRepositoryAdapter implements ReactiveAppointment
      * @param firestore Instancia de Firestore para acceder a la base de datos
      */
     public ReactiveAppointmentRepositoryAdapter(Firestore firestore) {
-        this.firestore = firestore;
         this.appointmentsCollection = firestore.collection("appointments");
     }
     

@@ -28,7 +28,6 @@ public class ReactivePatientRepositoryAdapter implements ReactivePatientReposito
 
     private static final String COLLECTION_NAME = "patients";
     
-    private final Firestore firestore;
     private final CollectionReference patientsCollection;
 
     /**
@@ -36,7 +35,6 @@ public class ReactivePatientRepositoryAdapter implements ReactivePatientReposito
      * @param firestore Cliente Firestore
      */
     public ReactivePatientRepositoryAdapter(Firestore firestore) {
-        this.firestore = firestore;
         this.patientsCollection = firestore.collection(COLLECTION_NAME);
     }
 
@@ -243,19 +241,21 @@ public class ReactivePatientRepositoryAdapter implements ReactivePatientReposito
                 // Fecha de nacimiento
                 if (document.contains("fechaNacimiento") && document.get("fechaNacimiento") instanceof String) {
                     String fechaNacimientoStr = document.getString("fechaNacimiento");
-                    try {
-                        // Intentar primero el formato simple yyyy-MM-dd
-                        patient.setFechaNacimiento(java.time.LocalDate.parse(fechaNacimientoStr));
-                    } catch (java.time.format.DateTimeParseException e) {
+                    if (fechaNacimientoStr != null) {
                         try {
-                            // Si falla, intentar parsear formatos con tiempo (yyyy-MM-ddTHH:mm:ssZ)
-                            // Extraer solo la parte de la fecha (los primeros 10 caracteres)
-                            if (fechaNacimientoStr.length() >= 10) {
-                                String soloFecha = fechaNacimientoStr.substring(0, 10);
-                                patient.setFechaNacimiento(java.time.LocalDate.parse(soloFecha));
+                            // Intentar primero el formato simple yyyy-MM-dd
+                            patient.setFechaNacimiento(java.time.LocalDate.parse(fechaNacimientoStr));
+                        } catch (java.time.format.DateTimeParseException e) {
+                            try {
+                                // Si falla, intentar parsear formatos con tiempo (yyyy-MM-ddTHH:mm:ssZ)
+                                // Extraer solo la parte de la fecha (los primeros 10 caracteres)
+                                if (fechaNacimientoStr.length() >= 10) {
+                                    String soloFecha = fechaNacimientoStr.substring(0, 10);
+                                    patient.setFechaNacimiento(java.time.LocalDate.parse(soloFecha));
+                                }
+                            } catch (Exception ex) {
+                                System.err.println("No se pudo parsear la fecha: " + fechaNacimientoStr);
                             }
-                        } catch (Exception ex) {
-                            System.err.println("No se pudo parsear la fecha: " + fechaNacimientoStr);
                         }
                     }
                 }
@@ -269,40 +269,62 @@ public class ReactivePatientRepositoryAdapter implements ReactivePatientReposito
                 // Teléfono - puede ser un String o un Map
                 if (document.contains("telefono")) {
                     Object telefono = document.get("telefono");
-                    if (telefono instanceof String) {
-                        // Es un string directo
-                        patient.setTelefono(new odoonto.domain.model.valueobjects.PhoneNumber((String)telefono));
-                    } else if (telefono instanceof Map) {
-                        // Es un mapa, intentar obtener el valor como una cadena
-                        Map<String, Object> telefonoMap = (Map<String, Object>) telefono;
-                        if (telefonoMap.containsKey("value")) {
-                            String telefonoStr = telefonoMap.get("value").toString();
-                            patient.setTelefono(new odoonto.domain.model.valueobjects.PhoneNumber(telefonoStr));
+                    if (telefono != null) {
+                        if (telefono instanceof String) {
+                            // Es un string directo
+                            String telefonoStr = (String)telefono;
+                            if (telefonoStr != null && !telefonoStr.isEmpty()) {
+                                patient.setTelefono(new odoonto.domain.model.valueobjects.PhoneNumber(telefonoStr));
+                            }
+                        } else if (telefono instanceof Map) {
+                            // Es un mapa, intentar obtener el valor como una cadena
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> telefonoMap = (Map<String, Object>) telefono;
+                            if (telefonoMap.containsKey("value")) {
+                                Object valueObj = telefonoMap.get("value");
+                                if (valueObj != null) {
+                                    String telefonoStr = valueObj.toString();
+                                    if (telefonoStr != null) {
+                                        patient.setTelefono(new odoonto.domain.model.valueobjects.PhoneNumber(telefonoStr));
+                                    }
+                                }
+                            } else {
+                                System.err.println("Mapa de teléfono no tiene campo 'value' para paciente " + id);
+                            }
                         } else {
-                            System.err.println("Mapa de teléfono no tiene campo 'value' para paciente " + id);
+                            System.err.println("Campo teléfono tiene tipo inesperado para paciente " + id + ": " + telefono.getClass().getName());
                         }
-                    } else {
-                        System.err.println("Campo teléfono tiene tipo inesperado para paciente " + id + ": " + telefono.getClass().getName());
                     }
                 }
                 
                 // Email - puede ser un String o un Map
                 if (document.contains("email")) {
                     Object email = document.get("email");
-                    if (email instanceof String) {
-                        // Es un string directo
-                        patient.setEmail(new odoonto.domain.model.valueobjects.EmailAddress((String)email));
-                    } else if (email instanceof Map) {
-                        // Es un mapa, intentar obtener el valor como una cadena
-                        Map<String, Object> emailMap = (Map<String, Object>) email;
-                        if (emailMap.containsKey("value")) {
-                            String emailStr = emailMap.get("value").toString();
-                            patient.setEmail(new odoonto.domain.model.valueobjects.EmailAddress(emailStr));
+                    if (email != null) {
+                        if (email instanceof String) {
+                            // Es un string directo
+                            String emailStr = (String)email;
+                            if (emailStr != null && !emailStr.isEmpty()) {
+                                patient.setEmail(new odoonto.domain.model.valueobjects.EmailAddress(emailStr));
+                            }
+                        } else if (email instanceof Map) {
+                            // Es un mapa, intentar obtener el valor como una cadena
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> emailMap = (Map<String, Object>) email;
+                            if (emailMap.containsKey("value")) {
+                                Object valueObj = emailMap.get("value");
+                                if (valueObj != null) {
+                                    String emailStr = valueObj.toString();
+                                    if (emailStr != null) {
+                                        patient.setEmail(new odoonto.domain.model.valueobjects.EmailAddress(emailStr));
+                                    }
+                                }
+                            } else {
+                                System.err.println("Mapa de email no tiene campo 'value' para paciente " + id);
+                            }
                         } else {
-                            System.err.println("Mapa de email no tiene campo 'value' para paciente " + id);
+                            System.err.println("Campo email tiene tipo inesperado para paciente " + id + ": " + email.getClass().getName());
                         }
-                    } else {
-                        System.err.println("Campo email tiene tipo inesperado para paciente " + id + ": " + email.getClass().getName());
                     }
                 }
                 

@@ -1,4 +1,4 @@
-package odoonto.presentation.documentation;
+package odoonto.documentation.swagger;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

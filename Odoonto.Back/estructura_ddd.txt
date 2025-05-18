@@ -170,6 +170,7 @@ Odoonto.Back/src/main/java/odoonto/
 │   │   ├── FirestoreConfig.java *                  # Configuración de Firestore
 │   │   ├── DiagramGeneratorConfig.java *           # Configuración para generación de diagramas DDD
 │   │   ├── StartupMenuConfig.java *                # Menú interactivo al inicio de la aplicación
+│   │   ├── ServiceInitializer.java *               # Inicialización de servicios y recursos
 │   │   └── WebConfig.java *                        # Configuración web
 │   ├── security/            # Implementaciones de seguridad
 │   │   └── SecurityConfig.java *                   # Configuración de seguridad
