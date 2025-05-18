@@ -125,7 +125,7 @@ public class SchedulingPolicy {
         
         for (Appointment existing : existingAppointments) {
             // Ignorar citas canceladas
-            if (existing.getStatus() == AppointmentStatus.CANCELLED) {
+            if (existing.getStatus() == AppointmentStatus.CANCELADA) {
                 continue;
             }
             

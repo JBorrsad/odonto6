@@ -14,6 +14,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
@@ -23,7 +26,6 @@ import java.util.stream.Collectors;
  * Controlador REST para operaciones con citas
  */
 @RestController
-@RequestMapping("/api/appointments")
 public class AppointmentController {
     
     private final AppointmentService appointmentService;
@@ -33,11 +35,13 @@ public class AppointmentController {
         this.appointmentService = appointmentService;
     }
     
+    // API sincrónica tradicional
+    
     /**
      * Obtiene todas las citas
      * @return Lista de DTOs de citas
      */
-    @GetMapping
+    @GetMapping("/api/appointments")
     public ResponseEntity<List<AppointmentDTO>> getAllAppointments() {
         return ResponseEntity.ok(appointmentService.getAllAppointments());
     }
@@ -47,7 +51,7 @@ public class AppointmentController {
      * @param id ID de la cita
      * @return DTO de la cita o 404 si no existe
      */
-    @GetMapping("/{id}")
+    @GetMapping("/api/appointments/{id}")
     public ResponseEntity<AppointmentDTO> getAppointmentById(@PathVariable String id) {
         try {
             AppointmentDTO appointment = appointmentService.getAppointmentById(id);
@@ -62,7 +66,7 @@ public class AppointmentController {
      * @param createDTO DTO con datos de la cita
      * @return DTO de la cita creada o error
      */
-    @PostMapping
+    @PostMapping("/api/appointments")
     public ResponseEntity<?> createAppointment(@RequestBody AppointmentCreateDTO createDTO) {
         try {
             AppointmentDTO created = appointmentService.createAppointment(createDTO);
@@ -82,7 +86,7 @@ public class AppointmentController {
      * @param updateDTO DTO con datos actualizados
      * @return DTO de la cita actualizada o error
      */
-    @PutMapping("/{id}")
+    @PutMapping("/api/appointments/{id}")
     public ResponseEntity<?> updateAppointment(
             @PathVariable String id, 
             @RequestBody AppointmentCreateDTO updateDTO) {
@@ -99,7 +103,7 @@ public class AppointmentController {
      * @param id ID de la cita a eliminar
      * @return 204 No Content si se eliminó correctamente
      */
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/api/appointments/{id}")
     public ResponseEntity<Void> deleteAppointment(@PathVariable String id) {
         appointmentService.deleteAppointment(id);
         return ResponseEntity.noContent().build();
@@ -112,7 +116,7 @@ public class AppointmentController {
      * @param to Fecha de fin
      * @return Lista de DTOs de citas
      */
-    @GetMapping("/doctor/{doctorId}")
+    @GetMapping("/api/appointments/doctor/{doctorId}")
     public ResponseEntity<List<AppointmentDTO>> getAppointmentsByDoctorAndDateRange(
             @PathVariable String doctorId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -132,7 +136,7 @@ public class AppointmentController {
      * @param patientId ID del paciente
      * @return Lista de DTOs de citas
      */
-    @GetMapping("/patient/{patientId}")
+    @GetMapping("/api/appointments/patient/{patientId}")
     public ResponseEntity<List<AppointmentDTO>> getAppointmentsByPatient(
             @PathVariable String patientId) {
         
@@ -148,7 +152,7 @@ public class AppointmentController {
      * @param id ID de la cita
      * @return DTO de la cita actualizada o error
      */
-    @PutMapping("/{id}/confirm")
+    @PutMapping("/api/appointments/{id}/confirm")
     public ResponseEntity<?> confirmAppointment(@PathVariable String id) {
         try {
             // Obtenemos la cita existente
@@ -168,7 +172,7 @@ public class AppointmentController {
      * @param reason Motivo de cancelación (opcional)
      * @return DTO de la cita actualizada o error
      */
-    @PutMapping("/{id}/cancel")
+    @PutMapping("/api/appointments/{id}/cancel")
     public ResponseEntity<?> cancelAppointment(
             @PathVariable String id,
             @RequestParam(required = false) String reason) {
@@ -180,5 +184,129 @@ public class AppointmentController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
+    }
+    
+    // API reactiva
+    
+    /**
+     * Obtiene todas las citas de forma reactiva
+     * @return Flux de DTOs de citas
+     */
+    @GetMapping(value = "/api/reactive/appointments", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Flux<AppointmentDTO> getAllAppointmentsReactive() {
+        return Flux.fromIterable(appointmentService.getAllAppointments());
+    }
+    
+    /**
+     * Obtiene una cita por su ID de forma reactiva
+     * @param id ID de la cita
+     * @return Mono con el DTO de la cita
+     */
+    @GetMapping(value = "/api/reactive/appointments/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<AppointmentDTO> getAppointmentByIdReactive(@PathVariable String id) {
+        return Mono.fromCallable(() -> appointmentService.getAppointmentById(id))
+                .onErrorResume(RuntimeException.class, e -> Mono.empty());
+    }
+    
+    /**
+     * Crea una nueva cita de forma reactiva
+     * @param createDTO DTO con datos de la cita
+     * @return Mono con el DTO de la cita creada
+     */
+    @PostMapping(value = "/api/reactive/appointments", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<AppointmentDTO> createAppointmentReactive(@RequestBody AppointmentCreateDTO createDTO) {
+        return Mono.fromCallable(() -> appointmentService.createAppointment(createDTO))
+                .onErrorResume(e -> {
+                    if (e instanceof PatientNotFoundException || e instanceof DoctorNotFoundException) {
+                        return Mono.error(e);
+                    } else if (e instanceof AppointmentConflictException) {
+                        return Mono.error(e);
+                    } else {
+                        return Mono.error(new RuntimeException("Error creando cita: " + e.getMessage()));
+                    }
+                });
+    }
+    
+    /**
+     * Actualiza una cita existente de forma reactiva
+     * @param id ID de la cita a actualizar
+     * @param updateDTO DTO con datos actualizados
+     * @return Mono con el DTO de la cita actualizada
+     */
+    @PutMapping(value = "/api/reactive/appointments/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<AppointmentDTO> updateAppointmentReactive(
+            @PathVariable String id, 
+            @RequestBody AppointmentCreateDTO updateDTO) {
+        return Mono.fromCallable(() -> appointmentService.updateAppointment(id, updateDTO))
+                .onErrorResume(RuntimeException.class, e -> Mono.empty());
+    }
+    
+    /**
+     * Elimina una cita de forma reactiva
+     * @param id ID de la cita a eliminar
+     * @return Mono vacío que completa cuando se elimina la cita
+     */
+    @DeleteMapping("/api/reactive/appointments/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> deleteAppointmentReactive(@PathVariable String id) {
+        return Mono.fromRunnable(() -> appointmentService.deleteAppointment(id));
+    }
+    
+    /**
+     * Obtiene las citas de un doctor en un rango de fechas de forma reactiva
+     * @param doctorId ID del doctor
+     * @param from Fecha de inicio
+     * @param to Fecha de fin
+     * @return Flux de DTOs de citas
+     */
+    @GetMapping(value = "/api/reactive/appointments/doctor/{doctorId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Flux<AppointmentDTO> getAppointmentsByDoctorAndDateRangeReactive(
+            @PathVariable String doctorId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        
+        String fromString = from.atStartOfDay(ZoneId.systemDefault()).toInstant().toString();
+        String toString = to.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant().toString();
+        
+        return Flux.fromIterable(
+            appointmentService.getAppointmentsByDoctorAndDateRange(doctorId, fromString, toString)
+        );
+    }
+    
+    /**
+     * Obtiene las citas de un paciente de forma reactiva
+     * @param patientId ID del paciente
+     * @return Flux de DTOs de citas
+     */
+    @GetMapping(value = "/api/reactive/appointments/patient/{patientId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Flux<AppointmentDTO> getAppointmentsByPatientReactive(@PathVariable String patientId) {
+        return Flux.fromIterable(appointmentService.getAllAppointments())
+                .filter(a -> a.getPatientId().equals(patientId));
+    }
+    
+    /**
+     * Confirma una cita de forma reactiva
+     * @param id ID de la cita
+     * @return Mono con el DTO de la cita confirmada
+     */
+    @PutMapping(value = "/api/reactive/appointments/{id}/confirm", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<AppointmentDTO> confirmAppointmentReactive(@PathVariable String id) {
+        return Mono.fromCallable(() -> appointmentService.getAppointmentById(id))
+                .onErrorResume(RuntimeException.class, e -> Mono.empty());
+    }
+    
+    /**
+     * Cancela una cita de forma reactiva
+     * @param id ID de la cita
+     * @param reason Motivo de cancelación (opcional)
+     * @return Mono vacío que completa cuando se cancela la cita
+     */
+    @DeleteMapping("/api/reactive/appointments/{id}/cancel")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> cancelAppointmentReactive(
+            @PathVariable String id,
+            @RequestParam(required = false) String reason) {
+        return Mono.fromRunnable(() -> appointmentService.deleteAppointment(id));
     }
 } 

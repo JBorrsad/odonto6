@@ -3,6 +3,7 @@ package odoonto.domain.model.aggregates;
 
 import odoonto.domain.exceptions.DomainException;
 import odoonto.domain.model.valueobjects.DoctorSchedule;
+import odoonto.domain.model.valueobjects.Specialty;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -18,7 +19,7 @@ public class Doctor {
 
     private String id;
     private String nombreCompleto;
-    private String especialidad;
+    private Specialty especialidad;
     private Map<DayOfWeek, DoctorSchedule> horarios;
 
     /**
@@ -34,7 +35,7 @@ public class Doctor {
      * @param nombreCompleto Nombre completo del doctor
      * @param especialidad Especialidad médica del doctor
      */
-    public Doctor(String nombreCompleto, String especialidad) {
+    public Doctor(String nombreCompleto, Specialty especialidad) {
         if (nombreCompleto == null || nombreCompleto.trim().isEmpty()) {
             throw new DomainException("El nombre del doctor no puede estar vacío");
         }
@@ -47,7 +48,7 @@ public class Doctor {
     /**
      * Constructor con ID para reconstrucción desde persistencia
      */
-    public Doctor(String id, String nombreCompleto, String especialidad) {
+    public Doctor(String id, String nombreCompleto, Specialty especialidad) {
         this(nombreCompleto, especialidad);
         if (id == null || id.trim().isEmpty()) {
             throw new DomainException("El ID del doctor no puede estar vacío");
@@ -159,11 +160,11 @@ public class Doctor {
         this.nombreCompleto = nombreCompleto;
     }
     
-    public String getEspecialidad() {
+    public Specialty getEspecialidad() {
         return especialidad;
     }
     
-    public void setEspecialidad(String especialidad) {
+    public void setEspecialidad(Specialty especialidad) {
         this.especialidad = especialidad;
     }
     

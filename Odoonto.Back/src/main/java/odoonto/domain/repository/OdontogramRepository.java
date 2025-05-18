@@ -5,94 +5,91 @@ import odoonto.domain.model.entities.Tooth;
 import odoonto.domain.model.valueobjects.LesionType;
 import odoonto.domain.model.valueobjects.OdontogramId;
 import odoonto.domain.model.valueobjects.PatientId;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
  * Interfaz del repositorio para gestionar Odontogramas.
+ * Define operaciones puras de dominio sin dependencias externas.
  * Nota: Los odontogramas se identifican por el ID del paciente al que pertenecen.
  */
 public interface OdontogramRepository {
     
     /**
      * Busca todos los odontogramas
-     * @return Flux con todos los odontogramas
+     * @return Lista con todos los odontogramas
      */
-    Flux<Odontogram> findAll();
+    List<Odontogram> findAll();
     
     /**
      * Busca un odontograma por su identificador
      * @param id Identificador único del odontograma
-     * @return Mono con el odontograma encontrado o empty si no existe
+     * @return Optional con el odontograma encontrado o empty si no existe
      */
-    Mono<Odontogram> findById(OdontogramId id);
+    Optional<Odontogram> findById(OdontogramId id);
     
     /**
      * Busca un odontograma por el identificador del paciente
      * @param patientId Identificador único del paciente
-     * @return Mono con el odontograma encontrado o empty si no existe
+     * @return Optional con el odontograma encontrado o empty si no existe
      */
-    Mono<Odontogram> findByPatientId(PatientId patientId);
+    Optional<Odontogram> findByPatientId(PatientId patientId);
     
     /**
      * Guarda un odontograma en el repositorio
      * @param odontogram Odontograma a guardar
-     * @return Mono con el odontograma guardado
+     * @return El odontograma guardado
      */
-    Mono<Odontogram> save(Odontogram odontogram);
+    Odontogram save(Odontogram odontogram);
     
     /**
      * Elimina un odontograma por su identificador
      * @param id Identificador único del odontograma
-     * @return Mono vacío que completa cuando la operación termina
      */
-    Mono<Void> deleteById(OdontogramId id);
+    void deleteById(OdontogramId id);
     
     /**
      * Busca odontogramas que contienen un tipo específico de lesión
      * @param lesionType Tipo de lesión a buscar
-     * @return Flux con los odontogramas que contienen el tipo de lesión especificado
+     * @return Lista con los odontogramas que contienen el tipo de lesión especificado
      */
-    Flux<Odontogram> findByLesionType(LesionType lesionType);
+    List<Odontogram> findByLesionType(LesionType lesionType);
     
     /**
      * Verifica si existe un odontograma para el paciente especificado
      * @param patientId Identificador único del paciente
-     * @return Mono con true si existe o false si no existe
+     * @return true si existe o false si no existe
      */
-    Mono<Boolean> existsByPatientId(PatientId patientId);
+    boolean existsByPatientId(PatientId patientId);
     
     /**
      * Elimina un odontograma por el identificador del paciente
      * @param patientId Identificador único del paciente
-     * @return Mono vacío que completa cuando la operación termina
      */
-    Mono<Void> deleteByPatientId(PatientId patientId);
+    void deleteByPatientId(PatientId patientId);
     
     /**
      * Crea una copia histórica de un odontograma
      * @param odontogramId Identificador único del odontograma a copiar
-     * @return Mono con el ID de la versión histórica creada
+     * @return ID de la versión histórica creada
      */
-    Mono<String> createHistoricalCopy(OdontogramId odontogramId);
+    String createHistoricalCopy(OdontogramId odontogramId);
     
     /**
      * Busca todas las versiones históricas de un odontograma por el identificador del paciente
      * @param patientId Identificador único del paciente
-     * @return Flux con las versiones históricas del odontograma
+     * @return Lista con las versiones históricas del odontograma
      */
-    Flux<Odontogram> findHistoryByPatientId(PatientId patientId);
+    List<Odontogram> findHistoryByPatientId(PatientId patientId);
     
     /**
      * Busca una versión histórica específica de un odontograma
      * @param patientId Identificador único del paciente
      * @param version Identificador de versión
-     * @return Mono con la versión histórica del odontograma o empty si no existe
+     * @return Optional con la versión histórica del odontograma o empty si no existe
      */
-    Mono<Odontogram> findHistoricalByPatientIdAndVersion(PatientId patientId, String version);
+    Optional<Odontogram> findHistoricalByPatientIdAndVersion(PatientId patientId, String version);
     
     /**
      * Actualiza un diente específico en el odontograma de un paciente
@@ -103,6 +100,30 @@ public interface OdontogramRepository {
      */
     boolean updateTooth(String patientId, String toothNumber, Tooth tooth);
     
+    /**
+     * Elimina una lesión específica de un diente en un odontograma por ID
+     * @param odontogramId ID del odontograma
+     * @param toothNumber Número del diente
+     * @param lesionId ID de la lesión a eliminar
+     */
+    void removeLesion(String odontogramId, String toothNumber, String lesionId);
+    
+    /**
+     * Añade un tratamiento a un diente en un odontograma
+     * @param odontogramId ID del odontograma
+     * @param toothNumber Número del diente
+     * @param treatmentData Datos del tratamiento a añadir
+     */
+    void addTreatment(String odontogramId, String toothNumber, Object treatmentData);
+    
+    /**
+     * Elimina un tratamiento específico de un diente en un odontograma
+     * @param odontogramId ID del odontograma
+     * @param toothNumber Número del diente
+     * @param treatmentId ID del tratamiento a eliminar
+     */
+    void removeTreatment(String odontogramId, String toothNumber, String treatmentId);
+    
     /* 
      * Métodos de compatibilidad para mantener retrocompatibilidad
      */
@@ -110,11 +131,11 @@ public interface OdontogramRepository {
     /**
      * Método de compatibilidad para buscar por id usando String
      * @param id Identificador como String
-     * @return Mono con el odontograma encontrado o empty si no existe
+     * @return Optional con el odontograma encontrado o empty si no existe
      */
-    default Mono<Odontogram> findById(String id) {
+    default Optional<Odontogram> findById(String id) {
         if (id == null || id.trim().isEmpty()) {
-            return Mono.empty();
+            return Optional.empty();
         }
         return findById(OdontogramId.of(id));
     }
@@ -122,11 +143,11 @@ public interface OdontogramRepository {
     /**
      * Método de compatibilidad para buscar por patientId usando String
      * @param patientId Identificador del paciente como String
-     * @return Mono con el odontograma encontrado o empty si no existe
+     * @return Optional con el odontograma encontrado o empty si no existe
      */
-    default Mono<Odontogram> findByPatientId(String patientId) {
+    default Optional<Odontogram> findByPatientId(String patientId) {
         if (patientId == null || patientId.trim().isEmpty()) {
-            return Mono.empty();
+            return Optional.empty();
         }
         return findByPatientId(PatientId.of(patientId));
     }
@@ -134,23 +155,22 @@ public interface OdontogramRepository {
     /**
      * Método de compatibilidad para eliminar por id usando String
      * @param id Identificador como String
-     * @return Mono vacío que completa cuando la operación termina
      */
-    default Mono<Void> deleteById(String id) {
+    default void deleteById(String id) {
         if (id == null || id.trim().isEmpty()) {
-            return Mono.empty();
+            return;
         }
-        return deleteById(OdontogramId.of(id));
+        deleteById(OdontogramId.of(id));
     }
     
     /**
      * Método de compatibilidad para verificar existencia por patientId usando String
      * @param patientId Identificador del paciente como String
-     * @return Mono con true si existe o false si no existe
+     * @return true si existe o false si no existe
      */
-    default Mono<Boolean> existsByPatientId(String patientId) {
+    default boolean existsByPatientId(String patientId) {
         if (patientId == null || patientId.trim().isEmpty()) {
-            return Mono.just(false);
+            return false;
         }
         return existsByPatientId(PatientId.of(patientId));
     }
@@ -158,23 +178,22 @@ public interface OdontogramRepository {
     /**
      * Método de compatibilidad para eliminar por patientId usando String
      * @param patientId Identificador del paciente como String
-     * @return Mono vacío que completa cuando la operación termina
      */
-    default Mono<Void> deleteByPatientId(String patientId) {
+    default void deleteByPatientId(String patientId) {
         if (patientId == null || patientId.trim().isEmpty()) {
-            return Mono.empty();
+            return;
         }
-        return deleteByPatientId(PatientId.of(patientId));
+        deleteByPatientId(PatientId.of(patientId));
     }
     
     /**
      * Método de compatibilidad para crear copia histórica usando String
      * @param odontogramId Identificador del odontograma como String
-     * @return Mono con el ID de la versión histórica creada
+     * @return ID de la versión histórica creada
      */
-    default Mono<String> createHistoricalCopy(String odontogramId) {
+    default String createHistoricalCopy(String odontogramId) {
         if (odontogramId == null || odontogramId.trim().isEmpty()) {
-            return Mono.empty();
+            return null;
         }
         return createHistoricalCopy(OdontogramId.of(odontogramId));
     }
@@ -182,11 +201,11 @@ public interface OdontogramRepository {
     /**
      * Método de compatibilidad para buscar historia por patientId usando String
      * @param patientId Identificador del paciente como String
-     * @return Flux con las versiones históricas del odontograma
+     * @return Lista con las versiones históricas del odontograma
      */
-    default Flux<Odontogram> findHistoryByPatientId(String patientId) {
+    default List<Odontogram> findHistoryByPatientId(String patientId) {
         if (patientId == null || patientId.trim().isEmpty()) {
-            return Flux.empty();
+            return List.of();
         }
         return findHistoryByPatientId(PatientId.of(patientId));
     }
@@ -195,11 +214,11 @@ public interface OdontogramRepository {
      * Método de compatibilidad para buscar versión histórica usando String
      * @param patientId Identificador del paciente como String
      * @param version Identificador de versión
-     * @return Mono con la versión histórica del odontograma o empty si no existe
+     * @return Optional con la versión histórica del odontograma o empty si no existe
      */
-    default Mono<Odontogram> findHistoricalByPatientIdAndVersion(String patientId, String version) {
+    default Optional<Odontogram> findHistoricalByPatientIdAndVersion(String patientId, String version) {
         if (patientId == null || patientId.trim().isEmpty()) {
-            return Mono.empty();
+            return Optional.empty();
         }
         return findHistoricalByPatientIdAndVersion(PatientId.of(patientId), version);
     }

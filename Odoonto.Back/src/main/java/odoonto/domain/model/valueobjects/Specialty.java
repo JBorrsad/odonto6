@@ -1,4 +1,4 @@
-package odoonto.domain.model.aggregates;
+package odoonto.domain.model.valueobjects;
 
 /**
  * Enumeración que representa las diferentes especialidades odontológicas.

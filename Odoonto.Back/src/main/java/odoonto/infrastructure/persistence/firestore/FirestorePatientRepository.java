@@ -4,6 +4,8 @@ import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.QueryDocumentSnapshot;
+import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.spring.data.firestore.FirestoreTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -12,8 +14,12 @@ import odoonto.domain.model.aggregates.Patient;
 import odoonto.domain.model.valueobjects.PatientId;
 import odoonto.domain.repository.PatientRepository;
 import odoonto.infrastructure.persistence.entity.FirestorePatientEntity;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 /**
  * Implementación de PatientRepository usando Firestore
@@ -35,20 +41,27 @@ public class FirestorePatientRepository implements PatientRepository {
     }
     
     @Override
-    public Mono<Patient> findById(PatientId id) {
+    public Optional<Patient> findById(PatientId id) {
         if (id == null) {
-            return Mono.empty();
+            return Optional.empty();
         }
         
-        return Mono.fromFuture(patientsCollection.document(id.getValue()).get())
-                .map(this::mapToPatient)
-                .filter(patient -> patient != null);
+        try {
+            DocumentSnapshot document = patientsCollection.document(id.getValue()).get().get();
+            if (document.exists()) {
+                return Optional.ofNullable(mapToPatient(document));
+            }
+            return Optional.empty();
+        } catch (InterruptedException | ExecutionException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Error al buscar paciente: " + e.getMessage(), e);
+        }
     }
     
     @Override
-    public Mono<Patient> save(Patient patient) {
+    public Patient save(Patient patient) {
         if (patient == null) {
-            return Mono.empty();
+            throw new IllegalArgumentException("El paciente no puede ser nulo");
         }
         
         // Asegurar que el paciente tenga un ID
@@ -58,54 +71,90 @@ public class FirestorePatientRepository implements PatientRepository {
         
         FirestorePatientEntity entity = mapToEntity(patient);
         
-        return Mono.fromFuture(patientsCollection.document(entity.getId()).set(entity))
-                .thenReturn(patient);
+        try {
+            patientsCollection.document(entity.getId()).set(entity).get();
+            return patient;
+        } catch (InterruptedException | ExecutionException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Error al guardar paciente: " + e.getMessage(), e);
+        }
     }
     
     @Override
-    public Mono<Void> deleteById(PatientId id) {
+    public void deleteById(PatientId id) {
         if (id == null) {
-            return Mono.empty();
+            return;
         }
         
-        return Mono.fromFuture(patientsCollection.document(id.getValue()).delete())
-                .then();
+        try {
+            patientsCollection.document(id.getValue()).delete().get();
+        } catch (InterruptedException | ExecutionException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Error al eliminar paciente: " + e.getMessage(), e);
+        }
     }
     
     @Override
-    public Flux<Patient> findAll() {
-        return Flux.from(patientsCollection.get().get().getDocuments().stream())
-                .map(this::mapToPatient)
-                .filter(patient -> patient != null);
+    public List<Patient> findAll() {
+        try {
+            return patientsCollection.get().get().getDocuments().stream()
+                    .map(this::mapToPatient)
+                    .filter(patient -> patient != null)
+                    .collect(Collectors.toList());
+        } catch (InterruptedException | ExecutionException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Error al buscar todos los pacientes: " + e.getMessage(), e);
+        }
     }
     
     @Override
-    public Flux<Patient> findByNombreContainingOrApellidoContaining(String nombre, String apellido) {
+    public List<Patient> findByNombreContainingOrApellidoContaining(String nombre, String apellido) {
         // Firestore no soporta búsquedas parciales nativas, 
         // esta es una implementación simple que podría no ser eficiente.
-        return findAll()
+        return findAll().stream()
                 .filter(patient -> 
                     (patient.getNombre() != null && 
                      patient.getNombre().toLowerCase().contains(nombre.toLowerCase())) ||
                     (patient.getApellido() != null && 
                      patient.getApellido().toLowerCase().contains(apellido.toLowerCase()))
-                );
+                )
+                .collect(Collectors.toList());
     }
     
     @Override
-    public Mono<Patient> findByEmail(String email) {
-        return Flux.from(patientsCollection.whereEqualTo("email.value", email).get().get().getDocuments().stream())
-                .map(this::mapToPatient)
-                .filter(patient -> patient != null)
-                .next();
+    public Optional<Patient> findByEmail(String email) {
+        try {
+            QuerySnapshot querySnapshot = patientsCollection
+                    .whereEqualTo("email.value", email)
+                    .get().get();
+            
+            if (querySnapshot.isEmpty()) {
+                return Optional.empty();
+            }
+            
+            return Optional.ofNullable(mapToPatient(querySnapshot.getDocuments().get(0)));
+        } catch (InterruptedException | ExecutionException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Error al buscar paciente por email: " + e.getMessage(), e);
+        }
     }
     
     @Override
-    public Mono<Patient> findByTelefono(String telefono) {
-        return Flux.from(patientsCollection.whereEqualTo("telefono.value", telefono).get().get().getDocuments().stream())
-                .map(this::mapToPatient)
-                .filter(patient -> patient != null)
-                .next();
+    public Optional<Patient> findByTelefono(String telefono) {
+        try {
+            QuerySnapshot querySnapshot = patientsCollection
+                    .whereEqualTo("telefono.value", telefono)
+                    .get().get();
+            
+            if (querySnapshot.isEmpty()) {
+                return Optional.empty();
+            }
+            
+            return Optional.ofNullable(mapToPatient(querySnapshot.getDocuments().get(0)));
+        } catch (InterruptedException | ExecutionException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Error al buscar paciente por teléfono: " + e.getMessage(), e);
+        }
     }
     
     /**

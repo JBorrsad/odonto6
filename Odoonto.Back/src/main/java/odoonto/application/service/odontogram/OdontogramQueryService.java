@@ -4,14 +4,14 @@ import odoonto.application.dto.response.OdontogramDTO;
 import odoonto.application.exceptions.OdontogramNotFoundException;
 import odoonto.application.mapper.OdontogramMapper;
 import odoonto.application.port.in.odontogram.OdontogramQueryUseCase;
+import odoonto.application.port.out.ReactiveOdontogramRepository;
 import odoonto.domain.model.aggregates.Odontogram;
-import odoonto.domain.repository.OdontogramRepository;
+import odoonto.domain.model.valueobjects.PatientId;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,11 +22,11 @@ import java.util.Optional;
 @Service
 public class OdontogramQueryService implements OdontogramQueryUseCase {
     
-    private final OdontogramRepository odontogramRepository;
+    private final ReactiveOdontogramRepository odontogramRepository;
     private final OdontogramMapper odontogramMapper;
     
     @Autowired
-    public OdontogramQueryService(OdontogramRepository odontogramRepository,
+    public OdontogramQueryService(ReactiveOdontogramRepository odontogramRepository,
                                  OdontogramMapper odontogramMapper) {
         this.odontogramRepository = odontogramRepository;
         this.odontogramMapper = odontogramMapper;
@@ -63,8 +63,7 @@ public class OdontogramQueryService implements OdontogramQueryUseCase {
     
     @Override
     public boolean existsByPatientId(String patientId) {
-        return odontogramRepository.findByPatientId(patientId)
-                .hasElement()
+        return odontogramRepository.existsByPatientId(PatientId.of(patientId))
                 .block();
     }
     

@@ -4,6 +4,7 @@ import odoonto.domain.exceptions.DomainException;
 import odoonto.domain.model.aggregates.Odontogram;
 import odoonto.domain.model.entities.Lesion;
 import odoonto.domain.model.entities.Tooth;
+import odoonto.domain.model.entities.Treatment;
 import odoonto.domain.model.valueobjects.LesionType;
 import odoonto.domain.model.valueobjects.ToothFace;
 
@@ -11,12 +12,249 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Collections;
+import java.util.stream.Collectors;
 
 /**
- * Servicio de dominio para diagnóstico y análisis de lesiones dentales.
- * Trabaja con el odontograma, que es un objeto de valor dentro del agregado Patient.
+ * Servicio de dominio para realizar diagnósticos dentales.
+ * Encapsula lógica de negocio relacionada con la interpretación
+ * del estado dental basado en el odontograma del paciente.
  */
 public class DentalDiagnosisService {
+    
+    /**
+     * Analiza un odontograma para generar un diagnóstico de la salud dental
+     * @param odontogram Odontograma a analizar
+     * @return Mapa con los resultados del diagnóstico
+     */
+    public Map<String, Object> generateDiagnosis(Odontogram odontogram) {
+        if (odontogram == null) {
+            throw new DomainException("No se puede generar un diagnóstico sin odontograma");
+        }
+        
+        Map<String, Object> diagnosis = new HashMap<>();
+        
+        // Conteo de lesiones por tipo
+        Map<LesionType, Integer> lesionCounts = countLesionsByType(odontogram);
+        diagnosis.put("lesionCounts", lesionCounts);
+        
+        // Conteo de dientes afectados
+        int affectedTeethCount = countAffectedTeeth(odontogram);
+        int totalTeeth = odontogram.getTeethCount();
+        diagnosis.put("affectedTeethCount", affectedTeethCount);
+        diagnosis.put("totalTeethCount", totalTeeth);
+        
+        // Porcentaje de salud dental
+        double healthPercentage = calculateDentalHealthPercentage(affectedTeethCount, totalTeeth);
+        diagnosis.put("healthPercentage", healthPercentage);
+        
+        // Nivel de riesgo
+        String riskLevel = determineRiskLevel(healthPercentage, lesionCounts);
+        diagnosis.put("riskLevel", riskLevel);
+        
+        // Áreas más afectadas
+        List<String> mostAffectedAreas = identifyMostAffectedAreas(odontogram);
+        diagnosis.put("mostAffectedAreas", mostAffectedAreas);
+        
+        // Tratamientos recomendados
+        List<String> recommendedTreatments = suggestTreatments(lesionCounts, mostAffectedAreas);
+        diagnosis.put("recommendedTreatments", recommendedTreatments);
+        
+        return diagnosis;
+    }
+    
+    /**
+     * Cuenta el número de lesiones por tipo
+     * @param odontogram Odontograma a analizar
+     * @return Mapa con conteo de lesiones por tipo
+     */
+    private Map<LesionType, Integer> countLesionsByType(Odontogram odontogram) {
+        Map<LesionType, Integer> counts = new HashMap<>();
+        
+        for (Tooth tooth : odontogram.getTeeth()) {
+            for (Lesion lesion : tooth.getLesions()) {
+                LesionType type = lesion.getType();
+                counts.put(type, counts.getOrDefault(type, 0) + 1);
+            }
+        }
+        
+        return counts;
+    }
+    
+    /**
+     * Cuenta el número de dientes afectados por lesiones
+     * @param odontogram Odontograma a analizar
+     * @return Número de dientes afectados
+     */
+    private int countAffectedTeeth(Odontogram odontogram) {
+        return (int) odontogram.getTeeth().stream()
+                .filter(tooth -> !tooth.getLesions().isEmpty())
+                .count();
+    }
+    
+    /**
+     * Calcula el porcentaje de salud dental
+     * @param affectedTeethCount Número de dientes afectados
+     * @param totalTeeth Número total de dientes
+     * @return Porcentaje de salud dental (0-100)
+     */
+    private double calculateDentalHealthPercentage(int affectedTeethCount, int totalTeeth) {
+        if (totalTeeth == 0) {
+            return 100.0; // Por defecto, si no hay dientes se considera 100% de salud
+        }
+        
+        double healthyTeethCount = totalTeeth - affectedTeethCount;
+        return (healthyTeethCount / totalTeeth) * 100.0;
+    }
+    
+    /**
+     * Determina el nivel de riesgo basado en el porcentaje de salud y tipos de lesiones
+     * @param healthPercentage Porcentaje de salud dental
+     * @param lesionCounts Conteo de lesiones por tipo
+     * @return Nivel de riesgo (BAJO, MEDIO, ALTO, MUY ALTO)
+     */
+    private String determineRiskLevel(double healthPercentage, Map<LesionType, Integer> lesionCounts) {
+        // Contar lesiones severas (CARIES_AVANZADA, ABSCESO, FRACTURA)
+        int severeLesions = lesionCounts.getOrDefault(LesionType.CARIES_AVANZADA, 0) +
+                            lesionCounts.getOrDefault(LesionType.ABSCESO, 0) +
+                            lesionCounts.getOrDefault(LesionType.FRACTURA, 0);
+        
+        if (healthPercentage >= 90) {
+            return "BAJO";
+        } else if (healthPercentage >= 75) {
+            return severeLesions > 0 ? "MEDIO" : "BAJO";
+        } else if (healthPercentage >= 50) {
+            return severeLesions > 2 ? "ALTO" : "MEDIO";
+        } else {
+            return "MUY ALTO";
+        }
+    }
+    
+    /**
+     * Identifica las áreas más afectadas de la dentadura
+     * @param odontogram Odontograma a analizar
+     * @return Lista de áreas afectadas en orden de severidad
+     */
+    private List<String> identifyMostAffectedAreas(Odontogram odontogram) {
+        // Conteo de lesiones por cuadrante
+        Map<String, Integer> quadrantLesionCount = new HashMap<>();
+        quadrantLesionCount.put("SUPERIOR_DERECHO", 0);
+        quadrantLesionCount.put("SUPERIOR_IZQUIERDO", 0);
+        quadrantLesionCount.put("INFERIOR_IZQUIERDO", 0);
+        quadrantLesionCount.put("INFERIOR_DERECHO", 0);
+        
+        // Conteo de lesiones por zona
+        Map<String, Integer> zoneLesionCount = new HashMap<>();
+        zoneLesionCount.put("ANTERIOR", 0);
+        zoneLesionCount.put("PREMOLARES", 0);
+        zoneLesionCount.put("MOLARES", 0);
+        
+        for (Tooth tooth : odontogram.getTeeth()) {
+            int toothNumber = tooth.getNumber();
+            int lesionCount = tooth.getLesions().size();
+            
+            // Determinar cuadrante
+            String quadrant;
+            if (toothNumber >= 11 && toothNumber <= 18) {
+                quadrant = "SUPERIOR_DERECHO";
+            } else if (toothNumber >= 21 && toothNumber <= 28) {
+                quadrant = "SUPERIOR_IZQUIERDO";
+            } else if (toothNumber >= 31 && toothNumber <= 38) {
+                quadrant = "INFERIOR_IZQUIERDO";
+            } else {
+                quadrant = "INFERIOR_DERECHO";
+            }
+            
+            // Determinar zona
+            String zone;
+            int toothPosition = toothNumber % 10;
+            if (toothPosition >= 1 && toothPosition <= 3) {
+                zone = "ANTERIOR";
+            } else if (toothPosition >= 4 && toothPosition <= 5) {
+                zone = "PREMOLARES";
+            } else {
+                zone = "MOLARES";
+            }
+            
+            // Actualizar conteos
+            quadrantLesionCount.put(quadrant, quadrantLesionCount.get(quadrant) + lesionCount);
+            zoneLesionCount.put(zone, zoneLesionCount.get(zone) + lesionCount);
+        }
+        
+        // Identificar áreas más afectadas
+        List<String> affectedAreas = new ArrayList<>();
+        
+        // Añadir cuadrantes con más lesiones
+        List<Map.Entry<String, Integer>> quadrantEntries = new ArrayList<>(quadrantLesionCount.entrySet());
+        quadrantEntries.sort(Map.Entry.<String, Integer>comparingByValue().reversed());
+        
+        for (Map.Entry<String, Integer> entry : quadrantEntries) {
+            if (entry.getValue() > 0) {
+                affectedAreas.add("Cuadrante " + entry.getKey() + " (" + entry.getValue() + " lesiones)");
+            }
+        }
+        
+        // Añadir zonas con más lesiones
+        List<Map.Entry<String, Integer>> zoneEntries = new ArrayList<>(zoneLesionCount.entrySet());
+        zoneEntries.sort(Map.Entry.<String, Integer>comparingByValue().reversed());
+        
+        for (Map.Entry<String, Integer> entry : zoneEntries) {
+            if (entry.getValue() > 0) {
+                affectedAreas.add("Zona " + entry.getKey() + " (" + entry.getValue() + " lesiones)");
+            }
+        }
+        
+        return affectedAreas;
+    }
+    
+    /**
+     * Sugiere tratamientos basados en las lesiones encontradas
+     * @param lesionCounts Conteo de lesiones por tipo
+     * @param mostAffectedAreas Áreas más afectadas
+     * @return Lista de tratamientos recomendados
+     */
+    private List<String> suggestTreatments(Map<LesionType, Integer> lesionCounts, List<String> mostAffectedAreas) {
+        List<String> recommendations = new ArrayList<>();
+        
+        // Recomendaciones basadas en tipos de lesiones
+        if (lesionCounts.getOrDefault(LesionType.CARIES_INCIPIENTE, 0) > 0) {
+            recommendations.add("Aplicación de flúor para caries incipientes");
+        }
+        
+        if (lesionCounts.getOrDefault(LesionType.CARIES_MODERADA, 0) > 0) {
+            recommendations.add("Obturaciones para caries moderadas");
+        }
+        
+        if (lesionCounts.getOrDefault(LesionType.CARIES_AVANZADA, 0) > 0) {
+            recommendations.add("Tratamiento de conducto para caries avanzadas");
+        }
+        
+        if (lesionCounts.getOrDefault(LesionType.ABSCESO, 0) > 0) {
+            recommendations.add("Tratamiento de abscesos y posible extracción");
+        }
+        
+        if (lesionCounts.getOrDefault(LesionType.FRACTURA, 0) > 0) {
+            recommendations.add("Reconstrucción o corona para dientes fracturados");
+        }
+        
+        // Recomendaciones generales basadas en la concentración de lesiones
+        boolean hasManyLesions = lesionCounts.values().stream().mapToInt(Integer::intValue).sum() > 5;
+        
+        if (hasManyLesions) {
+            recommendations.add("Plan integral de tratamiento dental");
+            recommendations.add("Revisión de hábitos de higiene oral");
+        }
+        
+        if (mostAffectedAreas.stream().anyMatch(area -> area.contains("ANTERIOR"))) {
+            recommendations.add("Evaluación estética para zona anterior");
+        }
+        
+        if (mostAffectedAreas.stream().anyMatch(area -> area.contains("MOLARES"))) {
+            recommendations.add("Evaluación de hábitos de alimentación y técnica de cepillado");
+        }
+        
+        return recommendations;
+    }
     
     /**
      * Identifica los dientes que requieren atención inmediata en un odontograma

@@ -424,4 +424,90 @@ public class FirestoreOdontogramRepository implements OdontogramRepository {
         
         return entity;
     }
+
+    @Override
+    public Mono<Void> removeLesion(String odontogramId, String toothNumber, String lesionId) {
+        if (odontogramId == null || toothNumber == null || lesionId == null) {
+            return Mono.empty();
+        }
+        
+        try {
+            // Obtener el documento del odontograma
+            return findById(odontogramId)
+                .flatMap(odontogram -> {
+                    // Si el odontograma existe y contiene el diente
+                    if (odontogram.getTeeth().containsKey(toothNumber)) {
+                        // Obtenemos el mapa de caras del diente
+                        Map<String, LesionType> faces = odontogram.getTeeth().get(toothNumber).getFaces();
+                        
+                        // Eliminamos la lesión por su clave (que en este caso es la cara)
+                        if (faces.containsKey(lesionId)) {
+                            faces.remove(lesionId);
+                            
+                            // Si el diente ya no tiene lesiones, lo eliminamos del mapa
+                            if (faces.isEmpty()) {
+                                odontogram.getTeeth().remove(toothNumber);
+                            }
+                            
+                            // Guardamos el odontograma actualizado
+                            return save(odontogram).then();
+                        }
+                    }
+                    return Mono.empty();
+                });
+        } catch (Exception e) {
+            return Mono.error(new DomainException("Error al eliminar lesión: " + e.getMessage(), e));
+        }
+    }
+    
+    @Override
+    public Mono<Void> addTreatment(String odontogramId, String toothNumber, Object treatmentData) {
+        // Implementación temporal para simular la adición de tratamientos
+        // En una implementación real, necesitarías modelar los tratamientos en el dominio
+        if (odontogramId == null || toothNumber == null || treatmentData == null) {
+            return Mono.empty();
+        }
+        
+        try {
+            // Simular adición de tratamiento con una actualización simple
+            DocumentReference docRef = odontogramsCollection.document(odontogramId);
+            
+            // Crear un mapa temporal con los datos del tratamiento
+            Map<String, Object> treatmentMap = new HashMap<>();
+            treatmentMap.put("timestamp", Instant.now().toString());
+            treatmentMap.put("data", treatmentData.toString());
+            
+            // Ruta al campo a actualizar
+            String fieldPath = "treatments." + toothNumber + "." + UUID.randomUUID().toString();
+            
+            ApiFuture<WriteResult> future = docRef.update(fieldPath, treatmentMap);
+            CompletableFuture<WriteResult> completableFuture = toCompletableFuture(future);
+            return Mono.fromFuture(completableFuture).then();
+        } catch (Exception e) {
+            return Mono.error(new DomainException("Error al añadir tratamiento: " + e.getMessage(), e));
+        }
+    }
+    
+    @Override
+    public Mono<Void> removeTreatment(String odontogramId, String toothNumber, String treatmentId) {
+        // Implementación temporal para simular la eliminación de tratamientos
+        if (odontogramId == null || toothNumber == null || treatmentId == null) {
+            return Mono.empty();
+        }
+        
+        try {
+            // Simular eliminación de tratamiento con una actualización simple
+            DocumentReference docRef = odontogramsCollection.document(odontogramId);
+            
+            // Ruta al campo a eliminar
+            String fieldPath = "treatments." + toothNumber + "." + treatmentId;
+            
+            // En Firestore, para eliminar un campo se usa FieldValue.delete()
+            ApiFuture<WriteResult> future = docRef.update(fieldPath, null);
+            CompletableFuture<WriteResult> completableFuture = toCompletableFuture(future);
+            return Mono.fromFuture(completableFuture).then();
+        } catch (Exception e) {
+            return Mono.error(new DomainException("Error al eliminar tratamiento: " + e.getMessage(), e));
+        }
+    }
 } 

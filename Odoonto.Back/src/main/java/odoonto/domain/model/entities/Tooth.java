@@ -5,6 +5,7 @@ import odoonto.domain.exceptions.DuplicateLesionException;
 import odoonto.domain.model.valueobjects.LesionType;
 import odoonto.domain.model.valueobjects.ToothFace;
 import odoonto.domain.model.valueobjects.ToothNumber;
+import odoonto.domain.model.valueobjects.ToothPosition;
 
 import java.util.ArrayList;
 import java.util.HashMap;

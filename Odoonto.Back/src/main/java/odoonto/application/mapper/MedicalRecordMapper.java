@@ -3,9 +3,10 @@ package odoonto.application.mapper;
 import org.springframework.stereotype.Component;
 
 import odoonto.application.dto.response.MedicalRecordDTO;
-import odoonto.domain.model.aggregates.MedicalRecord;
+import odoonto.domain.model.entities.MedicalRecord;
 import odoonto.domain.model.entities.MedicalEntry;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,10 +27,16 @@ public class MedicalRecordMapper {
         }
 
         MedicalRecordDTO dto = new MedicalRecordDTO();
-        dto.setId(medicalRecord.getId());
+        dto.setId(medicalRecord.getIdValue());
         dto.setEntries(mapEntriesToDTO(medicalRecord.getEntries()));
-        dto.setCreatedAt(medicalRecord.getCreatedAt().toString());
-        dto.setUpdatedAt(medicalRecord.getUpdatedAt().toString());
+        
+        // Establecer la fecha de última actualización como la fecha actual
+        dto.setLastUpdated(LocalDate.now());
+        
+        // Si hay un PatientId asociado, establecerlo
+        if (medicalRecord.extractPatientId() != null) {
+            dto.setPatientId(medicalRecord.extractPatientId().getValue());
+        }
 
         return dto;
     }
@@ -58,7 +65,16 @@ public class MedicalRecordMapper {
         MedicalRecordDTO.MedicalEntryDTO entryDTO = new MedicalRecordDTO.MedicalEntryDTO();
         entryDTO.setId(entry.getId());
         entryDTO.setDescription(entry.getDescription());
-        entryDTO.setCreatedAt(entry.getCreatedAt().toString());
+        entryDTO.setDate(entry.getRecordedAt().toLocalDate());
+        entryDTO.setType(entry.getType());
+        
+        if (entry.getDoctorId() != null) {
+            entryDTO.setDoctorId(entry.getDoctorId());
+        }
+        
+        if (entry.getNotes() != null) {
+            entryDTO.setNotes(entry.getNotes());
+        }
         
         return entryDTO;
     }

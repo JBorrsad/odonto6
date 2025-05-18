@@ -38,9 +38,9 @@ public class PatientMapper {
             patient.getApellido(),
             patient.getFechaNacimiento(),
             patient.getSexo().toString(),
-            patient.getTelefono().value(),
-            patient.getEmail().value(),
-            patient.getAge()
+            patient.getTelefono().getValue(),
+            patient.getEmail().getValue(),
+            patient.getId()
         );
     }
     

@@ -7,10 +7,11 @@ import odoonto.application.dto.response.OdontogramDTO;
 import odoonto.application.exceptions.OdontogramNotFoundException;
 import odoonto.application.mapper.OdontogramMapper;
 import odoonto.application.port.in.odontogram.LesionAddUseCase;
-import odoonto.application.port.out.OdontogramRepositoryPort;
+import odoonto.application.port.out.ReactiveOdontogramRepository;
 import odoonto.domain.model.aggregates.Odontogram;
 import odoonto.domain.model.valueobjects.LesionType;
 import odoonto.domain.model.valueobjects.ToothFace;
+import reactor.core.publisher.Mono;
 
 /**
  * Implementación del caso de uso para añadir lesiones a un odontograma
@@ -18,11 +19,11 @@ import odoonto.domain.model.valueobjects.ToothFace;
 @Service
 public class LesionAddService implements LesionAddUseCase {
 
-    private final OdontogramRepositoryPort odontogramRepository;
+    private final ReactiveOdontogramRepository odontogramRepository;
     private final OdontogramMapper odontogramMapper;
 
     @Autowired
-    public LesionAddService(OdontogramRepositoryPort odontogramRepository,
+    public LesionAddService(ReactiveOdontogramRepository odontogramRepository,
                           OdontogramMapper odontogramMapper) {
         this.odontogramRepository = odontogramRepository;
         this.odontogramMapper = odontogramMapper;
@@ -31,20 +32,20 @@ public class LesionAddService implements LesionAddUseCase {
     @Override
     public OdontogramDTO addLesion(String odontogramId, int toothNumber, String face, String lesionType) {
         // Obtener el odontograma
-        Odontogram odontogram = odontogramRepository.findById(odontogramId)
-                .orElseThrow(() -> new OdontogramNotFoundException("Odontograma no encontrado con ID: " + odontogramId));
-        
-        // Validar y convertir los datos
-        ToothFace toothFace = ToothFace.fromString(face); // Puede lanzar InvalidToothFaceException
-        LesionType lesion = LesionType.fromString(lesionType); // Puede lanzar excepciones de dominio
-        
-        // Añadir la lesión (la lógica de dominio puede lanzar DuplicateLesionException)
-        odontogram.addLesion(toothNumber, toothFace, lesion);
-        
-        // Persistir los cambios
-        Odontogram savedOdontogram = odontogramRepository.save(odontogram);
-        
-        // Convertir a DTO
-        return odontogramMapper.toDTO(savedOdontogram);
+        return odontogramRepository.findById(odontogramId)
+                .switchIfEmpty(Mono.error(new OdontogramNotFoundException("Odontograma no encontrado con ID: " + odontogramId)))
+                .flatMap(odontogram -> {
+                    // Validar y convertir los datos
+                    ToothFace toothFace = ToothFace.fromCodigo(face); // Usar el método correcto
+                    LesionType lesion = LesionType.valueOf(lesionType); // Usar valueOf para enum
+                    
+                    // Añadir la lesión (la lógica de dominio puede lanzar DuplicateLesionException)
+                    odontogram.addLesion(String.valueOf(toothNumber), toothFace, lesion);
+                    
+                    // Persistir los cambios
+                    return odontogramRepository.save(odontogram);
+                })
+                .map(odontogramMapper::toDTO)
+                .block(); // Bloqueamos para mantener compatibilidad con el caso de uso síncrono
     }
 } 

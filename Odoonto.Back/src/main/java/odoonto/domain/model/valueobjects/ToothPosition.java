@@ -1,4 +1,4 @@
-package odoonto.domain.model.entities;
+package odoonto.domain.model.valueobjects;
 
 /**
  * Representa la posición de un diente en la arcada dental.

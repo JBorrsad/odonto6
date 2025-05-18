@@ -1,0 +1,16 @@
+### 4. Estado de Implementación
+
+Actualmente se han implementado los siguientes adaptadores reactivos:
+
+1. **ReactivePatientRepository** ✓
+2. **ReactiveAppointmentRepository** ✓
+3. **ReactiveDoctorRepository** ✓
+4. **ReactiveOdontogramRepository** ✓
+5. **ReactiveMedicalRecordRepository** ❌ (pendiente)
+
+Servicios refactorizados para usar adaptadores reactivos:
+1. **OdontogramQueryService** ✓
+2. **LesionAddService** ✓
+3. **TreatmentAddService** ✓
+4. **ReactiveAppointmentValidationService** ✓
+5. **PatientService** ✓ 

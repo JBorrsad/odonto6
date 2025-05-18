@@ -9,158 +9,119 @@ import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 /**
- * Objeto de valor que representa la hora y duración de una cita.
- * Es inmutable y se valida en el constructor.
+ * Objeto de valor que representa el horario de una cita dental.
+ * Incluye la hora de inicio y duración. Es inmutable.
  */
 public final class AppointmentTime {
-    private final LocalDateTime startTime;
+    private final LocalDateTime startDateTime;
     private final int durationMinutes;
     
     /**
-     * Constantes para validación
+     * Constructor para crear un horario de cita válido
+     * @param startDateTime Fecha y hora de inicio de la cita
+     * @param durationMinutes Duración en minutos (debe ser múltiplo de 30)
+     * @throws InvalidAppointmentTimeException si los parámetros son inválidos
      */
-    private static final int MIN_DURATION_MINUTES = 30;
-    private static final int MAX_DURATION_MINUTES = 180;
-    private static final LocalTime EARLIEST_TIME = LocalTime.of(8, 0);
-    private static final LocalTime LATEST_START_TIME = LocalTime.of(17, 0);
-    
-    /**
-     * Constructor para crear un horario de cita válido.
-     * 
-     * @param startTime Fecha y hora de inicio de la cita
-     * @param durationMinutes Duración en minutos
-     * @throws InvalidAppointmentTimeException Si el horario no cumple con las reglas
-     */
-    public AppointmentTime(LocalDateTime startTime, int durationMinutes) {
-        validateStartTime(startTime);
+    public AppointmentTime(LocalDateTime startDateTime, int durationMinutes) {
+        validateStartDateTime(startDateTime);
         validateDuration(durationMinutes);
-        validateEndTimeInBusinessHours(startTime, durationMinutes);
         
-        this.startTime = startTime;
+        this.startDateTime = startDateTime;
         this.durationMinutes = durationMinutes;
     }
     
     /**
-     * Valida que la hora de inicio sea válida
-     * @param startTime Hora de inicio a validar
-     * @throws InvalidAppointmentTimeException Si no es válida
+     * Valida que la fecha y hora de inicio sea válida
+     * @param dateTime Fecha y hora a validar
+     * @throws InvalidAppointmentTimeException si la fecha/hora es inválida
      */
-    private void validateStartTime(LocalDateTime startTime) {
-        if (startTime == null) {
-            throw new InvalidAppointmentTimeException("La hora de inicio no puede ser nula");
+    private void validateStartDateTime(LocalDateTime dateTime) {
+        if (dateTime == null) {
+            throw new InvalidAppointmentTimeException("La fecha y hora de inicio no puede ser nula");
         }
         
-        // No se puede agendar en el pasado
-        LocalDateTime now = LocalDateTime.now();
-        if (startTime.isBefore(now)) {
-            throw new InvalidAppointmentTimeException("No se pueden agendar citas en el pasado");
+        if (dateTime.isBefore(LocalDateTime.now())) {
+            throw new InvalidAppointmentTimeException("La fecha de la cita no puede ser en el pasado");
         }
         
-        // Debe iniciar en intervalos de 30 minutos (00 o 30)
-        int minute = startTime.getMinute();
+        // Validar que la hora empiece en intervalos de 30 minutos (XX:00 o XX:30)
+        int minute = dateTime.getMinute();
         if (minute != 0 && minute != 30) {
-            throw new InvalidAppointmentTimeException(
-                    "Las citas deben iniciar en intervalos de 30 minutos (:00 o :30)");
-        }
-        
-        // Debe estar dentro del horario permitido
-        LocalTime timeOfDay = startTime.toLocalTime();
-        if (timeOfDay.isBefore(EARLIEST_TIME) || timeOfDay.isAfter(LATEST_START_TIME)) {
-            throw new InvalidAppointmentTimeException(
-                    "Las citas deben agendarse entre " + 
-                    EARLIEST_TIME.format(DateTimeFormatter.ofPattern("HH:mm")) + 
-                    " y " + 
-                    LATEST_START_TIME.format(DateTimeFormatter.ofPattern("HH:mm")));
+            throw new InvalidAppointmentTimeException("La hora debe comenzar en :00 o :30");
         }
     }
     
     /**
      * Valida que la duración sea válida
-     * @param durationMinutes Duración a validar
-     * @throws InvalidAppointmentTimeException Si no es válida
+     * @param minutes Duración en minutos
+     * @throws InvalidAppointmentTimeException si la duración es inválida
      */
-    private void validateDuration(int durationMinutes) {
-        if (durationMinutes < MIN_DURATION_MINUTES) {
-            throw new InvalidAppointmentTimeException(
-                    "La duración mínima de una cita es de " + MIN_DURATION_MINUTES + " minutos");
+    private void validateDuration(int minutes) {
+        if (minutes <= 0) {
+            throw new InvalidAppointmentTimeException("La duración debe ser mayor a 0 minutos");
         }
         
-        if (durationMinutes > MAX_DURATION_MINUTES) {
-            throw new InvalidAppointmentTimeException(
-                    "La duración máxima de una cita es de " + MAX_DURATION_MINUTES + " minutos");
+        if (minutes % 30 != 0) {
+            throw new InvalidAppointmentTimeException("La duración debe ser en bloques de 30 minutos");
         }
         
-        // Debe ser en múltiplos de 30 minutos
-        if (durationMinutes % 30 != 0) {
-            throw new InvalidAppointmentTimeException(
-                    "La duración debe ser en múltiplos de 30 minutos");
+        if (minutes > 180) {
+            throw new InvalidAppointmentTimeException("La duración máxima de una cita es 180 minutos (3 horas)");
         }
     }
     
     /**
-     * Valida que la hora de finalización esté dentro del horario
-     * @param startTime Hora de inicio
-     * @param durationMinutes Duración en minutos
-     * @throws InvalidAppointmentTimeException Si no es válida
+     * @return Fecha y hora de inicio de la cita
      */
-    private void validateEndTimeInBusinessHours(LocalDateTime startTime, int durationMinutes) {
-        LocalDateTime endTime = startTime.plusMinutes(durationMinutes);
-        LocalTime endTimeOfDay = endTime.toLocalTime();
-        
-        // La cita no debe terminar después de las 18:00
-        if (endTimeOfDay.isAfter(LocalTime.of(18, 0))) {
-            throw new InvalidAppointmentTimeException(
-                    "La cita no puede finalizar después de las 18:00");
-        }
+    public LocalDateTime getStartDateTime() {
+        return startDateTime;
     }
     
-    // Getters - No hay setters para mantener inmutabilidad
-    
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
-    
+    /**
+     * @return Duración en minutos
+     */
     public int getDurationMinutes() {
         return durationMinutes;
     }
     
     /**
-     * Obtiene la hora de finalización de la cita
-     * @return Fecha y hora de finalización
+     * @return Fecha y hora de finalización de la cita
      */
-    public LocalDateTime getEndTime() {
-        return startTime.plusMinutes(durationMinutes);
+    public LocalDateTime getEndDateTime() {
+        return startDateTime.plusMinutes(durationMinutes);
     }
     
     /**
-     * Verifica si esta cita se solapa con otra
-     * @param other Otra cita
-     * @return true si hay solapamiento
+     * Verifica si este horario se superpone con otro
+     * @param other Otro horario de cita
+     * @return true si hay superposición
      */
-    public boolean overlapsWith(AppointmentTime other) {
+    public boolean overlaps(AppointmentTime other) {
         if (other == null) {
             return false;
         }
         
-        LocalDateTime thisEnd = this.getEndTime();
-        LocalDateTime otherEnd = other.getEndTime();
+        LocalDateTime thisEnd = this.getEndDateTime();
+        LocalDateTime otherStart = other.getStartDateTime();
+        LocalDateTime otherEnd = other.getEndDateTime();
         
-        // Hay solapamiento si:
-        // 1. Esta cita comienza durante la otra
-        // 2. Esta cita termina durante la otra
-        // 3. Esta cita contiene completamente a la otra
-        return (this.startTime.isBefore(otherEnd) && this.startTime.isAfter(other.startTime)) ||
-               (thisEnd.isAfter(other.startTime) && thisEnd.isBefore(otherEnd)) ||
-               (this.startTime.isBefore(other.startTime) && thisEnd.isAfter(otherEnd));
+        // No hay superposición si este termina antes de que el otro comience
+        // o si este comienza después de que el otro termina
+        return !(thisEnd.isBefore(otherStart) || this.startDateTime.isAfter(otherEnd));
     }
     
     /**
-     * Verifica si la cita es en un día específico
-     * @param date Fecha a verificar
-     * @return true si la cita es en esa fecha
+     * Verifica si este horario está dentro del horario laboral estándar
+     * @return true si el horario está dentro del horario laboral (8am-7pm)
      */
-    public boolean isOnDate(java.time.LocalDate date) {
-        return this.startTime.toLocalDate().equals(date);
+    public boolean isWithinBusinessHours() {
+        LocalTime start = startDateTime.toLocalTime();
+        LocalTime end = getEndDateTime().toLocalTime();
+        
+        LocalTime businessStart = LocalTime.of(8, 0);
+        LocalTime businessEnd = LocalTime.of(19, 0);
+        
+        return !start.isBefore(businessStart) && !end.isAfter(businessEnd);
     }
     
     @Override
@@ -170,19 +131,19 @@ public final class AppointmentTime {
         
         AppointmentTime that = (AppointmentTime) o;
         return durationMinutes == that.durationMinutes &&
-               Objects.equals(startTime, that.startTime);
+               Objects.equals(startDateTime, that.startDateTime);
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(startTime, durationMinutes);
+        return Objects.hash(startDateTime, durationMinutes);
     }
     
     @Override
     public String toString() {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-        return "Inicio: " + startTime.format(formatter) + 
-               ", Duración: " + durationMinutes + " minutos, " +
-               "Fin: " + getEndTime().format(formatter);
+        return startDateTime.toLocalDate() + " " + 
+               startDateTime.toLocalTime() + " - " + 
+               getEndDateTime().toLocalTime() + 
+               " (" + durationMinutes + " min)";
     }
 } 

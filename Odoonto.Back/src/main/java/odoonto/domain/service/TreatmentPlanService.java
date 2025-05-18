@@ -1,255 +1,213 @@
 package odoonto.domain.service;
 
 import odoonto.domain.model.aggregates.Odontogram;
-import odoonto.domain.model.entities.Lesion;
+import odoonto.domain.model.aggregates.Patient;
 import odoonto.domain.model.entities.Tooth;
+import odoonto.domain.model.entities.Lesion;
 import odoonto.domain.model.entities.Treatment;
 import odoonto.domain.model.valueobjects.LesionType;
 import odoonto.domain.model.valueobjects.TreatmentType;
+import odoonto.domain.exceptions.DomainException;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 /**
- * Servicio de dominio para planificación de tratamientos dentales.
- * Trabaja con el odontograma, que es un objeto de valor dentro del agregado Patient.
+ * Servicio de dominio para planificar tratamientos dentales.
+ * Encapsula lógica de negocio relacionada con la creación de
+ * planes de tratamiento basados en el odontograma del paciente.
  */
 public class TreatmentPlanService {
+
+    // Mapa de correspondencia entre tipos de lesiones y tratamientos recomendados
+    private static final Map<LesionType, TreatmentType> RECOMMENDED_TREATMENTS = createTreatmentMap();
+    
+    private static Map<LesionType, TreatmentType> createTreatmentMap() {
+        Map<LesionType, TreatmentType> map = new HashMap<>();
+        map.put(LesionType.CARIES_INCIPIENTE, TreatmentType.APLICACION_FLUOR);
+        map.put(LesionType.CARIES_MODERADA, TreatmentType.OBTURACION_RESINA);
+        map.put(LesionType.CARIES_AVANZADA, TreatmentType.ENDODONCIA);
+        map.put(LesionType.MANCHA_BLANCA, TreatmentType.APLICACION_FLUOR);
+        map.put(LesionType.FRACTURA, TreatmentType.RECONSTRUCCION);
+        map.put(LesionType.ABSCESO, TreatmentType.ENDODONCIA);
+        map.put(LesionType.EROSION, TreatmentType.OBTURACION_RESINA);
+        return map;
+    }
     
     /**
-     * Genera un plan de tratamiento priorizado basado en el odontograma
-     * @param odontogram Odontograma del paciente (objeto de valor contenido en el agregado Patient)
-     * @return Lista de tratamientos propuestos ordenados por prioridad
+     * Genera un plan de tratamiento basado en el odontograma del paciente
+     * @param patient Paciente para el que se genera el plan
+     * @return Lista de tratamientos recomendados ordenados por prioridad
      */
-    public List<ProposedTreatment> generateTreatmentPlan(Odontogram odontogram) {
-        List<ProposedTreatment> treatmentPlan = new ArrayList<>();
+    public List<Map<String, Object>> generateTreatmentPlan(Patient patient) {
+        if (patient == null) {
+            throw new DomainException("No se puede generar un plan de tratamiento sin paciente");
+        }
         
-        // 1. Recopilar todas las lesiones que requieren tratamiento
+        Odontogram odontogram = patient.getOdontogram();
+        if (odontogram == null) {
+            throw new DomainException("El paciente no tiene odontograma registrado");
+        }
+        
+        List<Map<String, Object>> treatmentPlan = new ArrayList<>();
+        
+        // Procesar cada diente con lesiones
         for (Tooth tooth : odontogram.getTeeth()) {
-            for (Lesion lesion : tooth.getLesions()) {
-                // Determinar el tratamiento adecuado para la lesión
-                TreatmentType recommendedType = recommendTreatmentForLesion(lesion.getType());
-                if (recommendedType != null) {
-                    // Crear propuesta de tratamiento
-                    ProposedTreatment proposal = new ProposedTreatment(
-                            tooth.getNumber(),
-                            lesion.getFace(),
-                            lesion.getType(),
-                            recommendedType,
-                            calculatePriority(lesion.getType())
-                    );
-                    treatmentPlan.add(proposal);
-                }
+            if (!tooth.getLesions().isEmpty()) {
+                // Obtener la lesión más severa para tratamiento prioritario
+                Lesion mostSevereLesion = getMostSevereLesion(tooth.getLesions());
+                
+                // Determinar el tratamiento recomendado
+                TreatmentType recommendedTreatment = getRecommendedTreatment(mostSevereLesion.getType());
+                
+                // Crear entrada para el plan de tratamiento
+                Map<String, Object> treatmentEntry = new HashMap<>();
+                treatmentEntry.put("toothNumber", tooth.getNumber());
+                treatmentEntry.put("lesionType", mostSevereLesion.getType().toString());
+                treatmentEntry.put("recommendedTreatment", recommendedTreatment.toString());
+                treatmentEntry.put("priority", getPriorityLevel(mostSevereLesion.getType()));
+                treatmentEntry.put("estimatedSessions", getEstimatedSessions(recommendedTreatment));
+                treatmentEntry.put("notes", generateNotes(tooth, mostSevereLesion));
+                
+                treatmentPlan.add(treatmentEntry);
             }
         }
         
-        // 2. Ordenar tratamientos por prioridad (mayor primero)
-        Collections.sort(treatmentPlan, Comparator.comparing(ProposedTreatment::getPriority).reversed());
+        // Ordenar por prioridad (alta a baja)
+        treatmentPlan.sort(Comparator.comparing(entry -> (Integer) entry.get("priority")));
         
         return treatmentPlan;
     }
     
     /**
-     * Genera un plan de tratamiento por fases
-     * @param odontogram Odontograma del paciente
-     * @return Lista de fases de tratamiento
+     * Obtiene la lesión más severa de una lista de lesiones
+     * @param lesions Lista de lesiones a evaluar
+     * @return La lesión más severa
      */
-    public List<TreatmentPhase> generatePhasedTreatmentPlan(Odontogram odontogram) {
-        List<TreatmentPhase> phases = new ArrayList<>();
-        
-        // Fase 1: Urgencias - Alivio del dolor y tratamientos de emergencia
-        TreatmentPhase emergencyPhase = new TreatmentPhase("Fase de Urgencias", 1);
-        
-        // Fase 2: Control de infección - Eliminar caries y focos infecciosos
-        TreatmentPhase infectionControlPhase = new TreatmentPhase("Control de Infección", 2);
-        
-        // Fase 3: Rehabilitación - Restauraciones definitivas
-        TreatmentPhase rehabilitationPhase = new TreatmentPhase("Fase de Rehabilitación", 3);
-        
-        // Fase 4: Mantenimiento - Controles y prevención
-        TreatmentPhase maintenancePhase = new TreatmentPhase("Fase de Mantenimiento", 4);
-        
-        // Asignar tratamientos a las fases correspondientes
-        for (Tooth tooth : odontogram.getTeeth()) {
-            for (Lesion lesion : tooth.getLesions()) {
-                TreatmentType recommendedType = recommendTreatmentForLesion(lesion.getType());
-                if (recommendedType != null) {
-                    ProposedTreatment treatment = new ProposedTreatment(
-                            tooth.getNumber(),
-                            lesion.getFace(),
-                            lesion.getType(),
-                            recommendedType,
-                            calculatePriority(lesion.getType())
-                    );
-                    
-                    // Asignar a la fase correspondiente
-                    assignToPhase(treatment, emergencyPhase, infectionControlPhase, 
-                                 rehabilitationPhase, maintenancePhase);
-                }
-            }
-        }
-        
-        // Añadir fases que contengan tratamientos
-        if (!emergencyPhase.getTreatments().isEmpty()) {
-            phases.add(emergencyPhase);
-        }
-        if (!infectionControlPhase.getTreatments().isEmpty()) {
-            phases.add(infectionControlPhase);
-        }
-        if (!rehabilitationPhase.getTreatments().isEmpty()) {
-            phases.add(rehabilitationPhase);
-        }
-        if (!maintenancePhase.getTreatments().isEmpty()) {
-            phases.add(maintenancePhase);
-        }
-        
-        return phases;
+    private Lesion getMostSevereLesion(List<Lesion> lesions) {
+        return lesions.stream()
+                .max(Comparator.comparing(lesion -> getSeverityLevel(lesion.getType())))
+                .orElseThrow(() -> new DomainException("No se encontraron lesiones para evaluar"));
     }
     
     /**
-     * Asigna un tratamiento propuesto a la fase correspondiente
-     */
-    private void assignToPhase(ProposedTreatment treatment, 
-                              TreatmentPhase emergencyPhase,
-                              TreatmentPhase infectionControlPhase,
-                              TreatmentPhase rehabilitationPhase,
-                              TreatmentPhase maintenancePhase) {
-        // Asignar según el tipo de lesión y tratamiento
-        LesionType lesionType = treatment.getLesionType();
-        TreatmentType treatmentType = treatment.getTreatmentType();
-        
-        if (lesionType == LesionType.PULPITIS || 
-            lesionType == LesionType.ABSCESO || 
-            lesionType == LesionType.FRACTURA) {
-            emergencyPhase.addTreatment(treatment);
-        } else if (lesionType == LesionType.CARIES || 
-                  lesionType == LesionType.CARIES_PROFUNDA) {
-            infectionControlPhase.addTreatment(treatment);
-        } else if (treatmentType.getCategoria() == TreatmentType.Categoria.RESTAURADOR || 
-                  treatmentType.getCategoria() == TreatmentType.Categoria.PROTESICO) {
-            rehabilitationPhase.addTreatment(treatment);
-        } else {
-            maintenancePhase.addTreatment(treatment);
-        }
-    }
-    
-    /**
-     * Recomienda un tipo de tratamiento basado en el tipo de lesión
+     * Obtiene el nivel de severidad de un tipo de lesión
      * @param lesionType Tipo de lesión
-     * @return Tipo de tratamiento recomendado o null si no hay recomendación
+     * @return Valor numérico de severidad (mayor es más severo)
      */
-    private TreatmentType recommendTreatmentForLesion(LesionType lesionType) {
+    private int getSeverityLevel(LesionType lesionType) {
         switch (lesionType) {
-            case CARIES:
-                return TreatmentType.OBTURACION_RESINA;
-            case CARIES_PROFUNDA:
-                return TreatmentType.ENDODONCIA_UNIRRADICULAR;
-            case PULPITIS:
-                return TreatmentType.ENDODONCIA_BIRRADICULAR;
+            case CARIES_AVANZADA:
             case ABSCESO:
-                return TreatmentType.ENDODONCIA_MULTIRRADICULAR;
-            case FRACTURA:
-                return TreatmentType.RECONSTRUCCION;
-            case DESGASTE:
-                return TreatmentType.CORONA;
-            default:
-                return null;
-        }
-    }
-    
-    /**
-     * Calcula la prioridad de tratamiento según el tipo de lesión
-     * @param lesionType Tipo de lesión
-     * @return Nivel de prioridad (1-10, donde 10 es la mayor prioridad)
-     */
-    private int calculatePriority(LesionType lesionType) {
-        switch (lesionType) {
-            case PULPITIS:
-            case ABSCESO:
-                return 10; // Máxima prioridad - Requiere atención inmediata
-            case FRACTURA:
-                return 9;
-            case CARIES_PROFUNDA:
-                return 8;
-            case CARIES:
-                return 7;
-            case DESGASTE:
                 return 5;
-            case TINCION:
+            case FRACTURA:
+                return 4;
+            case CARIES_MODERADA:
                 return 3;
+            case CARIES_INCIPIENTE:
+            case EROSION:
+                return 2;
+            case MANCHA_BLANCA:
             default:
                 return 1;
         }
     }
     
     /**
-     * Clase que representa un tratamiento propuesto como parte de un plan
+     * Obtiene el nivel de prioridad para un tipo de lesión
+     * @param lesionType Tipo de lesión
+     * @return Valor de prioridad (1 es más urgente, 3 es menos urgente)
      */
-    public static class ProposedTreatment {
-        private final int toothNumber;
-        private final String face;
-        private final LesionType lesionType;
-        private final TreatmentType treatmentType;
-        private final int priority;
-        
-        public ProposedTreatment(int toothNumber, String face, LesionType lesionType, 
-                                TreatmentType treatmentType, int priority) {
-            this.toothNumber = toothNumber;
-            this.face = face;
-            this.lesionType = lesionType;
-            this.treatmentType = treatmentType;
-            this.priority = priority;
-        }
-        
-        // Getters
-        public int getToothNumber() { return toothNumber; }
-        public String getFace() { return face; }
-        public LesionType getLesionType() { return lesionType; }
-        public TreatmentType getTreatmentType() { return treatmentType; }
-        public int getPriority() { return priority; }
-        
-        @Override
-        public String toString() {
-            return "Diente " + toothNumber + " (" + face + "): " + 
-                   treatmentType.getNombre() + " para " + lesionType.getNombre();
+    private int getPriorityLevel(LesionType lesionType) {
+        switch (lesionType) {
+            case CARIES_AVANZADA:
+            case ABSCESO:
+            case FRACTURA:
+                return 1; // Alta prioridad
+            case CARIES_MODERADA:
+            case EROSION:
+                return 2; // Media prioridad
+            case CARIES_INCIPIENTE:
+            case MANCHA_BLANCA:
+            default:
+                return 3; // Baja prioridad
         }
     }
     
     /**
-     * Clase que representa una fase de tratamiento
+     * Obtiene el tratamiento recomendado para un tipo de lesión
+     * @param lesionType Tipo de lesión
+     * @return Tipo de tratamiento recomendado
      */
-    public static class TreatmentPhase {
-        private final String name;
-        private final int phaseNumber;
-        private final List<ProposedTreatment> treatments = new ArrayList<>();
-        private LocalDate proposedStartDate;
+    private TreatmentType getRecommendedTreatment(LesionType lesionType) {
+        return RECOMMENDED_TREATMENTS.getOrDefault(lesionType, TreatmentType.EVALUACION);
+    }
+    
+    /**
+     * Estima el número de sesiones necesarias para un tratamiento
+     * @param treatmentType Tipo de tratamiento
+     * @return Número estimado de sesiones
+     */
+    private int getEstimatedSessions(TreatmentType treatmentType) {
+        switch (treatmentType) {
+            case ENDODONCIA:
+                return 2;
+            case CORONA:
+            case RECONSTRUCCION:
+                return 2;
+            case EXTRACCION:
+                return 1;
+            case OBTURACION_RESINA:
+            case OBTURACION_AMALGAMA:
+                return 1;
+            case APLICACION_FLUOR:
+            case SELLANTE:
+                return 1;
+            default:
+                return 1;
+        }
+    }
+    
+    /**
+     * Genera notas adicionales para el tratamiento
+     * @param tooth Diente a tratar
+     * @param lesion Lesión principal
+     * @return Notas para el tratamiento
+     */
+    private String generateNotes(Tooth tooth, Lesion lesion) {
+        StringBuilder notes = new StringBuilder();
         
-        public TreatmentPhase(String name, int phaseNumber) {
-            this.name = name;
-            this.phaseNumber = phaseNumber;
+        // Añadir información sobre la ubicación de la lesión
+        notes.append("Lesión en ").append(lesion.getFace().toString().toLowerCase()).append(". ");
+        
+        // Añadir notas específicas por tipo de lesión
+        switch (lesion.getType()) {
+            case CARIES_AVANZADA:
+                notes.append("Evaluar posible compromiso pulpar. ");
+                break;
+            case ABSCESO:
+                notes.append("Considerar medicación antibiótica previa. ");
+                break;
+            case FRACTURA:
+                notes.append("Evaluar extensión de la fractura. ");
+                break;
+            default:
+                // No se añaden notas adicionales
+                break;
         }
         
-        public void addTreatment(ProposedTreatment treatment) {
-            treatments.add(treatment);
+        // Añadir notas sobre lesiones adicionales en el mismo diente
+        int additionalLesions = tooth.getLesions().size() - 1;
+        if (additionalLesions > 0) {
+            notes.append("El diente presenta ").append(additionalLesions)
+                 .append(" lesión(es) adicional(es) que pueden requerir tratamiento. ");
         }
         
-        // Getters
-        public String getName() { return name; }
-        public int getPhaseNumber() { return phaseNumber; }
-        public List<ProposedTreatment> getTreatments() { return treatments; }
-        public LocalDate getProposedStartDate() { return proposedStartDate; }
-        
-        public void setProposedStartDate(LocalDate proposedStartDate) {
-            this.proposedStartDate = proposedStartDate;
-        }
-        
-        public int getEstimatedSessionCount() {
-            // Estimación básica: 1 sesión cada 2 tratamientos (mínimo 1)
-            return Math.max(1, (int) Math.ceil(treatments.size() / 2.0));
-        }
+        return notes.toString();
     }
 } 

@@ -101,14 +101,68 @@ public class OdontogramService {
     }
     
     /**
-     * Añade una lesión al odontograma
+     * Obtiene un odontograma por su ID para el controlador
+     * @param id ID del odontograma
+     * @return DTO del odontograma o error si no existe
+     */
+    public OdontogramDTO getOdontogramById(String id) {
+        return findById(id).block();
+    }
+    
+    /**
+     * Obtiene un odontograma por su ID de forma reactiva
+     * @param id ID del odontograma
+     * @return Mono con el DTO del odontograma o error si no existe
+     */
+    public Mono<OdontogramDTO> getOdontogramByIdReactive(String id) {
+        return findById(id);
+    }
+    
+    /**
+     * Obtiene el odontograma de un paciente de forma reactiva
      * @param patientId ID del paciente
-     * @param toothId ID del diente
+     * @return Mono con el odontograma del paciente
+     */
+    public Mono<Odontogram> getPatientOdontogramReactive(String patientId) {
+        if (patientId == null || patientId.trim().isEmpty()) {
+            return Mono.error(new IllegalArgumentException("El ID del paciente no puede estar vacío"));
+        }
+        
+        PatientId id = PatientId.of(patientId);
+        return odontogramRepository.findByPatientId(id)
+                .switchIfEmpty(Mono.error(new PatientNotFoundException("No se encontró el odontograma para el paciente con ID " + patientId)));
+    }
+    
+    /**
+     * Añade una lesión al odontograma para el controlador REST
+     * @param odontogramId ID del odontograma
+     * @param toothNumber Número del diente
      * @param face Cara del diente
      * @param lesionType Tipo de lesión
      * @return DTO del odontograma actualizado
      */
-    public Mono<OdontogramDTO> addLesion(String patientId, String toothId, String faceCode, String lesionTypeStr) {
+    public OdontogramDTO addLesion(String odontogramId, int toothNumber, String face, String lesionType) {
+        String toothId = String.valueOf(toothNumber);
+        return addLesionToOdontogram(odontogramId, toothId, face, lesionType).block();
+    }
+    
+    /**
+     * Añade una lesión al odontograma de forma reactiva para el controlador REST reactivo
+     * @param odontogramId ID del odontograma
+     * @param toothNumber Número del diente
+     * @param face Cara del diente
+     * @param lesionType Tipo de lesión
+     * @return Mono con el DTO del odontograma actualizado
+     */
+    public Mono<OdontogramDTO> addLesionReactive(String odontogramId, int toothNumber, String face, String lesionType) {
+        String toothId = String.valueOf(toothNumber);
+        return addLesionToOdontogram(odontogramId, toothId, face, lesionType);
+    }
+    
+    /**
+     * Método interno para añadir una lesión al odontograma
+     */
+    private Mono<OdontogramDTO> addLesionToOdontogram(String patientId, String toothId, String faceCode, String lesionTypeStr) {
         if (patientId == null || patientId.trim().isEmpty()) {
             return Mono.error(new IllegalArgumentException("El ID del paciente no puede estar vacío"));
         }
@@ -157,13 +211,33 @@ public class OdontogramService {
     }
     
     /**
-     * Elimina una lesión del odontograma
-     * @param patientId ID del paciente
-     * @param toothId ID del diente
+     * Elimina una lesión del odontograma para el controlador REST
+     * @param odontogramId ID del odontograma
+     * @param toothNumber Número del diente
      * @param face Cara del diente
      * @return DTO del odontograma actualizado
      */
-    public Mono<OdontogramDTO> removeLesion(String patientId, String toothId, String faceCode) {
+    public OdontogramDTO removeLesion(String odontogramId, int toothNumber, String face) {
+        String toothId = String.valueOf(toothNumber);
+        return removeLesionFromOdontogram(odontogramId, toothId, face).block();
+    }
+    
+    /**
+     * Elimina una lesión del odontograma de forma reactiva para el controlador REST reactivo
+     * @param odontogramId ID del odontograma
+     * @param toothNumber Número del diente
+     * @param face Cara del diente
+     * @return Mono con el DTO del odontograma actualizado
+     */
+    public Mono<OdontogramDTO> removeLesionReactive(String odontogramId, int toothNumber, String face) {
+        String toothId = String.valueOf(toothNumber);
+        return removeLesionFromOdontogram(odontogramId, toothId, face);
+    }
+    
+    /**
+     * Método interno para eliminar una lesión del odontograma
+     */
+    private Mono<OdontogramDTO> removeLesionFromOdontogram(String patientId, String toothId, String faceCode) {
         if (patientId == null || patientId.trim().isEmpty()) {
             return Mono.error(new IllegalArgumentException("El ID del paciente no puede estar vacío"));
         }
@@ -201,6 +275,31 @@ public class OdontogramService {
         } catch (IllegalArgumentException e) {
             return Mono.error(new IllegalArgumentException("Valor inválido: " + e.getMessage()));
         }
+    }
+    
+    /**
+     * Añade un tratamiento a un diente
+     * @param odontogramId ID del odontograma
+     * @param toothNumber Número del diente
+     * @param treatmentType Tipo de tratamiento
+     * @return DTO del odontograma actualizado
+     */
+    public OdontogramDTO addTreatment(String odontogramId, int toothNumber, String treatmentType) {
+        String toothId = String.valueOf(toothNumber);
+        // Implementar lógica para añadir tratamiento
+        return null; // Implementación pendiente
+    }
+    
+    /**
+     * Elimina un tratamiento de un diente
+     * @param odontogramId ID del odontograma
+     * @param toothNumber Número del diente
+     * @return DTO del odontograma actualizado
+     */
+    public OdontogramDTO removeTreatment(String odontogramId, int toothNumber) {
+        String toothId = String.valueOf(toothNumber);
+        // Implementar lógica para eliminar tratamiento
+        return null; // Implementación pendiente
     }
     
     /**
