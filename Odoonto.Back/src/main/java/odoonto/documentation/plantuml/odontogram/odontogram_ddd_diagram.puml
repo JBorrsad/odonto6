@@ -1,243 +1,179 @@
-@startuml Odontogram - Diagrama DDD End-to-End
+@startuml
 
-!theme plain
-skinparam Stereotype {
-  BackgroundColor white
-  BorderColor black
-}
-skinparam StereotypeN {
-  BackgroundColor white
-  BorderColor black
-}
-skinparam UseCaseStereotype {
-  FontColor black
-  FontName Verdana
-}
-skinparam linetype ortho
-skinparam packageStyle rectangle
-skinparam classAttributeIconSize 0
-skinparam shadowing false
+title Arquitectura DDD: Odontogram
 
-package "Domain" as domain #e1f5fe {
-  class Odontogram {
-    - id: OdontogramId
-    - teeth: Map<String,ToothRecord>
-    - PERMANENT_IDS: int[]
-    - TEMPORARY_IDS: int[]
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+scale max 1024 width
+left to right direction
 
-    + addLesion(String toothId, ToothFace face, LesionType lesionType): void
-    + removeLesion(String toothId, ToothFace face): void
-    + getLesionesForTooth(String toothId): Map<String,LesionType>
-    - validateToothId(String toothId): void
-    - isValidToothId(int id): boolean
-    + getId(): OdontogramId
-    + setId(OdontogramId id): void
-    + extractPatientId(): PatientId
-    + getIdValue(): String
-    + getTeeth(): Map<String,ToothRecord>
-    + setTeeth(Map<String,ToothRecord> teeth): void
-  }
-  class OdontogramId {
-    - value: String
+package "Presentation" as presentation #lightgray {
+  class OdontogramController {
+    - odontogramService: OdontogramService
+    - patientOdontogramUseCase: PatientOdontogramUseCase
 
-    + of(String value): OdontogramId
-    + generate(): OdontogramId
-    + fromPatientId(PatientId patientId): OdontogramId
-    + extractPatientId(): PatientId
-    + isDerivedFromPatient(): boolean
-    + getValue(): String
-    + equals(Object o): boolean
-    + hashCode(): int
-    + toString(): String
+    + getOdontogramById()
+    + getPatientOdontogram()
+    .. más métodos ..
   }
 }
 
-package "Application" as application #e0f7fa {
+package "Application" as application #lightgreen {
   class OdontogramUpdateDTO {
-    - id: String
-    - patientId: String
-    - teethLesions: Map<String,List<LesionCreateDTO>>
+    - id: str
+    - patientId: str
+    .. más campos ..
 
-    + getId(): String
-    + setId(String id): void
-    + getPatientId(): String
-    + setPatientId(String patientId): void
-    + getTeethLesions(): Map<String,List<LesionCreateDTO>>
-    + setTeethLesions(Map<String,List<LesionCreateDTO>> teethLesions): void
-    + toString(): String
+    + getId()
+    + setId()
+    .. más métodos ..
   }
   class OdontogramDTO {
-    - id: String
-    - patientId: String
-    - teeth: Map<String,ToothRecordDTO>
+    - id: str
+    - patientId: str
+    .. más campos ..
 
-    + getId(): String
-    + setId(String id): void
-    + getPatientId(): String
-    + setPatientId(String patientId): void
-    + getTeeth(): Map<String,ToothRecordDTO>
-    + setTeeth(Map<String,ToothRecordDTO> teeth): void
+    + getId()
+    + setId()
+    .. más métodos ..
   }
-  class OdontogramNotFoundException {
-  }
+  class OdontogramNotFoundException
   class OdontogramMapper {
-    + toDTO(Odontogram odontogram): OdontogramDTO
-    + updateFromDTO(OdontogramDTO dto, Odontogram existingOdontogram): Odontogram
-    + toDomain(OdontogramDTO dto): Odontogram
-    + applyLesionCommand(Odontogram odontogram, LesionCreateDTO lesionDTO): void
-    + removeLesion(Odontogram odontogram, LesionCreateDTO lesionDTO): void
+    + toDTO()
+    + updateFromDTO()
+    .. más métodos ..
   }
   interface OdontogramQueryUseCase {
-    ~ findById(String odontogramId): Mono<OdontogramDTO>
-    ~ findByPatientId(String patientId): Mono<OdontogramDTO>
-    ~ findAll(): Flux<OdontogramDTO>
-    ~ existsById(String odontogramId): Mono<Boolean>
-    ~ existsByPatientId(String patientId): Mono<Boolean>
+    ~ findById()
+    ~ findByPatientId()
+    .. más métodos ..
   }
   interface PatientOdontogramUseCase {
-    ~ getPatientOdontogram(String patientId): Mono<Odontogram>
-    ~ getPatientOdontogramDTO(String patientId): Mono<OdontogramDTO>
-    ~ getPatientMedicalRecord(String patientId): Mono<MedicalRecordId>
-    ~ getPatientMedicalRecordDTO(String patientId): Mono<MedicalRecordDTO>
+    ~ getPatientOdontogram()
+    ~ getPatientOdontogramDTO()
+    .. más métodos ..
   }
   interface ReactiveOdontogramRepository {
-    ~ findAll(): Flux<Odontogram>
-    ~ findById(OdontogramId id): Mono<Odontogram>
-    ~ findByPatientId(PatientId patientId): Mono<Odontogram>
-    ~ save(Odontogram odontogram): Mono<Odontogram>
-    ~ deleteById(OdontogramId id): Mono<Void>
-    ~ findByLesionType(LesionType lesionType): Flux<Odontogram>
-    ~ existsByPatientId(PatientId patientId): Mono<Boolean>
-    ~ deleteByPatientId(PatientId patientId): Mono<Void>
-    ~ createHistoricalCopy(OdontogramId odontogramId): Mono<String>
-    ~ findHistoryByPatientId(PatientId patientId): Flux<Odontogram>
-    ~ findHistoricalByPatientIdAndVersion(PatientId patientId, String version): Mono<Odontogram>
-    ~ updateTooth(String patientId, String toothNumber, Tooth tooth): Mono<Boolean>
-    ~ removeLesion(String odontogramId, String toothNumber, String lesionId): Mono<Void>
-    ~ addTreatment(String odontogramId, String toothNumber, Object treatmentData): Mono<Void>
-    ~ removeTreatment(String odontogramId, String toothNumber, String treatmentId): Mono<Void>
-    ~ findById(String id): Mono<Odontogram>
-    ~ findByPatientId(String patientId): Mono<Odontogram>
+    ~ findAll()
+    ~ findById()
+    .. más métodos ..
   }
   class OdontogramQueryService {
     - odontogramRepository: ReactiveOdontogramRepository
     - odontogramMapper: OdontogramMapper
 
-    + findById(String odontogramId): Mono<OdontogramDTO>
-    + findByPatientId(String patientId): Mono<OdontogramDTO>
-    + findAll(): Flux<OdontogramDTO>
-    + existsById(String odontogramId): Mono<Boolean>
-    + existsByPatientId(String patientId): Mono<Boolean>
-    + getOdontogramOrThrow(String odontogramId): Mono<Odontogram>
-    + getOdontogramByPatientIdOrThrow(String patientId): Mono<Odontogram>
+    + findById()
+    + findByPatientId()
+    .. más métodos ..
   }
   class OdontogramService {
     - odontogramRepository: ReactiveOdontogramRepository
     - odontogramMapper: OdontogramMapper
 
-    + findAll(): Flux<OdontogramDTO>
-    + findById(String id): Mono<OdontogramDTO>
-    + findByPatientId(String patientId): Mono<OdontogramDTO>
-    + createForPatient(String patientId): Mono<OdontogramDTO>
-    + getOdontogramById(String id): Mono<OdontogramDTO>
-    + getOdontogramByIdReactive(String id): Mono<OdontogramDTO>
-    + getPatientOdontogramReactive(String patientId): Mono<Odontogram>
-    + addLesion(String odontogramId, int toothNumber, String face, String lesionType): Mono<OdontogramDTO>
-    + addLesionReactive(String odontogramId, int toothNumber, String face, String lesionType): Mono<OdontogramDTO>
-    - addLesionToOdontogram(String patientId, String toothId, String faceCode, String lesionTypeStr): Mono<OdontogramDTO>
-    + removeLesion(String odontogramId, int toothNumber, String face): Mono<OdontogramDTO>
-    + removeLesionReactive(String odontogramId, int toothNumber, String face): Mono<OdontogramDTO>
-    - removeLesionFromOdontogram(String patientId, String toothId, String faceCode): Mono<OdontogramDTO>
-    + addTreatment(String odontogramId, int toothNumber, String treatmentType): Mono<OdontogramDTO>
-    + removeTreatment(String odontogramId, int toothNumber): Mono<OdontogramDTO>
-    + getHistory(String patientId): Flux<OdontogramDTO>
-    + getHistoricalVersion(String patientId, String version): Mono<OdontogramDTO>
+    + findAll()
+    + findById()
+    .. más métodos ..
   }
   class PatientOdontogramService {
     - patientRepository: ReactivePatientRepository
     - odontogramRepository: ReactiveOdontogramRepository
-    - medicalRecordRepository: ReactiveMedicalRecordRepository
-    - odontogramMapper: OdontogramMapper
-    - medicalRecordMapper: MedicalRecordMapper
+    .. más campos ..
 
-    + getPatientOdontogram(String patientId): Mono<Odontogram>
-    + getPatientOdontogramDTO(String patientId): Mono<OdontogramDTO>
-    + getPatientMedicalRecordDTO(String patientId): Mono<MedicalRecordDTO>
-    + getPatientMedicalRecord(String patientId): Mono<MedicalRecordId>
+    + getPatientOdontogram()
+    + getPatientOdontogramDTO()
+    .. más métodos ..
   }
 }
 
-package "Presentation" as presentation #fff8e1 {
-  class OdontogramController {
-    - odontogramService: OdontogramService
-    - patientOdontogramUseCase: PatientOdontogramUseCase
+package "Domain" as domain #lightblue {
+  class Odontogram {
+    - id: OdontogramId
+    - teeth: Map<...>
+    .. más campos ..
 
-    + getOdontogramById(String id): Mono<ResponseEntity<OdontogramDTO>>
-    + getPatientOdontogram(String patientId): Mono<Odontogram>
-    + addLesion(String id, int toothNumber, String face, String lesionType): Mono<ResponseEntity<OdontogramDTO>>
-    + removeLesion(String id, int toothNumber, String face): Mono<ResponseEntity<OdontogramDTO>>
-    + addTreatment(String id, int toothNumber, String treatmentType): Mono<ResponseEntity<OdontogramDTO>>
-    + removeTreatment(String id, int toothNumber): Mono<ResponseEntity<OdontogramDTO>>
+    + addLesion()
+    + removeLesion()
+    .. más métodos ..
+  }
+  class OdontogramId {
+    - value: str
+
+    + of()
+    + generate()
+    .. más métodos ..
+  }
+  class Odontogram {
+    - id: OdontogramId
+    - teeth: Map<...>
+    .. más campos ..
+
+    + addLesion()
+    + removeLesion()
+    .. más métodos ..
+  }
+  class OdontogramId {
+    - value: str
+
+    + of()
+    + generate()
+    .. más métodos ..
+  }
+  class DentalDiagnosisService {
+    + generateDiagnosis()
+    - countLesionsByType()
+    .. más métodos ..
+  }
+  class DentalDiagnosisService {
+    + generateDiagnosis()
+    - countLesionsByType()
+    .. más métodos ..
   }
 }
 
-package "Infrastructure" as infrastructure #f1f8e9 {
+package "Infrastructure" as infrastructure #lightyellow {
   class FirestoreOdontogramEntity {
-    - id: String
-    - patientId: String
-    - dientes: Map<String,Object>
-    - fechaCreacion: String
-    - fechaActualizacion: String
+    - id: str
+    - patientId: str
+    .. más campos ..
 
-    + getId(): String
-    + setId(String id): void
-    + getPatientId(): String
-    + setPatientId(String patientId): void
-    + getDientes(): Map<String,Object>
-    + setDientes(Map<String,Object> dientes): void
-    + getFechaCreacion(): String
-    + setFechaCreacion(String fechaCreacion): void
-    + getFechaActualizacion(): String
-    + setFechaActualizacion(String fechaActualizacion): void
+    + getId()
+    + setId()
+    .. más métodos ..
   }
   class ReactiveOdontogramRepositoryAdapter {
-    - odontogramsCollection: CollectionReference
-    - historicalOdontogramsCollection: CollectionReference
+    - odontogramsCollection: CollReference
+    - historicalOdontogramsCollection: CollReference
 
-    + findAll(): Flux<Odontogram>
-    + findById(OdontogramId id): Mono<Odontogram>
-    + findByPatientId(PatientId patientId): Mono<Odontogram>
-    + save(Odontogram odontogram): Mono<Odontogram>
-    + deleteById(OdontogramId id): Mono<Void>
-    + findByLesionType(LesionType lesionType): Flux<Odontogram>
-    - containsLesionType(Odontogram odontogram, LesionType lesionType): boolean
-    + existsByPatientId(PatientId patientId): Mono<Boolean>
-    + deleteByPatientId(PatientId patientId): Mono<Void>
-    + createHistoricalCopy(OdontogramId odontogramId): Mono<String>
-    + findHistoryByPatientId(PatientId patientId): Flux<Odontogram>
-    + findHistoricalByPatientIdAndVersion(PatientId patientId, String version): Mono<Odontogram>
-    + updateTooth(String patientId, String toothNumber, Tooth tooth): Mono<Boolean>
-    + removeLesion(String odontogramId, String toothNumber, String lesionId): Mono<Void>
-    + addTreatment(String odontogramId, String toothNumber, Object treatmentData): Mono<Void>
-    + removeTreatment(String odontogramId, String toothNumber, String treatmentId): Mono<Void>
-    - mapToOdontogram(DocumentSnapshot document): Odontogram
-    - mapToFirestore(Odontogram odontogram): Map<String,Object>
-    - mapToothToFirestore(Tooth tooth): Map<String,Object>
+    + findAll()
+    + findById()
+    .. más métodos ..
   }
 }
 
-' Relaciones entre clases
+' Dependencias entre capas de arquitectura
+presentation --> application
+application --> domain
+infrastructure --> domain
+infrastructure --> application
+
+' Relaciones entre clases principales
 Odontogram --> OdontogramId
-OdontogramQueryService --> ReactiveOdontogramRepository
-OdontogramQueryService --> OdontogramMapper
-OdontogramQueryService ..|> OdontogramQueryUseCase
-OdontogramService --> ReactiveOdontogramRepository
-OdontogramService --> OdontogramMapper
-PatientOdontogramService --> ReactiveOdontogramRepository
-PatientOdontogramService --> OdontogramMapper
-PatientOdontogramService ..|> PatientOdontogramUseCase
+Odontogram --> OdontogramId
+ReactiveOdontogramRepositoryAdapter ..|> ReactiveOdontogramRepository
 OdontogramController --> OdontogramService
 OdontogramController --> PatientOdontogramUseCase
-ReactiveOdontogramRepositoryAdapter ..|> ReactiveOdontogramRepository
+OdontogramQueryService ..|> OdontogramQueryUseCase
+PatientOdontogramService ..|> PatientOdontogramUseCase
+OdontogramService --> OdontogramMapper
+OdontogramQueryService --> OdontogramMapper
+OdontogramService --> ReactiveOdontogramRepository
+OdontogramQueryService --> ReactiveOdontogramRepository
+PatientOdontogramService --> ReactiveOdontogramRepository
+PatientOdontogramService --> OdontogramMapper
+legend right
+  Arquitectura Domain-Driven Design
+  Entidad: Odontogram
+endlegend
 
 @enduml

@@ -1,284 +1,257 @@
-@startuml Appointment - Architecture
+@startuml
 
-' Configuración de diseño
+title Arquitectura DDD: Appointment
+
 skinparam backgroundColor white
 skinparam defaultFontName Arial
 skinparam defaultFontSize 12
 scale max 1024 width
 left to right direction
-skinparam packageStyle rectangle
-skinparam classBorderColor black
-skinparam packageBorderColor black
-skinparam nodesep 20
-skinparam ranksep 30
-title Arquitectura DDD: Appointment
 
 package "Presentation" as presentation #lightgray {
-  together {
-    layout_as_sketch
-    class AppointmentController {
-      - appointmentService: AppointmentService
+  class AppointmentController {
+    - appointmentService: AppointmentService
 
-      + createAppointment(...): Mono<AppointmentDTO>
-      + updateAppointment(...): Mono<AppointmentDTO>
-      .. 7 más ..
-    }
+    + getAllAppointments()
+    + getAppointmentById()
+    .. más métodos ..
   }
-
 }
 
 package "Application" as application #lightgreen {
-  together {
-    layout_as_sketch
-    class AppointmentDTO {
-      - id: str
-      - patientId: str
-      - doctorId: str
-      .. 7 más ..
+  class AppointmentCreateDTO {
+    - doctorId: str
+    - patientId: str
+    .. más campos ..
 
-      + getId(): str
-      .. 19 más ..
-    }
-    class AppointmentCreateDTO {
-      - doctorId: str
-      - patientId: str
-      .. 4 más ..
-
-      + getDoctorId(): str
-      .. 11 más ..
-    }
-    class ReactiveAppointmentValidationService {
-      - appointmentRepository: ReactiveAppointmentRepository
-      - doctorRepository: ReactiveDoctorRepository
-      .. 4 más ..
-
-      + validateNewAppointment(...): Mono<Void>
-      + validateAppointmentUpdate(...): Mono<Void>
-      .. 3 más ..
-    }
-    class AppointmentService {
-      - appointmentRepository: ReactiveAppointmentRepository
-      - patientRepository: ReactivePatientRepository
-      .. 2 más ..
-
-      + createAppointment(...): Mono<AppointmentDTO>
-      + updateAppointment(...): Mono<AppointmentDTO>
-      .. 4 más ..
-    }
+    + getDoctorId()
+    + setDoctorId()
+    .. más métodos ..
   }
+  class AppointmentDTO {
+    - id: str
+    - patientId: str
+    .. más campos ..
 
-  together {
-    layout_as_sketch
-    interface ReactiveAppointmentRepository {
-      .. 9 más ..
-    }
-    class AppointmentQueryService {
-      - appointmentRepository: ReactiveAppointmentRepository
-      - appointmentMapper: AppointmentMapper
-
-      + findById(...): Mono<AppointmentDTO>
-      + findAll(): Flux<AppointmentDTO>
-      .. 2 más ..
-    }
-    class AppointmentCreateService {
-      - appointmentRepository: ReactiveAppointmentRepository
-      - doctorRepository: ReactiveDoctorRepository
-      .. 2 más ..
-
-      + createAppointment(...): Mono<AppointmentDTO>
-    }
-    class AppointmentUpdateService {
-      - appointmentRepository: ReactiveAppointmentRepository
-      - doctorRepository: ReactiveDoctorRepository
-      .. 2 más ..
-
-      + updateAppointment(...): Mono<AppointmentDTO>
-    }
+    + getId()
+    + setId()
+    .. más métodos ..
   }
-
-  together {
-    layout_as_sketch
-    interface AppointmentQueryUseCase {
-      .. 4 más ..
-    }
-    class AppointmentMapper {
-      + toDTO(...): AppointmentDTO
-      .. 2 más ..
-    }
-    class AppointmentCancelService {
-      - appointmentRepository: ReactiveAppointmentRepository
-
-      + cancelAppointment(...): Mono<Void>
-    }
-    interface AppointmentCancelUseCase {
-      ~ cancelAppointment(...): Mono<Void>
-    }
+  class AppointmentConflictException
+  class AppointmentMapper {
+    + toDTO()
+    + toEntity()
+    .. más métodos ..
   }
-
-  together {
-    layout_as_sketch
-    interface AppointmentCreateUseCase {
-      ~ createAppointment(...): Mono<AppointmentDTO>
-    }
-    interface AppointmentUpdateUseCase {
-      ~ updateAppointment(...): Mono<AppointmentDTO>
-    }
-    class AppointmentConflictException {
-    }
+  interface AppointmentCancelUseCase {
+    ~ cancelAppointment()
   }
+  interface AppointmentCreateUseCase {
+    ~ createAppointment()
+  }
+  interface AppointmentQueryUseCase {
+    ~ findById()
+    ~ findAll()
+    .. más métodos ..
+  }
+  interface AppointmentUpdateUseCase {
+    ~ updateAppointment()
+  }
+  interface ReactiveAppointmentRepository {
+    ~ findById()
+    ~ save()
+    .. más métodos ..
+  }
+  class AppointmentCancelService {
+    - appointmentRepository: ReactiveAppointmentRepository
 
+    + cancelAppointment()
+  }
+  class AppointmentCreateService {
+    - appointmentRepository: ReactiveAppointmentRepository
+    - doctorRepository: ReactiveDoctorRepository
+    .. más campos ..
+
+    + createAppointment()
+  }
+  class AppointmentQueryService {
+    - appointmentRepository: ReactiveAppointmentRepository
+    - appointmentMapper: AppointmentMapper
+
+    + findById()
+    + findAll()
+    .. más métodos ..
+  }
+  class AppointmentUpdateService {
+    - appointmentRepository: ReactiveAppointmentRepository
+    - doctorRepository: ReactiveDoctorRepository
+    .. más campos ..
+
+    + updateAppointment()
+  }
+  class AppointmentService {
+    - appointmentRepository: ReactiveAppointmentRepository
+    - patientRepository: ReactivePatientRepository
+    .. más campos ..
+
+    + getAllAppointments()
+    + getAppointmentById()
+    .. más métodos ..
+  }
+  class ReactiveAppointmentValidationService {
+    - appointmentRepository: ReactiveAppointmentRepository
+    - doctorRepository: ReactiveDoctorRepository
+    .. más campos ..
+
+    + validateNewAppointment()
+    + validateAppointmentUpdate()
+    .. más métodos ..
+  }
 }
 
 package "Domain" as domain #lightblue {
-  together {
-    layout_as_sketch
-    class Appointment {
-      - id: str
-      - patientId: str
-      - doctorId: str
-      .. 4 más ..
+  class AppointmentScheduledEvent {
+    - appointmentId: str
+    - patientId: str
+    .. más campos ..
 
-      - validateAppointmentTime(...)
-      .. 25 más ..
-    }
-    class Appointment {
-      - id: str
-      - patientId: str
-      - doctorId: str
-      .. 4 más ..
-
-      - validateAppointmentTime(...)
-      .. 25 más ..
-    }
-    class AppointmentTime {
-      - startDateTime: LocalDateTime
-      - durationMinutes: int
-
-      - validateStartDateTime(...)
-      .. 9 más ..
-    }
-    class AppointmentTime {
-      - startDateTime: LocalDateTime
-      - durationMinutes: int
-
-      - validateStartDateTime(...)
-      .. 9 más ..
-    }
-    class AppointmentScheduledEvent {
-      - appointmentId: str
-      - patientId: str
-      - doctorId: str
-      .. 2 más ..
-
-      + getAppointmentId(): str
-      .. 5 más ..
-    }
+    + getAppointmentId()
+    + getPatientId()
+    .. más métodos ..
   }
+  class AppointmentStatusChangedEvent {
+    - appointmentId: str
+    - previousStatus: AppointmentStatus
+    .. más campos ..
 
-  together {
-    layout_as_sketch
-    class AppointmentStatusChangedEvent {
-      - appointmentId: str
-      .. 4 más ..
-
-      + getAppointmentId(): str
-      .. 5 más ..
-    }
-    class AppointmentScheduledEvent {
-      - appointmentId: str
-      - patientId: str
-      - doctorId: str
-      .. 2 más ..
-
-      + getAppointmentId(): str
-      .. 5 más ..
-    }
-    class AppointmentStatusChangedEvent {
-      - appointmentId: str
-      .. 4 más ..
-
-      + getAppointmentId(): str
-      .. 5 más ..
-    }
-    class AppointmentOverlapException {
-      - appointmentId1: str
-      - appointmentId2: str
-      - doctorId: str
-      .. 1 más ..
-
-      + getAppointmentId1(): str
-      .. 5 más ..
-    }
-    class AppointmentOverlapException {
-      - appointmentId1: str
-      - appointmentId2: str
-      - doctorId: str
-      .. 1 más ..
-
-      + getAppointmentId1(): str
-      .. 5 más ..
-    }
+    + getAppointmentId()
+    + getPreviousStatus()
+    .. más métodos ..
   }
+  class AppointmentOverlapException {
+    - FORMATTER: DateTimeFormatter
+    - appointmentId1: str
+    .. más campos ..
 
-  together {
-    layout_as_sketch
-    class AppointmentSpecification {
-      + byDoctor(...): Specification<Appointment>
-      .. 8 más ..
-    }
-    class AppointmentSpecification {
-      + byDoctor(...): Specification<Appointment>
-      .. 8 más ..
-    }
-    class AppointmentId {
-      - value: str
-
-      + generate(): AppointmentId
-      .. 6 más ..
-    }
-    class AppointmentId {
-      - value: str
-
-      + generate(): AppointmentId
-      .. 6 más ..
-    }
-    class InvalidAppointmentTimeException {
-    }
+    + getAppointmentId1()
+    + getAppointmentId2()
+    .. más métodos ..
   }
+  class InvalidAppointmentTimeException
+  class Appointment {
+    - id: str
+    - patientId: str
+    .. más campos ..
 
-  together {
-    layout_as_sketch
-    class InvalidAppointmentTimeException {
-    }
-    class DoctorSchedule {
-      .. 4 más ..
-      + isTimeInSchedule(...): boolean
-      .. 8 más ..
-    }
+    - validateAppointmentTime()
+    - validateIds()
+    .. más métodos ..
   }
+  class AppointmentId {
+    - value: str
 
+    + generate()
+    + of()
+    .. más métodos ..
+  }
+  class AppointmentTime {
+    - startDateTime: LocalDateTime
+    - durationMinutes: int
+
+    - validateStartDateTime()
+    - validateDuration()
+    .. más métodos ..
+  }
+  class AppointmentSpecification {
+    + byDoctor()
+    + byPatient()
+    .. más métodos ..
+  }
+  class AppointmentScheduledEvent {
+    - appointmentId: str
+    - patientId: str
+    .. más campos ..
+
+    + getAppointmentId()
+    + getPatientId()
+    .. más métodos ..
+  }
+  class AppointmentStatusChangedEvent {
+    - appointmentId: str
+    - previousStatus: AppointmentStatus
+    .. más campos ..
+
+    + getAppointmentId()
+    + getPreviousStatus()
+    .. más métodos ..
+  }
+  class AppointmentOverlapException {
+    - FORMATTER: DateTimeFormatter
+    - appointmentId1: str
+    .. más campos ..
+
+    + getAppointmentId1()
+    + getAppointmentId2()
+    .. más métodos ..
+  }
+  class InvalidAppointmentTimeException
+  class Appointment {
+    - id: str
+    - patientId: str
+    .. más campos ..
+
+    - validateAppointmentTime()
+    - validateIds()
+    .. más métodos ..
+  }
+  class AppointmentId {
+    - value: str
+
+    + generate()
+    + of()
+    .. más métodos ..
+  }
+  class AppointmentTime {
+    - startDateTime: LocalDateTime
+    - durationMinutes: int
+
+    - validateStartDateTime()
+    - validateDuration()
+    .. más métodos ..
+  }
+  class AppointmentSpecification {
+    + byDoctor()
+    + byPatient()
+    .. más métodos ..
+  }
+  class DoctorSchedule {
+    - dayOfWeek: DayOfWeek
+    - startTime: LocalTime
+    .. más campos ..
+
+    + isTimeInSchedule()
+    + isRangeInSchedule()
+    .. más métodos ..
+  }
 }
 
 package "Infrastructure" as infrastructure #lightyellow {
-  together {
-    layout_as_sketch
-    class FirestoreAppointmentEntity {
-      - id: str
-      - patientId: str
-      - doctorId: str
-      .. 6 más ..
+  class FirestoreAppointmentEntity {
+    - id: str
+    - patientId: str
+    .. más campos ..
 
-      + getId(): str
-      .. 17 más ..
-    }
-    class ReactiveAppointmentRepositoryAdapter {
-      - appointmentsCollection: CollReference
-
-      + findById(...): Mono<Appointment>
-      .. 11 más ..
-    }
+    + getId()
+    + setId()
+    .. más métodos ..
   }
+  class ReactiveAppointmentRepositoryAdapter {
+    - appointmentsCollection: CollReference
 
+    + findById()
+    + save()
+    .. más métodos ..
+  }
 }
 
 ' Dependencias entre capas de arquitectura
@@ -288,24 +261,24 @@ infrastructure --> domain
 infrastructure --> application
 
 ' Relaciones entre clases principales
-ReactiveAppointmentRepositoryAdapter ..|> ReactiveAppointmentRepository : implements
+ReactiveAppointmentRepositoryAdapter ..|> ReactiveAppointmentRepository
 AppointmentController --> AppointmentService
-AppointmentCancelService ..|> AppointmentCancelUseCase : implements
-AppointmentUpdateService ..|> AppointmentUpdateUseCase : implements
-AppointmentQueryService ..|> AppointmentQueryUseCase : implements
-AppointmentCreateService ..|> AppointmentCreateUseCase : implements
+AppointmentCreateService ..|> AppointmentCreateUseCase
+AppointmentCancelService ..|> AppointmentCancelUseCase
+AppointmentQueryService ..|> AppointmentQueryUseCase
+AppointmentUpdateService ..|> AppointmentUpdateUseCase
+AppointmentQueryService --> ReactiveAppointmentRepository
+AppointmentService --> AppointmentMapper
+ReactiveAppointmentValidationService --> ReactiveAppointmentRepository
+AppointmentCreateService --> AppointmentMapper
+AppointmentService --> ReactiveAppointmentRepository
+AppointmentQueryService --> AppointmentMapper
 AppointmentCreateService --> ReactiveAppointmentRepository
 AppointmentCancelService --> ReactiveAppointmentRepository
-AppointmentCreateService --> AppointmentMapper
-AppointmentUpdateService --> ReactiveAppointmentRepository
-ReactiveAppointmentValidationService --> ReactiveAppointmentRepository
-AppointmentQueryService --> ReactiveAppointmentRepository
 AppointmentUpdateService --> AppointmentMapper
-AppointmentService --> ReactiveAppointmentRepository
-AppointmentService --> AppointmentMapper
 legend right
-  **Arquitectura Domain-Driven Design**
-  Entidad principal: Appointment
+  Arquitectura Domain-Driven Design
+  Entidad: Appointment
 endlegend
 
 @enduml

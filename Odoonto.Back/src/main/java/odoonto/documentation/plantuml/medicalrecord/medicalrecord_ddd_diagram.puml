@@ -209,11 +209,11 @@ ReactiveMedicalRecordRepositoryAdapter ..|> ReactiveMedicalRecordRepository
 MedicalRecordController --> MedicalRecordQueryUseCase
 MedicalRecordCreateService ..|> MedicalRecordCreateUseCase
 MedicalRecordQueryService ..|> MedicalRecordQueryUseCase
-MedicalRecordQueryService --> ReactiveMedicalRecordRepository
+MedicalRecordCreateService --> MedicalRecordMapper
+MedicalRecordQueryService --> MedicalRecordMapper
 MedicalRecordService --> MedicalRecordPolicy
 MedicalRecordCreateService --> ReactiveMedicalRecordRepository
-MedicalRecordQueryService --> MedicalRecordMapper
-MedicalRecordCreateService --> MedicalRecordMapper
+MedicalRecordQueryService --> ReactiveMedicalRecordRepository
 MedicalRecordService --> MedicalRecordPolicy
 legend right
   Arquitectura Domain-Driven Design

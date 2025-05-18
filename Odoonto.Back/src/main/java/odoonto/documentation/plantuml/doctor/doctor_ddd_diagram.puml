@@ -1,80 +1,175 @@
 @startuml
+
 title Arquitectura DDD: Doctor
 
-' Configuración básica
 skinparam backgroundColor white
 skinparam defaultFontName Arial
 skinparam defaultFontSize 12
 scale max 1024 width
 left to right direction
 
-' Definición de paquetes y colores básicos
 package "Presentation" as presentation #lightgray {
   class DoctorController {
+    - doctorQueryUseCase: DoctorQueryUseCase
+    - doctorCreateUseCase: DoctorCreateUseCase
+    .. más campos ..
+
     + getAllDoctors()
     + getDoctorById()
-  }
-  class GlobalExceptionHandler {
-    + handleDoctorNotFound()
+    .. más métodos ..
   }
 }
 
 package "Application" as application #lightgreen {
-  class DoctorCreateService {
-    + createDoctor()
-  }
-  class DoctorQueryService {
-    + findById()
-    + findAll()
+  class DoctorCreateDTO {
+    - nombreCompleto: str
+    - especialidad: str
+
+    + getNombreCompleto()
+    + setNombreCompleto()
+    .. más métodos ..
   }
   class DoctorDTO {
-    - id
-    - name
+    - id: str
+    - nombreCompleto: str
+    .. más campos ..
+
+    + getId()
+    + setId()
+    .. más métodos ..
+  }
+  class DoctorNotFoundException
+  class DoctorMapper {
+    + toDTO()
+    + toEntity()
+    .. más métodos ..
+  }
+  interface DoctorCreateUseCase {
+    ~ createDoctor()
+  }
+  interface DoctorDeleteUseCase {
+    ~ deleteDoctor()
+  }
+  interface DoctorQueryUseCase {
+    ~ findById()
+    ~ findAll()
+    .. más métodos ..
+  }
+  interface DoctorUpdateUseCase {
+    ~ updateDoctor()
+  }
+  interface ReactiveDoctorRepository {
+    ~ findById()
+    ~ save()
+    .. más métodos ..
+  }
+  class DoctorCreateService {
+    - doctorRepository: ReactiveDoctorRepository
+    - doctorMapper: DoctorMapper
+
+    + createDoctor()
+  }
+  class DoctorDeleteService {
+    - doctorRepository: ReactiveDoctorRepository
+
+    + deleteDoctor()
+  }
+  class DoctorQueryService {
+    - doctorRepository: ReactiveDoctorRepository
+    - doctorMapper: DoctorMapper
+
+    + findById()
+    + findAll()
+    .. más métodos ..
+  }
+  class DoctorUpdateService {
+    - doctorRepository: ReactiveDoctorRepository
+    - doctorMapper: DoctorMapper
+
+    + updateDoctor()
   }
 }
 
 package "Domain" as domain #lightblue {
   class Doctor {
-    - id
-    - name
-    - specialty
+    - id: str
+    - nombreCompleto: str
+    .. más campos ..
+
+    - initializeDefaultSchedule()
+    + setSchedule()
+    .. más métodos ..
   }
-  class Specialty {
-    - name
+  class DoctorSchedule {
+    - dayOfWeek: DayOfWeek
+    - startTime: LocalTime
+    .. más campos ..
+
+    + isTimeInSchedule()
+    + isRangeInSchedule()
+    .. más métodos ..
   }
-  interface DoctorRepository {
-    + save()
-    + findById()
+  class Doctor {
+    - id: str
+    - nombreCompleto: str
+    .. más campos ..
+
+    - initializeDefaultSchedule()
+    + setSchedule()
+    .. más métodos ..
+  }
+  class DoctorSchedule {
+    - dayOfWeek: DayOfWeek
+    - startTime: LocalTime
+    .. más campos ..
+
+    + isTimeInSchedule()
+    + isRangeInSchedule()
+    .. más métodos ..
   }
 }
 
 package "Infrastructure" as infrastructure #lightyellow {
-  class DoctorRepositoryAdapter {
-    - firestore
-    + save()
-    + findById()
-  }
   class FirestoreDoctorEntity {
-    - id
-    - nombre
+    - id: str
+    - nombre: str
+    .. más campos ..
+
+    + getId()
+    + setId()
+    .. más métodos ..
+  }
+  class ReactiveDoctorRepositoryAdapter {
+    - doctorsCollection: CollReference
+
+    + findById()
+    + save()
+    .. más métodos ..
   }
 }
 
-' Dependencias entre capas
+' Dependencias entre capas de arquitectura
 presentation --> application
 application --> domain
 infrastructure --> domain
 infrastructure --> application
 
-' Relaciones entre clases
-DoctorController --> DoctorQueryService
-DoctorController --> DoctorCreateService
-DoctorCreateService --> DoctorRepository
-DoctorQueryService --> DoctorRepository
-DoctorRepositoryAdapter ..|> DoctorRepository
-Doctor --> Specialty
-DoctorRepositoryAdapter --> FirestoreDoctorEntity
-
+' Relaciones entre clases principales
+ReactiveDoctorRepositoryAdapter ..|> ReactiveDoctorRepository
+DoctorController --> DoctorCreateUseCase
+DoctorController --> DoctorUpdateUseCase
+DoctorController --> DoctorDeleteUseCase
+DoctorController --> DoctorQueryUseCase
+DoctorUpdateService ..|> DoctorUpdateUseCase
+DoctorQueryService ..|> DoctorQueryUseCase
+DoctorCreateService ..|> DoctorCreateUseCase
+DoctorDeleteService ..|> DoctorDeleteUseCase
+DoctorCreateService --> ReactiveDoctorRepository
+DoctorQueryService --> ReactiveDoctorRepository
+DoctorCreateService --> DoctorMapper
+DoctorUpdateService --> ReactiveDoctorRepository
+DoctorDeleteService --> ReactiveDoctorRepository
+DoctorQueryService --> DoctorMapper
 legend right
   Arquitectura Domain-Driven Design
   Entidad: Doctor
