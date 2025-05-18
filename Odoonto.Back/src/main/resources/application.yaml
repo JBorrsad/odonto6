@@ -2,7 +2,7 @@ spring:
   cloud:
     gcp:
       credentials:
-        location: file:src/main/resources/firebase-service-account.json
+        location: file:src/main/resources/config-data.json
       firestore:
         project-id: odoonto-e06a7
       core:
