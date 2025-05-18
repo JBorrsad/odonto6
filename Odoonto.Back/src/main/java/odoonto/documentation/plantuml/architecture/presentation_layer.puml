@@ -1,0 +1,94 @@
+@startuml Presentation Layer
+
+!theme plain
+skinparam packageStyle rectangle
+skinparam backgroundColor white
+skinparam ClassBackgroundColor WhiteSmoke
+skinparam ClassBorderColor Black
+skinparam ArrowColor Black
+skinparam linetype ortho
+
+package "Presentation Layer" {
+  package "REST" {
+    package "Controller" {
+      class PatientController {
+        -patientCreateUseCase: PatientCreateUseCase
+        -patientQueryUseCase: PatientQueryUseCase
+        -patientUpdateUseCase: PatientUpdateUseCase
+        -patientDeleteUseCase: PatientDeleteUseCase
+        +getAllPatients(): Flux<PatientDTO>
+        +getPatientById(id: String): Mono<PatientDTO>
+        +createPatient(patientDTO: PatientCreateDTO): Mono<PatientDTO>
+        +updatePatient(id: String, patientDTO: PatientUpdateDTO): Mono<PatientDTO>
+        +deletePatient(id: String): Mono<Void>
+      }
+      
+      class OdontogramController {
+        -odontogramQueryUseCase: OdontogramQueryUseCase
+        -lesionAddUseCase: LesionAddUseCase
+        -treatmentAddUseCase: TreatmentAddUseCase
+        +getOdontogramByPatientId(patientId: String): Mono<OdontogramDTO>
+        +addLesion(patientId: String, lesionDTO: LesionCreateDTO): Mono<OdontogramDTO>
+        +addTreatment(patientId: String, treatmentDTO: TreatmentCreateDTO): Mono<OdontogramDTO>
+      }
+      
+      class MedicalRecordController
+      class DoctorController
+      class AppointmentController
+    }
+    
+    package "Advice" {
+      class GlobalExceptionHandler {
+        +handleDomainException(ex: DomainException): ResponseEntity<ErrorResponse>
+        +handlePatientNotFoundException(ex: PatientNotFoundException): ResponseEntity<ErrorResponse>
+        +handleValidationException(ex: MethodArgumentNotValidException): ResponseEntity<ValidationErrorResponse>
+      }
+    }
+  }
+  
+  package "Documentation" {
+    class SwaggerConfig {
+      +odoontoOpenAPI(): OpenAPI
+    }
+    
+    class DDDDocumentation {
+      +showDiagrams(): String
+    }
+  }
+}
+
+' Interfaces de la capa de aplicación (casos de uso)
+interface PatientCreateUseCase
+interface PatientQueryUseCase
+interface PatientUpdateUseCase
+interface PatientDeleteUseCase
+interface OdontogramQueryUseCase
+interface LesionAddUseCase
+interface TreatmentAddUseCase
+
+' Relaciones con casos de uso
+PatientController o-- PatientCreateUseCase
+PatientController o-- PatientQueryUseCase
+PatientController o-- PatientUpdateUseCase
+PatientController o-- PatientDeleteUseCase
+
+OdontogramController o-- OdontogramQueryUseCase
+OdontogramController o-- LesionAddUseCase
+OdontogramController o-- TreatmentAddUseCase
+
+' Rutas REST (anotaciones)
+note top of PatientController
+  @RestController
+  @RequestMapping("/api/patients")
+end note
+
+note top of OdontogramController
+  @RestController
+  @RequestMapping("/api/patients/{patientId}/odontogram")
+end note
+
+note top of GlobalExceptionHandler
+  @RestControllerAdvice
+end note
+
+@enduml 

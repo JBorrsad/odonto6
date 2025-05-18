@@ -1,0 +1,158 @@
+@startuml Application Layer
+
+!theme plain
+skinparam packageStyle rectangle
+skinparam backgroundColor white
+skinparam ClassBackgroundColor WhiteSmoke
+skinparam ClassBorderColor Black
+skinparam ArrowColor Black
+skinparam linetype ortho
+
+package "Application Layer" {
+  package "Ports" {
+    package "In (Use Cases)" {
+      package "Patient" {
+        interface PatientCreateUseCase {
+          +createPatient(patientCreateDTO: PatientCreateDTO): Mono<PatientDTO>
+        }
+        
+        interface PatientUpdateUseCase {
+          +updatePatient(id: String, patientUpdateDTO: PatientUpdateDTO): Mono<PatientDTO>
+        }
+        
+        interface PatientDeleteUseCase {
+          +deletePatient(id: String): Mono<Void>
+        }
+        
+        interface PatientQueryUseCase {
+          +findPatientById(id: String): Mono<PatientDTO>
+          +findAllPatients(): Flux<PatientDTO>
+        }
+      }
+      
+      package "Odontogram" {
+        interface OdontogramQueryUseCase {
+          +findOdontogramByPatientId(patientId: String): Mono<OdontogramDTO>
+        }
+        
+        interface LesionAddUseCase {
+          +addLesion(patientId: String, lesionCreateDTO: LesionCreateDTO): Mono<OdontogramDTO>
+        }
+        
+        interface TreatmentAddUseCase {
+          +addTreatment(patientId: String, treatmentCreateDTO: TreatmentCreateDTO): Mono<OdontogramDTO>
+        }
+      }
+    }
+    
+    package "Out (Repositories)" {
+      interface ReactivePatientRepository {
+        +save(patient: Patient): Mono<Patient>
+        +findById(id: PatientId): Mono<Patient>
+        +findAll(): Flux<Patient>
+        +deleteById(id: PatientId): Mono<Void>
+      }
+      
+      interface ReactiveOdontogramRepository {
+        +save(odontogram: Odontogram): Mono<Odontogram>
+        +findByPatientId(patientId: PatientId): Mono<Odontogram>
+      }
+      
+      interface ReactiveMedicalRecordRepository
+      interface ReactiveDoctorRepository
+      interface ReactiveAppointmentRepository
+    }
+  }
+  
+  package "DTOs" {
+    package "Request" {
+      class PatientCreateDTO {
+        +name: String
+        +email: String
+        +phoneNumber: String
+        +address: String
+        +birthDate: LocalDate
+        +sexo: String
+      }
+      
+      class PatientUpdateDTO
+      class OdontogramUpdateDTO
+      class LesionCreateDTO
+      class AppointmentCreateDTO
+    }
+    
+    package "Response" {
+      class PatientDTO {
+        +id: String
+        +name: String
+        +email: String
+        +phoneNumber: String
+        +address: String
+        +birthDate: LocalDate
+        +sexo: String
+      }
+      
+      class OdontogramDTO
+      class MedicalRecordDTO
+      class DoctorDTO
+      class AppointmentDTO
+    }
+  }
+  
+  package "Mappers" {
+    class PatientMapper {
+      +toDomain(dto: PatientCreateDTO): Patient
+      +toDTO(patient: Patient): PatientDTO
+    }
+    
+    class OdontogramMapper
+    class DoctorMapper
+    class AppointmentMapper
+  }
+  
+  package "Services" {
+    package "Patient" {
+      class PatientCreateService {
+        -patientRepository: ReactivePatientRepository
+        -patientMapper: PatientMapper
+        +createPatient(patientCreateDTO: PatientCreateDTO): Mono<PatientDTO>
+      }
+      
+      class PatientUpdateService
+      class PatientDeleteService
+      class PatientQueryService
+    }
+    
+    package "Odontogram" {
+      class OdontogramQueryService
+      class LesionAddService
+      class TreatmentAddService
+    }
+  }
+  
+  package "Exceptions" {
+    class PatientNotFoundException
+    class OdontogramNotFoundException
+    class AppointmentConflictException
+  }
+}
+
+' Relaciones
+PatientCreateUseCase <|.. PatientCreateService
+PatientUpdateUseCase <|.. PatientUpdateService
+PatientDeleteUseCase <|.. PatientDeleteService
+PatientQueryUseCase <|.. PatientQueryService
+
+OdontogramQueryUseCase <|.. OdontogramQueryService
+LesionAddUseCase <|.. LesionAddService
+TreatmentAddUseCase <|.. TreatmentAddService
+
+PatientCreateService o-- ReactivePatientRepository
+PatientCreateService o-- PatientMapper
+PatientQueryService o-- ReactivePatientRepository
+PatientQueryService o-- PatientMapper
+
+LesionAddService o-- ReactiveOdontogramRepository
+LesionAddService o-- OdontogramMapper
+
+@enduml 
