@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import odoonto.application.port.in.patient.PatientDeleteUseCase;
-import odoonto.application.port.out.PatientRepositoryPort;
+import odoonto.application.port.out.ReactivePatientRepository;
 import reactor.core.publisher.Mono;
 
 /**
@@ -13,18 +13,16 @@ import reactor.core.publisher.Mono;
 @Service
 public class PatientDeleteService implements PatientDeleteUseCase {
 
-    private final PatientRepositoryPort patientRepository;
+    private final ReactivePatientRepository patientRepository;
 
     @Autowired
-    public PatientDeleteService(PatientRepositoryPort patientRepository) {
+    public PatientDeleteService(ReactivePatientRepository patientRepository) {
         this.patientRepository = patientRepository;
     }
 
     @Override
     public Mono<Void> deletePatient(String id) {
-        // Eliminar el paciente y retornar un Mono vacío
-        return Mono.fromRunnable(() -> {
-            patientRepository.deleteById(id);
-        }).then();
+        // Eliminar el paciente de forma reactiva
+        return patientRepository.deleteById(id);
     }
 } 

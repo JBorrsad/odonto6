@@ -3,7 +3,7 @@ package odoonto.application.port.out;
 import odoonto.domain.model.aggregates.MedicalRecord;
 import odoonto.domain.model.entities.MedicalEntry;
 import odoonto.domain.model.valueobjects.MedicalRecordId;
-import odoonto.domain.model.valueobjects.PatientId;
+
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -150,5 +150,18 @@ public interface ReactiveMedicalRecordRepository {
             return Mono.empty();
         }
         return deleteById(UUID.fromString(id));
+    }
+    
+    /**
+     * Método de compatibilidad para eliminar una entrada usando String como medicalRecordId
+     * @param medicalRecordId Identificador del historial médico como String
+     * @param entryId ID de la entrada
+     * @return Mono que completa con true si se eliminó correctamente
+     */
+    default Mono<Boolean> deleteEntry(String medicalRecordId, String entryId) {
+        if (medicalRecordId == null || medicalRecordId.trim().isEmpty()) {
+            return Mono.just(false);
+        }
+        return deleteEntry(MedicalRecordId.of(medicalRecordId), entryId);
     }
 } 

@@ -7,11 +7,10 @@ import odoonto.application.dto.response.DoctorDTO;
 import odoonto.application.mapper.DoctorMapper;
 import odoonto.application.port.in.doctor.DoctorQueryUseCase;
 import odoonto.domain.model.valueobjects.Specialty;
-import odoonto.domain.repository.DoctorRepository;
+
 import odoonto.application.port.out.ReactiveDoctorRepository;
 
-import java.util.List;
-import java.util.Optional;
+
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Flux;
 

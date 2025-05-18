@@ -7,11 +7,11 @@ import odoonto.application.dto.request.AppointmentCreateDTO;
 import odoonto.application.dto.response.AppointmentDTO;
 import odoonto.application.mapper.AppointmentMapper;
 import odoonto.application.port.in.appointment.AppointmentCreateUseCase;
+import odoonto.application.port.out.ReactiveAppointmentRepository;
+import odoonto.application.port.out.ReactiveDoctorRepository;
+import odoonto.application.port.out.ReactivePatientRepository;
 import odoonto.domain.exceptions.DomainException;
 import odoonto.domain.model.aggregates.Appointment;
-import odoonto.domain.repository.AppointmentRepository;
-import odoonto.domain.repository.DoctorRepository;
-import odoonto.domain.repository.PatientRepository;
 import reactor.core.publisher.Mono;
 
 /**
@@ -20,16 +20,16 @@ import reactor.core.publisher.Mono;
 @Service
 public class AppointmentCreateService implements AppointmentCreateUseCase {
 
-    private final AppointmentRepository appointmentRepository;
-    private final DoctorRepository doctorRepository;
-    private final PatientRepository patientRepository;
+    private final ReactiveAppointmentRepository appointmentRepository;
+    private final ReactiveDoctorRepository doctorRepository;
+    private final ReactivePatientRepository patientRepository;
     private final AppointmentMapper appointmentMapper;
 
     @Autowired
     public AppointmentCreateService(
-            AppointmentRepository appointmentRepository,
-            DoctorRepository doctorRepository,
-            PatientRepository patientRepository,
+            ReactiveAppointmentRepository appointmentRepository,
+            ReactiveDoctorRepository doctorRepository,
+            ReactivePatientRepository patientRepository,
             AppointmentMapper appointmentMapper) {
         this.appointmentRepository = appointmentRepository;
         this.doctorRepository = doctorRepository;
@@ -38,27 +38,26 @@ public class AppointmentCreateService implements AppointmentCreateUseCase {
     }
 
     @Override
-    public AppointmentDTO createAppointment(AppointmentCreateDTO appointmentCreateDTO) {
+    public Mono<AppointmentDTO> createAppointment(AppointmentCreateDTO appointmentCreateDTO) {
         // Validaciones básicas
         if (appointmentCreateDTO == null) {
-            throw new DomainException("Los datos de la cita no pueden ser nulos");
+            return Mono.error(new DomainException("Los datos de la cita no pueden ser nulos"));
         }
         
-        // Verificar que el doctor existe
-        doctorRepository.findById(appointmentCreateDTO.getDoctorId())
-            .orElseThrow(() -> new DomainException("No existe un doctor con el ID: " + appointmentCreateDTO.getDoctorId()));
+        // Verificar que el doctor y el paciente existen
+        return Mono.zip(
+            doctorRepository.findById(appointmentCreateDTO.getDoctorId())
+                .switchIfEmpty(Mono.error(new DomainException("No existe un doctor con el ID: " + appointmentCreateDTO.getDoctorId()))),
+            patientRepository.findById(appointmentCreateDTO.getPatientId())
+                .switchIfEmpty(Mono.error(new DomainException("No existe un paciente con el ID: " + appointmentCreateDTO.getPatientId())))
+        )
+        .flatMap(tuple -> {
+            // Convertir DTO a entidad de dominio
+            Appointment appointment = appointmentMapper.toEntity(appointmentCreateDTO);
             
-        // Verificar que el paciente existe
-        patientRepository.findById(appointmentCreateDTO.getPatientId())
-            .orElseThrow(() -> new DomainException("No existe un paciente con el ID: " + appointmentCreateDTO.getPatientId()));
-            
-        // Convertir DTO a entidad de dominio
-        Appointment appointment = appointmentMapper.toEntity(appointmentCreateDTO);
-        
-        // Guardar la cita
-        Appointment savedAppointment = appointmentRepository.save(appointment);
-        
-        // Convertir entidad a DTO y devolver
-        return appointmentMapper.toDTO(savedAppointment);
+            // Guardar la cita
+            return appointmentRepository.save(appointment);
+        })
+        .map(appointmentMapper::toDTO);
     }
 } 

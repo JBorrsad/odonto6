@@ -7,11 +7,8 @@ import odoonto.application.dto.response.PatientDTO;
 import odoonto.application.exceptions.PatientNotFoundException;
 import odoonto.application.mapper.PatientMapper;
 import odoonto.application.port.in.patient.PatientQueryUseCase;
-import odoonto.application.port.out.PatientRepositoryPort;
-import odoonto.domain.model.aggregates.Patient;
+import odoonto.application.port.out.ReactivePatientRepository;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -21,11 +18,11 @@ import reactor.core.publisher.Mono;
 @Service
 public class PatientQueryService implements PatientQueryUseCase {
 
-    private final PatientRepositoryPort patientRepository;
+    private final ReactivePatientRepository patientRepository;
     private final PatientMapper patientMapper;
 
     @Autowired
-    public PatientQueryService(PatientRepositoryPort patientRepository, 
+    public PatientQueryService(ReactivePatientRepository patientRepository, 
                               PatientMapper patientMapper) {
         this.patientRepository = patientRepository;
         this.patientMapper = patientMapper;
@@ -33,29 +30,20 @@ public class PatientQueryService implements PatientQueryUseCase {
 
     @Override
     public Flux<PatientDTO> getAllPatients() {
-        List<Patient> patients = patientRepository.findAll();
-        return Flux.fromIterable(
-            patients.stream()
-                .map(patientMapper::toDTO)
-                .collect(Collectors.toList())
-        );
+        return patientRepository.findAll()
+                .map(patientMapper::toDTO);
     }
 
     @Override
     public Mono<PatientDTO> getPatientById(String id) {
-        Patient patient = patientRepository.findById(id)
-                .orElseThrow(() -> new PatientNotFoundException("Paciente no encontrado con ID: " + id));
-        
-        return Mono.just(patientMapper.toDTO(patient));
+        return patientRepository.findById(id)
+                .map(patientMapper::toDTO)
+                .switchIfEmpty(Mono.error(new PatientNotFoundException("Paciente no encontrado con ID: " + id)));
     }
 
     @Override
     public Flux<PatientDTO> searchPatients(String searchQuery) {
-        List<Patient> patients = patientRepository.findByNameOrLastName(searchQuery);
-        return Flux.fromIterable(
-            patients.stream()
-                .map(patientMapper::toDTO)
-                .collect(Collectors.toList())
-        );
+        return patientRepository.findByNameContaining(searchQuery)
+                .map(patientMapper::toDTO);
     }
 } 

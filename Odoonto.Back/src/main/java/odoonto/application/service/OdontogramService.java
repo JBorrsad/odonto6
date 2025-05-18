@@ -283,7 +283,6 @@ public class OdontogramService {
      * @return DTO del odontograma actualizado
      */
     public Mono<OdontogramDTO> addTreatment(String odontogramId, int toothNumber, String treatmentType) {
-        String toothId = String.valueOf(toothNumber);
         // Implementar lógica para añadir tratamiento
         return Mono.empty(); // Implementación pendiente
     }
@@ -295,7 +294,6 @@ public class OdontogramService {
      * @return DTO del odontograma actualizado
      */
     public Mono<OdontogramDTO> removeTreatment(String odontogramId, int toothNumber) {
-        String toothId = String.valueOf(toothNumber);
         // Implementar lógica para eliminar tratamiento
         return Mono.empty(); // Implementación pendiente
     }

@@ -7,15 +7,12 @@ import odoonto.application.dto.request.AppointmentCreateDTO;
 import odoonto.application.dto.response.AppointmentDTO;
 import odoonto.application.mapper.AppointmentMapper;
 import odoonto.application.port.in.appointment.AppointmentUpdateUseCase;
+import odoonto.application.port.out.ReactiveAppointmentRepository;
+import odoonto.application.port.out.ReactiveDoctorRepository;
+import odoonto.application.port.out.ReactivePatientRepository;
 import odoonto.domain.exceptions.DomainException;
-import odoonto.domain.model.aggregates.Appointment;
-import odoonto.domain.model.aggregates.Doctor;
-import odoonto.domain.model.aggregates.Patient;
-import odoonto.domain.repository.AppointmentRepository;
-import odoonto.domain.repository.DoctorRepository;
-import odoonto.domain.repository.PatientRepository;
 
-import java.util.Optional;
+import reactor.core.publisher.Mono;
 
 /**
  * Implementación del caso de uso para actualizar una cita
@@ -23,16 +20,16 @@ import java.util.Optional;
 @Service
 public class AppointmentUpdateService implements AppointmentUpdateUseCase {
 
-    private final AppointmentRepository appointmentRepository;
-    private final DoctorRepository doctorRepository;
-    private final PatientRepository patientRepository;
+    private final ReactiveAppointmentRepository appointmentRepository;
+    private final ReactiveDoctorRepository doctorRepository;
+    private final ReactivePatientRepository patientRepository;
     private final AppointmentMapper appointmentMapper;
 
     @Autowired
     public AppointmentUpdateService(
-            AppointmentRepository appointmentRepository,
-            DoctorRepository doctorRepository,
-            PatientRepository patientRepository,
+            ReactiveAppointmentRepository appointmentRepository,
+            ReactiveDoctorRepository doctorRepository,
+            ReactivePatientRepository patientRepository,
             AppointmentMapper appointmentMapper) {
         this.appointmentRepository = appointmentRepository;
         this.doctorRepository = doctorRepository;
@@ -41,49 +38,50 @@ public class AppointmentUpdateService implements AppointmentUpdateUseCase {
     }
 
     @Override
-    public AppointmentDTO updateAppointment(String appointmentId, AppointmentCreateDTO appointmentCreateDTO) {
+    public Mono<AppointmentDTO> updateAppointment(String appointmentId, AppointmentCreateDTO appointmentCreateDTO) {
         // Validaciones básicas
         if (appointmentId == null || appointmentId.trim().isEmpty()) {
-            throw new DomainException("El ID de la cita no puede ser nulo o vacío");
+            return Mono.error(new DomainException("El ID de la cita no puede ser nulo o vacío"));
         }
         
         if (appointmentCreateDTO == null) {
-            throw new DomainException("Los datos de la cita no pueden ser nulos");
+            return Mono.error(new DomainException("Los datos de la cita no pueden ser nulos"));
         }
         
         // Buscar la cita existente
-        Optional<Appointment> appointmentOpt = appointmentRepository.findById(appointmentId);
-        if (appointmentOpt.isEmpty()) {
-            throw new DomainException("No existe una cita con el ID: " + appointmentId);
-        }
-        
-        Appointment existingAppointment = appointmentOpt.get();
-        
-        // Verificar que el doctor existe si se está cambiando
-        if (appointmentCreateDTO.getDoctorId() != null && 
-            !appointmentCreateDTO.getDoctorId().equals(existingAppointment.getDoctorId())) {
-            
-            Optional<Doctor> doctorOpt = doctorRepository.findById(appointmentCreateDTO.getDoctorId());
-            if (doctorOpt.isEmpty()) {
-                throw new DomainException("No existe un doctor con el ID: " + appointmentCreateDTO.getDoctorId());
-            }
-        }
-        
-        // Verificar que el paciente existe si se está cambiando
-        if (appointmentCreateDTO.getPatientId() != null && 
-            !appointmentCreateDTO.getPatientId().equals(existingAppointment.getPatientId())) {
-            
-            Optional<Patient> patientOpt = patientRepository.findById(appointmentCreateDTO.getPatientId());
-            if (patientOpt.isEmpty()) {
-                throw new DomainException("No existe un paciente con el ID: " + appointmentCreateDTO.getPatientId());
-            }
-        }
-        
-        // Actualizar los campos de la cita usando el mapper
-        appointmentMapper.updateAppointmentFromDTO(appointmentCreateDTO, existingAppointment);
-        
-        // Guardar los cambios
-        Appointment updatedAppointment = appointmentRepository.save(existingAppointment);
-        return appointmentMapper.toDTO(updatedAppointment);
+        return appointmentRepository.findById(appointmentId)
+            .switchIfEmpty(Mono.error(new DomainException("No existe una cita con el ID: " + appointmentId)))
+            .flatMap(existingAppointment -> {
+                // Verificación condicional de doctor si cambia
+                Mono<Boolean> doctorCheck = Mono.just(true);
+                if (appointmentCreateDTO.getDoctorId() != null && 
+                    !appointmentCreateDTO.getDoctorId().equals(existingAppointment.getDoctorId())) {
+                    
+                    doctorCheck = doctorRepository.findById(appointmentCreateDTO.getDoctorId())
+                        .switchIfEmpty(Mono.error(new DomainException("No existe un doctor con el ID: " + appointmentCreateDTO.getDoctorId())))
+                        .map(doctor -> true);
+                }
+                
+                // Verificación condicional de paciente si cambia
+                Mono<Boolean> patientCheck = Mono.just(true);
+                if (appointmentCreateDTO.getPatientId() != null && 
+                    !appointmentCreateDTO.getPatientId().equals(existingAppointment.getPatientId())) {
+                    
+                    patientCheck = patientRepository.findById(appointmentCreateDTO.getPatientId())
+                        .switchIfEmpty(Mono.error(new DomainException("No existe un paciente con el ID: " + appointmentCreateDTO.getPatientId())))
+                        .map(patient -> true);
+                }
+                
+                // Combina ambas verificaciones y luego actualiza
+                return Mono.zip(doctorCheck, patientCheck)
+                    .flatMap(tuple -> {
+                        // Actualizar los campos de la cita usando el mapper
+                        appointmentMapper.updateAppointmentFromDTO(appointmentCreateDTO, existingAppointment);
+                        
+                        // Guardar los cambios
+                        return appointmentRepository.save(existingAppointment);
+                    })
+                    .map(appointmentMapper::toDTO);
+            });
     }
 } 

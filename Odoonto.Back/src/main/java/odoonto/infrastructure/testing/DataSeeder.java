@@ -1,17 +1,19 @@
-package odoonto.api.infrastructure;
+package odoonto.infrastructure.testing;
 
-import odoonto.api.domain.models.Doctor;
-import odoonto.api.domain.models.Patient;
-import odoonto.api.domain.models.Appointment;
-import odoonto.api.domain.models.Odontogram;
-import odoonto.api.domain.core.valueobjects.Sexo;
-import odoonto.api.domain.core.valueobjects.EmailAddress;
-import odoonto.api.domain.core.valueobjects.PhoneNumber;
-import odoonto.api.domain.core.valueobjects.ToothFace;
-import odoonto.api.domain.core.valueobjects.LesionType;
-import odoonto.api.domain.repositories.DoctorRepository;
-import odoonto.api.domain.repositories.PatientRepository;
-import odoonto.api.domain.repositories.AppointmentRepository;
+import odoonto.domain.model.aggregates.Doctor;
+import odoonto.domain.model.aggregates.Patient;
+import odoonto.domain.model.aggregates.Appointment;
+import odoonto.domain.model.aggregates.Odontogram;
+import odoonto.domain.model.valueobjects.Sexo;
+import odoonto.domain.model.valueobjects.EmailAddress;
+import odoonto.domain.model.valueobjects.PhoneNumber;
+import odoonto.domain.model.valueobjects.ToothFace;
+import odoonto.domain.model.valueobjects.LesionType;
+import odoonto.domain.model.valueobjects.Specialty;
+import odoonto.domain.model.valueobjects.PatientId;
+import odoonto.application.port.out.ReactiveDoctorRepository;
+import odoonto.application.port.out.ReactivePatientRepository;
+import odoonto.application.port.out.ReactiveAppointmentRepository;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -19,7 +21,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.annotation.Order;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -37,7 +38,7 @@ import reactor.core.publisher.Mono;
 public class DataSeeder {
 
     @Bean
-    CommandLineRunner seedData(DoctorRepository dr, PatientRepository pr, AppointmentRepository ar) {
+    CommandLineRunner seedData(ReactiveDoctorRepository dr, ReactivePatientRepository pr, ReactiveAppointmentRepository ar) {
         return args -> {
             try {
                 System.out.println("\n\n📊 GENERANDO DATOS DE EJEMPLO PARA LA BASE DE DATOS");
@@ -46,9 +47,19 @@ public class DataSeeder {
                 // Limpiar datos existentes primero
                 System.out.println("\n🧹 Limpiando datos existentes antes de cargar nuevos datos de ejemplo...");
                 
-                Mono<Void> deleteAppointments = ar.deleteAll();
-                Mono<Void> deletePatients = pr.deleteAll();
-                Mono<Void> deleteDoctors = dr.deleteAll();
+                // Eliminar todas las entidades - como no existe deleteAll(), 
+                // obtenemos todas y eliminamos una por una
+                Mono<Void> deleteAppointments = ar.findAll()
+                    .flatMap(appointment -> ar.deleteById(appointment.getId()))
+                    .then();
+                    
+                Mono<Void> deletePatients = pr.findAll()
+                    .flatMap(patient -> pr.deleteById(patient.getId().getValue()))
+                    .then();
+                    
+                Mono<Void> deleteDoctors = dr.findAll()
+                    .flatMap(doctor -> dr.deleteById(doctor.getId()))
+                    .then();
                 
                 // Esperar a que todas las operaciones de eliminación terminen
                 Mono.when(deleteAppointments, deletePatients, deleteDoctors)
@@ -59,9 +70,9 @@ public class DataSeeder {
                 
                 // Crear 3 doctores con especialidades
                 List<Doctor> doctores = new ArrayList<>();
-                doctores.add(new Doctor("Doctor 1", "Especialidad 1"));
-                doctores.add(new Doctor("Doctor 2", "Especialidad 2"));
-                doctores.add(new Doctor("Doctor 3", "Especialidad 3"));
+                doctores.add(new Doctor("Doctor 1", Specialty.ODONTOLOGIA_GENERAL));
+                doctores.add(new Doctor("Doctor 2", Specialty.ORTODONCIA));
+                doctores.add(new Doctor("Doctor 3", Specialty.ENDODONCIA));
                 
                 // Guardar los doctores y obtener sus IDs
                 List<String> doctorIds = new ArrayList<>();
@@ -89,20 +100,18 @@ public class DataSeeder {
                     // Edad aleatoria entre 18 y 70 años
                     int edad = 18 + random.nextInt(52);
                     LocalDate fechaNacimiento = LocalDate.now().minusYears(edad);
-                    Instant nacimiento = fechaNacimiento.atStartOfDay().toInstant(ZoneOffset.UTC);
                     
                     // Género alternado
                     Sexo genero = i % 2 == 0 ? Sexo.MASCULINO : Sexo.FEMENINO;
                     
-                    // Crear el paciente
+                    // Crear el paciente con constructor correcto
                     Patient patient = new Patient(
                             "Paciente " + i,
                             "Apellido " + i,
-                            nacimiento,
+                            fechaNacimiento,
                             genero,
                             telefono,
-                            email,
-                            edad
+                            email
                     );
                     
                     // Añadir lesiones aleatorias al odontograma (1-3 lesiones)
@@ -117,11 +126,12 @@ public class DataSeeder {
                 Flux.fromIterable(pacientes)
                     .flatMap(pr::save)
                     .doOnNext(patient -> {
-                        patientIds.add(patient.getId());
+                        // Agregamos el ID del paciente (usando getValue() del objeto PatientId)
+                        patientIds.add(patient.getId().getValue());
                         System.out.println("👨‍👩‍👧 Paciente creado: " + patient.getNombre() + " " + patient.getApellido() + 
-                                          " - " + patient.getEmail().getEmailAddress() + 
-                                          " - Tel: " + patient.getTelefono().getNumero() +
-                                          " (ID: " + patient.getId() + ")");
+                                          " - " + patient.getEmail().getValue() + 
+                                          " - Tel: " + patient.getTelefono().getValue() +
+                                          " (ID: " + patient.getId().getValue() + ")");
                     })
                     .blockLast();
                 

@@ -7,8 +7,8 @@ import odoonto.application.port.out.ReactiveMedicalRecordRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * Implementación reactiva del caso de uso de consulta de historiales médicos.
@@ -27,38 +27,32 @@ public class MedicalRecordQueryService implements MedicalRecordQueryUseCase {
     }
 
     @Override
-    public Optional<MedicalRecordDTO> findById(String medicalRecordId) {
+    public Mono<MedicalRecordDTO> findById(String medicalRecordId) {
         return medicalRecordRepository.findById(medicalRecordId)
-                .map(medicalRecordMapper::toDTO)
-                .blockOptional();
+                .map(medicalRecordMapper::toDTO);
     }
 
     @Override
-    public Optional<MedicalRecordDTO> findByPatientId(String patientId) {
+    public Mono<MedicalRecordDTO> findByPatientId(String patientId) {
         return medicalRecordRepository.findByPatientId(patientId)
-                .map(medicalRecordMapper::toDTO)
-                .blockOptional();
+                .map(medicalRecordMapper::toDTO);
     }
 
     @Override
-    public List<MedicalRecordDTO> findAll() {
+    public Flux<MedicalRecordDTO> findAll() {
         return medicalRecordRepository.findAll()
-                .map(medicalRecordMapper::toDTO)
-                .collectList()
-                .block();
+                .map(medicalRecordMapper::toDTO);
     }
 
     @Override
-    public boolean existsById(String medicalRecordId) {
+    public Mono<Boolean> existsById(String medicalRecordId) {
         return medicalRecordRepository.findById(medicalRecordId)
-                .hasElement()
-                .block();
+                .hasElement();
     }
 
     @Override
-    public boolean existsByPatientId(String patientId) {
+    public Mono<Boolean> existsByPatientId(String patientId) {
         return medicalRecordRepository.findByPatientId(patientId)
-                .hasElement()
-                .block();
+                .hasElement();
     }
 } 

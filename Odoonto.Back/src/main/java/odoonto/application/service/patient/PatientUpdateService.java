@@ -8,8 +8,9 @@ import odoonto.application.dto.response.PatientDTO;
 import odoonto.application.exceptions.PatientNotFoundException;
 import odoonto.application.mapper.PatientMapper;
 import odoonto.application.port.in.patient.PatientUpdateUseCase;
-import odoonto.application.port.out.PatientRepositoryPort;
-import odoonto.domain.model.aggregates.Patient;
+import odoonto.application.port.out.ReactivePatientRepository;
+
+import reactor.core.publisher.Mono;
 
 /**
  * Implementación del caso de uso para actualizar pacientes
@@ -17,29 +18,23 @@ import odoonto.domain.model.aggregates.Patient;
 @Service
 public class PatientUpdateService implements PatientUpdateUseCase {
 
-    private final PatientRepositoryPort patientRepository;
+    private final ReactivePatientRepository patientRepository;
     private final PatientMapper patientMapper;
 
     @Autowired
-    public PatientUpdateService(PatientRepositoryPort patientRepository, 
+    public PatientUpdateService(ReactivePatientRepository patientRepository, 
                               PatientMapper patientMapper) {
         this.patientRepository = patientRepository;
         this.patientMapper = patientMapper;
     }
 
     @Override
-    public PatientDTO updatePatient(String id, PatientCreateDTO patientDTO) {
-        // Verificar que el paciente existe
-        Patient existingPatient = patientRepository.findById(id)
-                .orElseThrow(() -> new PatientNotFoundException("Paciente no encontrado con ID: " + id));
-        
-        // Mapear los datos actualizados al paciente existente
-        Patient updatedPatient = patientMapper.updateEntityFromDTO(patientDTO, existingPatient);
-        
-        // Persistir los cambios
-        Patient savedPatient = patientRepository.save(updatedPatient);
-        
-        // Convertir a DTO
-        return patientMapper.toDTO(savedPatient);
+    public Mono<PatientDTO> updatePatient(String id, PatientCreateDTO patientDTO) {
+        // Verificar que el paciente existe y actualizarlo
+        return patientRepository.findById(id)
+                .switchIfEmpty(Mono.error(new PatientNotFoundException("Paciente no encontrado con ID: " + id)))
+                .map(existingPatient -> patientMapper.updateEntityFromDTO(patientDTO, existingPatient))
+                .flatMap(patientRepository::save)
+                .map(patientMapper::toDTO);
     }
 } 

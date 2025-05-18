@@ -86,10 +86,11 @@ Odoonto.Back/src/main/java/odoonto/
 │   │   │   ├── odontogram/  # Casos de uso para odontogramas
 │   │   │   │   ├── OdontogramQueryUseCase.java * # Caso de uso: consultar odontograma
 │   │   │   │   ├── LesionAddUseCase.java *       # Caso de uso: añadir lesión
-│   │   │   │   ├── LesionRemoveUseCase.java *      # Caso de uso: eliminar lesión
-│   │   │   │   ├── TreatmentAddUseCase.java *     # Caso de uso: añadir tratamiento
-│   │   │   │   └── TreatmentRemoveUseCase.java *  # Caso de uso: eliminar tratamiento
+│   │   │   │   ├── LesionRemoveUseCase.java *    # Caso de uso: eliminar lesión
+│   │   │   │   ├── TreatmentAddUseCase.java *    # Caso de uso: añadir tratamiento
+│   │   │   │   └── TreatmentRemoveUseCase.java * # Caso de uso: eliminar tratamiento
 │   │   │   ├── medicalrecord/ # Casos de uso para historiales médicos
+│   │   │   │   ├── MedicalRecordCreateUseCase.java * # Caso de uso: crear historial
 │   │   │   │   ├── MedicalRecordQueryUseCase.java * # Caso de uso: consultar historial
 │   │   │   │   ├── MedicalEntryAddUseCase.java *   # Caso de uso: añadir entrada
 │   │   │   │   └── MedicalEntryRemoveUseCase.java * # Caso de uso: eliminar entrada
@@ -104,11 +105,6 @@ Odoonto.Back/src/main/java/odoonto/
 │   │   │       ├── AppointmentCancelUseCase.java * # Caso de uso: cancelar cita
 │   │   │       └── AppointmentQueryUseCase.java *  # Caso de uso: consultar cita
 │   │   └── out/             # Puertos de salida (para acceso a repositorios)
-│   │       ├── PatientRepositoryPort.java *     # Puerto para repositorio de pacientes
-│   │       ├── OdontogramRepositoryPort.java *  # Puerto para repositorio de odontogramas
-│   │       ├── MedicalRecordRepositoryPort.java * # Puerto para repositorio de historiales
-│   │       ├── DoctorRepositoryPort.java *      # Puerto para repositorio de doctores
-│   │       ├── AppointmentRepositoryPort.java * # Puerto para repositorio de citas
 │   │       ├── ReactivePatientRepository.java *     # Interfaz reactiva para repositorio de pacientes
 │   │       ├── ReactiveOdontogramRepository.java *  # Interfaz reactiva para repositorio de odontogramas
 │   │       ├── ReactiveMedicalRecordRepository.java * # Interfaz reactiva para repositorio de historiales
@@ -123,31 +119,32 @@ Odoonto.Back/src/main/java/odoonto/
 │   ├── service/             # Implementaciones de servicios (adaptadores)
 │   │   ├── ReactiveAppointmentValidationService.java * # Servicio reactivo para validación de citas
 │   │   ├── patient/         # Implementaciones para pacientes
-│   │   │   ├── PatientCreateService.java *       # Implementación de creación
-│   │   │   ├── PatientUpdateService.java *       # Implementación de actualización
-│   │   │   ├── PatientDeleteService.java *       # Implementación de eliminación
-│   │   │   ├── PatientQueryService.java *        # Implementación de consulta
-│   │   │   └── PatientOdontogramService.java *   # Implementación de gestión de odontogramas
+│   │   │   ├── PatientCreateService.java *       # Implementación reactiva de creación
+│   │   │   ├── PatientUpdateService.java *       # Implementación reactiva de actualización
+│   │   │   ├── PatientDeleteService.java *       # Implementación reactiva de eliminación
+│   │   │   ├── PatientQueryService.java *        # Implementación reactiva de consulta
+│   │   │   └── PatientOdontogramService.java *   # Implementación reactiva de gestión de odontogramas
 │   │   ├── odontogram/      # Implementaciones para odontogramas
-│   │   │   ├── OdontogramQueryService.java *     # Implementación de consulta (completamente reactiva)
-│   │   │   ├── LesionAddService.java *           # Implementación de añadir lesión
-│   │   │   ├── LesionRemoveService.java *        # Implementación de eliminar lesión
-│   │   │   ├── TreatmentAddService.java *        # Implementación de añadir tratamiento
-│   │   │   └── TreatmentRemoveService.java *     # Implementación de eliminar tratamiento
+│   │   │   ├── OdontogramQueryService.java *     # Implementación reactiva de consulta
+│   │   │   ├── LesionAddService.java *           # Implementación reactiva de añadir lesión
+│   │   │   ├── LesionRemoveService.java *        # Implementación reactiva de eliminar lesión
+│   │   │   ├── TreatmentAddService.java *        # Implementación reactiva de añadir tratamiento
+│   │   │   └── TreatmentRemoveService.java *     # Implementación reactiva de eliminar tratamiento
 │   │   ├── medicalrecord/   # Implementaciones para historiales médicos
-│   │   │   ├── MedicalRecordQueryService.java *  # Implementación de consulta
-│   │   │   ├── MedicalEntryAddService.java *     # Implementación de añadir entrada
-│   │   │   └── MedicalEntryRemoveService.java *  # Implementación de eliminar entrada
+│   │   │   ├── MedicalRecordCreateService.java * # Implementación reactiva de creación
+│   │   │   ├── MedicalRecordQueryService.java *  # Implementación reactiva de consulta
+│   │   │   ├── MedicalEntryAddService.java *     # Implementación reactiva de añadir entrada
+│   │   │   └── MedicalEntryRemoveService.java *  # Implementación reactiva de eliminar entrada
 │   │   ├── doctor/          # Implementaciones para doctores
-│   │   │   ├── DoctorCreateService.java *        # Implementación de creación
-│   │   │   ├── DoctorUpdateService.java *        # Implementación de actualización
-│   │   │   ├── DoctorDeleteService.java *        # Implementación de eliminación
-│   │   │   └── DoctorQueryService.java *         # Implementación de consulta
+│   │   │   ├── DoctorCreateService.java *        # Implementación reactiva de creación
+│   │   │   ├── DoctorUpdateService.java *        # Implementación reactiva de actualización
+│   │   │   ├── DoctorDeleteService.java *        # Implementación reactiva de eliminación
+│   │   │   └── DoctorQueryService.java *         # Implementación reactiva de consulta
 │   │   └── appointment/     # Implementaciones para citas
-│   │       ├── AppointmentCreateService.java *    # Implementación de creación
-│   │       ├── AppointmentUpdateService.java *    # Implementación de actualización
-│   │       ├── AppointmentCancelService.java *    # Implementación de cancelación
-│   │       └── AppointmentQueryService.java *     # Implementación de consulta
+│   │       ├── AppointmentCreateService.java *    # Implementación reactiva de creación
+│   │       ├── AppointmentUpdateService.java *    # Implementación reactiva de actualización
+│   │       ├── AppointmentCancelService.java *    # Implementación reactiva de cancelación
+│   │       └── AppointmentQueryService.java *     # Implementación reactiva de consulta
 │   └── exceptions/          # Excepciones específicas de la aplicación
 │       ├── PatientNotFoundException.java *       # Paciente no encontrado
 │       ├── DoctorNotFoundException.java *        # Doctor no encontrado
@@ -158,11 +155,11 @@ Odoonto.Back/src/main/java/odoonto/
 ├── infrastructure/          # Implementaciones técnicas (adaptadores)
 │   ├── persistence/         # Implementaciones de repositorios (adaptadores)
 │   │   ├── reactive/        # Implementaciones reactivas de repositorios
-│   │   │   ├── ReactivePatientRepositoryAdapter.java *       # Implementación reactiva para repositorio de pacientes
-│   │   │   ├── ReactiveOdontogramRepositoryAdapter.java *    # Implementación reactiva para repositorio de odontogramas
-│   │   │   ├── ReactiveMedicalRecordRepositoryAdapter.java * # Implementación reactiva para repositorio de historiales
-│   │   │   ├── ReactiveDoctorRepositoryAdapter.java *        # Implementación reactiva para repositorio de doctores
-│   │   │   └── ReactiveAppointmentRepositoryAdapter.java *   # Implementación reactiva para repositorio de citas
+│   │   │   ├── ReactivePatientRepositoryAdapter.java *      # Implementación reactiva para repositorio de pacientes
+│   │   │   ├── ReactiveOdontogramRepositoryAdapter.java *   # Implementación reactiva para repositorio de odontogramas
+│   │   │   ├── ReactiveMedicalRecordRepositoryAdapter.java * # Implementación reactiva directa con Firestore
+│   │   │   ├── ReactiveDoctorRepositoryAdapter.java *       # Implementación reactiva directa con Firestore
+│   │   │   └── ReactiveAppointmentRepositoryAdapter.java *  # Implementación reactiva directa con Firestore
 │   │   └── entity/          # Entidades de persistencia (si son distintas)
 │   │       ├── FirestorePatientEntity.java *        # Mapeo de Patient para Firestore
 │   │       ├── FirestoreOdontogramEntity.java *     # Mapeo de Odontogram para Firestore
@@ -180,11 +177,11 @@ Odoonto.Back/src/main/java/odoonto/
 └── presentation/            # API y controladores (adaptadores primarios)
     ├── rest/                # API REST
     │   ├── controller/      # Controladores REST (adaptadores que usan puertos)
-    │   │   ├── PatientController.java *             # Endpoints de pacientes (usa PatientCreateUseCase, etc.)
-    │   │   ├── OdontogramController.java *          # Endpoints de odontogramas (implementación reactiva completa)
-    │   │   ├── MedicalRecordController.java *       # Endpoints de historiales médicos (implementación reactiva completa)
-    │   │   ├── DoctorController.java *              # Endpoints de doctores (implementación reactiva completa)
-    │   │   └── AppointmentController.java *         # Endpoints de citas (implementación reactiva completa)
+    │   │   ├── PatientController.java *             # Endpoints de pacientes (implementación reactiva)
+    │   │   ├── OdontogramController.java *          # Endpoints de odontogramas (implementación reactiva)
+    │   │   ├── MedicalRecordController.java *       # Endpoints de historiales médicos (implementación reactiva)
+    │   │   ├── DoctorController.java *              # Endpoints de doctores (implementación reactiva)
+    │   │   └── AppointmentController.java *         # Endpoints de citas (implementación reactiva)
     │   └── advice/          # Manejadores de excepciones para REST
     │       └── GlobalExceptionHandler.java *       # Manejo global de excepciones 
     └── documentation/       # Documentación de API

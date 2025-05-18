@@ -3,10 +3,11 @@ package odoonto.domain.specifications;
 import odoonto.domain.model.aggregates.Patient;
 import odoonto.domain.model.valueobjects.Sexo;
 import odoonto.domain.model.aggregates.Odontogram;
+import odoonto.domain.model.valueobjects.MedicalRecordId;
 
 import java.time.LocalDate;
 import java.time.Period;
-import java.util.function.Predicate;
+
 import java.util.Map;
 
 /**
@@ -81,7 +82,10 @@ public class PatientSpecification {
      * @return Especificación resultante
      */
     public static Specification<Patient> withoutMedicalRecord() {
-        return patient -> patient.getMedicalRecordId() == null || patient.getMedicalRecordId().isEmpty();
+        return patient -> {
+            MedicalRecordId medicalRecordId = patient.deriveMedicalRecordId();
+            return medicalRecordId == null || medicalRecordId.getValue().isEmpty();
+        };
     }
     
     /**

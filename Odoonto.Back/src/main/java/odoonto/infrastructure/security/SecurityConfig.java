@@ -23,16 +23,16 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             // Desactivar CSRF para APIs RESTful
-            .csrf().disable()
+            .csrf(csrf -> csrf.disable())
             // Configurar política de sesión sin estado
-            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            .and()
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // Configurar reglas de autorización
-            .authorizeRequests()
+            .authorizeHttpRequests(authorize -> authorize
                 // Permitir acceso público a Swagger
-                .antMatchers("/swagger-ui.html", "/swagger-resources/**", "/v2/api-docs", "/webjars/**").permitAll()
+                .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/swagger-resources/**", "/v3/api-docs/**", "/webjars/**").permitAll()
                 // Permitir todas las peticiones (para desarrollo)
-                .anyRequest().permitAll();
+                .anyRequest().permitAll()
+            );
         
         return http.build();
     }

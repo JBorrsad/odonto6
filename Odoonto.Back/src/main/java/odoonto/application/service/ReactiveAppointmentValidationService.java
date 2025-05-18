@@ -6,7 +6,7 @@ import odoonto.domain.exceptions.AppointmentOverlapException;
 import odoonto.domain.exceptions.DomainException;
 import odoonto.domain.exceptions.InvalidAppointmentTimeException;
 import odoonto.domain.model.aggregates.Appointment;
-import odoonto.domain.model.aggregates.Doctor;
+
 import odoonto.domain.model.valueobjects.AppointmentTime;
 
 import org.springframework.stereotype.Service;

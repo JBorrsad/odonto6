@@ -4,6 +4,7 @@ import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
+import com.google.api.core.ApiFuture;
 
 import odoonto.application.port.out.ReactivePatientRepository;
 import odoonto.domain.model.aggregates.Patient;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Implementación reactiva del repositorio de pacientes usando Firestore
@@ -36,16 +39,37 @@ public class ReactivePatientRepositoryAdapter implements ReactivePatientReposito
     }
 
     @Override
-    public Mono<Patient> findById(PatientId id) {
+    public Mono<Patient> findById(String id) {
         if (id == null) {
             return Mono.empty();
         }
         
-        return Mono.fromCallable(() -> patientsCollection.document(id.getValue()).get())
-                .flatMap(future -> Mono.fromCallable(future::get))
-                .filter(DocumentSnapshot::exists)
-                .map(this::mapToPatient)
-                .subscribeOn(Schedulers.boundedElastic());
+        return Mono.fromCallable(() -> {
+            ApiFuture<DocumentSnapshot> future = patientsCollection.document(id).get();
+            CompletableFuture<DocumentSnapshot> completableFuture = new CompletableFuture<>();
+            
+            future.addListener(() -> {
+                try {
+                    completableFuture.complete(future.get());
+                } catch (Exception e) {
+                    completableFuture.completeExceptionally(e);
+                }
+            }, Runnable::run);
+            
+            return completableFuture;
+        })
+        .flatMap(future -> Mono.fromFuture(future))
+        .filter(DocumentSnapshot::exists)
+        .map(this::mapToPatient)
+        .subscribeOn(Schedulers.boundedElastic());
+    }
+    
+    @Override
+    public Mono<Patient> findById(PatientId patientId) {
+        if (patientId == null) {
+            return Mono.empty();
+        }
+        return findById(patientId.getValue());
     }
 
     @Override
@@ -61,67 +85,128 @@ public class ReactivePatientRepositoryAdapter implements ReactivePatientReposito
         
         FirestorePatientEntity entity = mapToEntity(patient);
         
-        return Mono.fromCallable(() -> patientsCollection.document(entity.getId()).set(entity))
-                .flatMap(future -> Mono.fromCallable(future::get))
-                .thenReturn(patient)
-                .subscribeOn(Schedulers.boundedElastic());
+        return Mono.fromCallable(() -> {
+            ApiFuture<?> future = patientsCollection.document(entity.getId()).set(entity);
+            CompletableFuture<Object> completableFuture = new CompletableFuture<>();
+            
+            future.addListener(() -> {
+                try {
+                    completableFuture.complete(future.get());
+                } catch (Exception e) {
+                    completableFuture.completeExceptionally(e);
+                }
+            }, Runnable::run);
+            
+            return completableFuture.thenApply(result -> patient);
+        })
+        .flatMap(future -> Mono.fromFuture(future))
+        .subscribeOn(Schedulers.boundedElastic());
     }
 
     @Override
-    public Mono<Void> deleteById(PatientId id) {
+    public Mono<Void> deleteById(String id) {
         if (id == null) {
             return Mono.empty();
         }
         
-        return Mono.fromCallable(() -> patientsCollection.document(id.getValue()).delete())
-                .flatMap(future -> Mono.fromCallable(future::get))
-                .then()
-                .subscribeOn(Schedulers.boundedElastic());
+        return Mono.fromCallable(() -> {
+            ApiFuture<?> future = patientsCollection.document(id).delete();
+            CompletableFuture<Object> completableFuture = new CompletableFuture<>();
+            
+            future.addListener(() -> {
+                try {
+                    completableFuture.complete(future.get());
+                } catch (Exception e) {
+                    completableFuture.completeExceptionally(e);
+                }
+            }, Runnable::run);
+            
+            return completableFuture;
+        })
+        .flatMap(future -> Mono.fromFuture(future))
+        .then()
+        .subscribeOn(Schedulers.boundedElastic());
     }
 
     @Override
     public Flux<Patient> findAll() {
-        return Mono.fromCallable(() -> patientsCollection.get())
-                .flatMap(future -> Mono.fromCallable(future::get))
-                .flatMapMany(querySnapshot -> Flux.fromIterable(querySnapshot.getDocuments()))
+        return Mono.fromCallable(() -> {
+            ApiFuture<QuerySnapshot> future = patientsCollection.get();
+            CompletableFuture<QuerySnapshot> completableFuture = new CompletableFuture<>();
+            
+            future.addListener(() -> {
+                try {
+                    completableFuture.complete(future.get());
+                } catch (Exception e) {
+                    completableFuture.completeExceptionally(e);
+                }
+            }, Runnable::run);
+            
+            return completableFuture;
+        })
+        .flatMap(future -> Mono.fromFuture(future))
+        .flatMapMany(querySnapshot -> {
+            return Flux.fromIterable(querySnapshot.getDocuments())
                 .map(this::mapToPatient)
-                .filter(patient -> patient != null)
-                .subscribeOn(Schedulers.boundedElastic());
+                .filter(patient -> patient != null);
+        })
+        .subscribeOn(Schedulers.boundedElastic());
     }
 
     @Override
-    public Flux<Patient> findByNombreContainingOrApellidoContaining(String nombre, String apellido) {
+    public Flux<Patient> findByNameContaining(String name) {
         // Firestore no soporta búsquedas parciales nativas, 
         // esta es una implementación simple que podría no ser eficiente.
         return findAll()
                 .filter(patient -> 
                     (patient.getNombre() != null && 
-                     patient.getNombre().toLowerCase().contains(nombre.toLowerCase())) ||
+                     patient.getNombre().toLowerCase().contains(name.toLowerCase())) ||
                     (patient.getApellido() != null && 
-                     patient.getApellido().toLowerCase().contains(apellido.toLowerCase()))
+                     patient.getApellido().toLowerCase().contains(name.toLowerCase()))
                 );
     }
 
     @Override
-    public Mono<Patient> findByEmail(String email) {
-        return Mono.fromCallable(() -> patientsCollection
-                    .whereEqualTo("email.value", email)
-                    .get())
-                .flatMap(future -> Mono.fromCallable(future::get))
-                .filter(querySnapshot -> !querySnapshot.isEmpty())
-                .map(querySnapshot -> mapToPatient(querySnapshot.getDocuments().get(0)))
-                .subscribeOn(Schedulers.boundedElastic());
+    public Flux<Patient> findByPhoneContaining(String phone) {
+        // Firestore no soporta búsquedas parciales nativas,
+        // esta es una implementación simple que podría no ser eficiente.
+        return findAll()
+                .filter(patient -> 
+                    patient.getTelefono() != null && 
+                    patient.getTelefono().getValue().contains(phone)
+                );
     }
-
+    
     @Override
-    public Mono<Patient> findByTelefono(String telefono) {
-        return Mono.fromCallable(() -> patientsCollection
-                    .whereEqualTo("telefono.value", telefono)
-                    .get())
-                .flatMap(future -> Mono.fromCallable(future::get))
-                .filter(querySnapshot -> !querySnapshot.isEmpty())
-                .map(querySnapshot -> mapToPatient(querySnapshot.getDocuments().get(0)))
-                .subscribeOn(Schedulers.boundedElastic());
+    public Flux<Patient> findByAddressContaining(String address) {
+        // Implementación simplificada - asumimos que no hay campo de dirección
+        // o que se buscaría en otros campos
+        return Flux.empty();
+    }
+    
+    @Override
+    public Mono<Boolean> existsById(String id) {
+        if (id == null) {
+            return Mono.just(false);
+        }
+        
+        return Mono.fromCallable(() -> {
+            ApiFuture<DocumentSnapshot> future = patientsCollection.document(id).get();
+            CompletableFuture<DocumentSnapshot> completableFuture = new CompletableFuture<>();
+            
+            future.addListener(() -> {
+                try {
+                    completableFuture.complete(future.get());
+                } catch (Exception e) {
+                    completableFuture.completeExceptionally(e);
+                }
+            }, Runnable::run);
+            
+            return completableFuture;
+        })
+        .flatMap(future -> Mono.fromFuture(future))
+        .map(DocumentSnapshot::exists)
+        .subscribeOn(Schedulers.boundedElastic());
     }
     
     /**

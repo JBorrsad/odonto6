@@ -5,8 +5,7 @@ import odoonto.domain.exceptions.InvalidAppointmentTimeException;
 import odoonto.domain.model.valueobjects.AppointmentStatus;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
+
 
 /**
  * Agregado raíz que representa una cita médica en el sistema.

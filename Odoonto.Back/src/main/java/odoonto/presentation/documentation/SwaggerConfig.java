@@ -2,49 +2,30 @@ package odoonto.presentation.documentation;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.service.ApiInfo;
-import springfox.documentation.service.Contact;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-import java.util.Collections;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.Contact;
 
 /**
- * Configuración de Swagger para documentación de API
+ * Configuración de OpenAPI para documentación de API
  */
 @Configuration
-@EnableSwagger2
 public class SwaggerConfig {
 
     /**
-     * Configura el servicio de documentación Swagger
+     * Configura el servicio de documentación OpenAPI
      */
     @Bean
-    public Docket api() {
-        return new Docket(DocumentationType.SWAGGER_2)
-                .select()
-                .apis(RequestHandlerSelectors.basePackage("odoonto.presentation.rest.controller"))
-                .paths(PathSelectors.any())
-                .build()
-                .apiInfo(apiInfo());
-    }
-
-    /**
-     * Información general de la API
-     */
-    private ApiInfo apiInfo() {
-        return new ApiInfo(
-                "Odoonto API",
-                "API REST para el sistema odontológico Odoonto",
-                "1.0.0",
-                "Términos del servicio",
-                new Contact("Equipo Odoonto", "https://www.odoonto.com", "info@odoonto.com"),
-                "Licencia",
-                "URL de la licencia",
-                Collections.emptyList()
-        );
+    public OpenAPI apiInfo() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Odoonto")
+                        .description("API REST Odoonto")
+                        .version("1.0.0")
+                        .contact(new Contact()
+                                .name("Juan Borrás")
+                                .url("sadaborras63@gmail.com")
+                                .email("juan-borras@hotmail.com")));
     }
 } 

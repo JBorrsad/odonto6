@@ -2,20 +2,18 @@ package odoonto.domain.service;
 
 import odoonto.domain.model.aggregates.Odontogram;
 import odoonto.domain.model.aggregates.Patient;
-import odoonto.domain.model.entities.Tooth;
-import odoonto.domain.model.entities.Lesion;
-import odoonto.domain.model.entities.Treatment;
+
 import odoonto.domain.model.valueobjects.LesionType;
 import odoonto.domain.model.valueobjects.TreatmentType;
 import odoonto.domain.exceptions.DomainException;
 
-import java.time.LocalDate;
+
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.stream.Collectors;
+
 
 /**
  * Servicio de dominio para planificar tratamientos dentales.

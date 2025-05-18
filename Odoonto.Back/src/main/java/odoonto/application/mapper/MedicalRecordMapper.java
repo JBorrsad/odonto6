@@ -8,7 +8,7 @@ import odoonto.domain.model.aggregates.MedicalRecord.MedicalNote;
 import odoonto.domain.model.aggregates.MedicalRecord.Diagnosis;
 import odoonto.domain.model.aggregates.MedicalRecord.Treatment;
 
-import java.time.LocalDate;
+
 import java.util.List;
 import java.util.stream.Collectors;
 

@@ -10,7 +10,6 @@ import odoonto.application.dto.response.OdontogramDTO;
 import odoonto.application.port.in.patient.PatientOdontogramUseCase;
 import odoonto.application.service.OdontogramService;
 import odoonto.domain.model.aggregates.Odontogram;
-import odoonto.application.exceptions.OdontogramNotFoundException;
 import reactor.core.publisher.Mono;
 
 /**
@@ -30,14 +29,12 @@ public class OdontogramController {
         this.patientOdontogramUseCase = patientOdontogramUseCase;
     }
 
-    // API reactiva
-
     /**
      * Obtiene un odontograma por su ID
      * @param id ID del odontograma
-     * @return DTO del odontograma
+     * @return Mono con el DTO del odontograma
      */
-    @GetMapping("/api/odontograms/{id}")
+    @GetMapping(value = "/api/odontograms/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<OdontogramDTO>> getOdontogramById(@PathVariable String id) {
         return odontogramService.getOdontogramById(id)
             .map(ResponseEntity::ok)
@@ -47,13 +44,11 @@ public class OdontogramController {
     /**
      * Obtiene el odontograma de un paciente
      * @param patientId ID del paciente
-     * @return Odontograma del paciente
+     * @return Mono con el odontograma del paciente
      */
-    @GetMapping("/api/patients/{patientId}/odontogram")
-    public Mono<ResponseEntity<Object>> getPatientOdontogram(@PathVariable String patientId) {
-        return Mono.fromCallable(() -> patientOdontogramUseCase.getPatientOdontogram(patientId))
-            .map(ResponseEntity::ok)
-            .onErrorResume(e -> Mono.just(ResponseEntity.notFound().build()));
+    @GetMapping(value = "/api/patients/{patientId}/odontogram", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<Odontogram> getPatientOdontogram(@PathVariable String patientId) {
+        return patientOdontogramUseCase.getPatientOdontogram(patientId);
     }
     
     /**
@@ -62,9 +57,10 @@ public class OdontogramController {
      * @param toothNumber Número del diente
      * @param face Cara del diente
      * @param lesionType Tipo de lesión
-     * @return Odontograma actualizado
+     * @return Mono con el odontograma actualizado
      */
-    @PostMapping("/api/odontograms/{id}/teeth/{toothNumber}/faces/{face}/lesions")
+    @PostMapping(value = "/api/odontograms/{id}/teeth/{toothNumber}/faces/{face}/lesions", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
     public Mono<ResponseEntity<OdontogramDTO>> addLesion(
             @PathVariable String id,
             @PathVariable int toothNumber,
@@ -81,9 +77,9 @@ public class OdontogramController {
      * @param id ID del odontograma
      * @param toothNumber Número del diente
      * @param face Cara del diente
-     * @return Odontograma actualizado
+     * @return Mono con el odontograma actualizado
      */
-    @DeleteMapping("/api/odontograms/{id}/teeth/{toothNumber}/faces/{face}/lesions")
+    @DeleteMapping(value = "/api/odontograms/{id}/teeth/{toothNumber}/faces/{face}/lesions", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<OdontogramDTO>> removeLesion(
             @PathVariable String id,
             @PathVariable int toothNumber,
@@ -99,9 +95,10 @@ public class OdontogramController {
      * @param id ID del odontograma
      * @param toothNumber Número del diente
      * @param treatmentType Tipo de tratamiento
-     * @return Odontograma actualizado
+     * @return Mono con el odontograma actualizado
      */
-    @PostMapping("/api/odontograms/{id}/teeth/{toothNumber}/treatments")
+    @PostMapping(value = "/api/odontograms/{id}/teeth/{toothNumber}/treatments", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
     public Mono<ResponseEntity<OdontogramDTO>> addTreatment(
             @PathVariable String id,
             @PathVariable int toothNumber,
@@ -116,9 +113,9 @@ public class OdontogramController {
      * Elimina un tratamiento de un diente
      * @param id ID del odontograma
      * @param toothNumber Número del diente
-     * @return Odontograma actualizado
+     * @return Mono con el odontograma actualizado
      */
-    @DeleteMapping("/api/odontograms/{id}/teeth/{toothNumber}/treatments")
+    @DeleteMapping(value = "/api/odontograms/{id}/teeth/{toothNumber}/treatments", produces = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<OdontogramDTO>> removeTreatment(
             @PathVariable String id,
             @PathVariable int toothNumber) {
@@ -126,90 +123,5 @@ public class OdontogramController {
         return odontogramService.removeTreatment(id, toothNumber)
             .map(ResponseEntity::ok)
             .defaultIfEmpty(ResponseEntity.notFound().build());
-    }
-    
-    /**
-     * Obtiene un odontograma por su ID de forma reactiva (endpoint alternativo)
-     * @param id ID del odontograma
-     * @return Mono con el DTO del odontograma
-     */
-    @GetMapping(value = "/api/reactive/odontograms/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<OdontogramDTO> getOdontogramByIdReactive(@PathVariable String id) {
-        return odontogramService.getOdontogramByIdReactive(id);
-    }
-    
-    /**
-     * Obtiene el odontograma de un paciente de forma reactiva (endpoint alternativo)
-     * @param patientId ID del paciente
-     * @return Mono con el odontograma del paciente
-     */
-    @GetMapping(value = "/api/reactive/patients/{patientId}/odontogram", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<Odontogram> getPatientOdontogramReactive(@PathVariable String patientId) {
-        return odontogramService.getPatientOdontogramReactive(patientId);
-    }
-    
-    /**
-     * Registra una lesión en un diente de forma reactiva (endpoint alternativo)
-     * @param id ID del odontograma
-     * @param toothNumber Número del diente
-     * @param face Cara del diente
-     * @param lesionType Tipo de lesión
-     * @return Mono con el odontograma actualizado
-     */
-    @PostMapping(value = "/api/reactive/odontograms/{id}/teeth/{toothNumber}/faces/{face}/lesions", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<OdontogramDTO> addLesionReactive(
-            @PathVariable String id,
-            @PathVariable int toothNumber,
-            @PathVariable String face,
-            @RequestParam String lesionType) {
-        
-        return odontogramService.addLesionReactive(id, toothNumber, face, lesionType);
-    }
-    
-    /**
-     * Elimina una lesión de un diente de forma reactiva (endpoint alternativo)
-     * @param id ID del odontograma
-     * @param toothNumber Número del diente
-     * @param face Cara del diente
-     * @return Mono con el odontograma actualizado
-     */
-    @DeleteMapping(value = "/api/reactive/odontograms/{id}/teeth/{toothNumber}/faces/{face}/lesions", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<OdontogramDTO> removeLesionReactive(
-            @PathVariable String id,
-            @PathVariable int toothNumber,
-            @PathVariable String face) {
-        
-        return odontogramService.removeLesionReactive(id, toothNumber, face);
-    }
-    
-    /**
-     * Registra un tratamiento en un diente de forma reactiva (endpoint alternativo)
-     * @param id ID del odontograma
-     * @param toothNumber Número del diente
-     * @param treatmentType Tipo de tratamiento
-     * @return Mono con el odontograma actualizado
-     */
-    @PostMapping(value = "/api/reactive/odontograms/{id}/teeth/{toothNumber}/treatments", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseStatus(HttpStatus.CREATED)
-    public Mono<OdontogramDTO> addTreatmentReactive(
-            @PathVariable String id,
-            @PathVariable int toothNumber,
-            @RequestParam String treatmentType) {
-        
-        return odontogramService.addTreatment(id, toothNumber, treatmentType);
-    }
-    
-    /**
-     * Elimina un tratamiento de un diente de forma reactiva (endpoint alternativo)
-     * @param id ID del odontograma
-     * @param toothNumber Número del diente
-     * @return Mono con el odontograma actualizado
-     */
-    @DeleteMapping(value = "/api/reactive/odontograms/{id}/teeth/{toothNumber}/treatments", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<OdontogramDTO> removeTreatmentReactive(
-            @PathVariable String id,
-            @PathVariable int toothNumber) {
-        
-        return odontogramService.removeTreatment(id, toothNumber);
     }
 } 

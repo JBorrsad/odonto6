@@ -8,17 +8,30 @@ import reactor.core.publisher.Mono;
 
 /**
  * Puerto de salida reactivo para el repositorio de pacientes.
- * Esta interfaz adapta el repositorio de dominio a una interfaz reactiva
- * para su uso en la capa de aplicación.
+ * Define las operaciones reactivas para acceder y manipular pacientes
+ * en la capa de infraestructura.
  */
 public interface ReactivePatientRepository {
 
+    /**
+     * Busca todos los pacientes
+     * @return Flux con todos los pacientes
+     */
+    Flux<Patient> findAll();
+    
     /**
      * Busca un paciente por su identificador
      * @param id Identificador único del paciente
      * @return Mono con el paciente encontrado o empty si no existe
      */
-    Mono<Patient> findById(PatientId id);
+    Mono<Patient> findById(String id);
+    
+    /**
+     * Busca un paciente por su identificador de valor
+     * @param patientId Identificador de paciente (objeto valor)
+     * @return Mono con el paciente encontrado o empty si no existe
+     */
+    Mono<Patient> findById(PatientId patientId);
     
     /**
      * Guarda un paciente en el repositorio
@@ -32,57 +45,33 @@ public interface ReactivePatientRepository {
      * @param id Identificador único del paciente
      * @return Mono que completa cuando la operación termina
      */
-    Mono<Void> deleteById(PatientId id);
+    Mono<Void> deleteById(String id);
     
     /**
-     * Busca todos los pacientes en el repositorio
-     * @return Flux con todos los pacientes
+     * Busca pacientes por su nombre
+     * @param name Nombre del paciente
+     * @return Flux con los pacientes que coinciden con el nombre
      */
-    Flux<Patient> findAll();
+    Flux<Patient> findByNameContaining(String name);
     
     /**
-     * Busca pacientes cuyo nombre o apellido contenga el texto especificado
-     * @param nombre Texto a buscar en el nombre
-     * @param apellido Texto a buscar en el apellido
-     * @return Flux con los pacientes que coinciden con la búsqueda
+     * Busca pacientes por su dirección
+     * @param address Dirección del paciente
+     * @return Flux con los pacientes que coinciden con la dirección
      */
-    Flux<Patient> findByNombreContainingOrApellidoContaining(String nombre, String apellido);
+    Flux<Patient> findByAddressContaining(String address);
     
     /**
-     * Busca un paciente por su email
-     * @param email Email a buscar
-     * @return Mono con el paciente encontrado o empty si no existe
+     * Busca pacientes por su número de teléfono
+     * @param phone Número de teléfono del paciente
+     * @return Flux con los pacientes que coinciden con el teléfono
      */
-    Mono<Patient> findByEmail(String email);
+    Flux<Patient> findByPhoneContaining(String phone);
     
     /**
-     * Busca un paciente por su teléfono
-     * @param telefono Teléfono a buscar
-     * @return Mono con el paciente encontrado o empty si no existe
+     * Comprueba si existe un paciente con el identificador proporcionado
+     * @param id Identificador único del paciente
+     * @return Mono con true si existe, false si no
      */
-    Mono<Patient> findByTelefono(String telefono);
-    
-    /**
-     * Método de compatibilidad para buscar por id usando String
-     * @param id Identificador como String
-     * @return Mono con el paciente encontrado o empty si no existe
-     */
-    default Mono<Patient> findById(String id) {
-        if (id == null || id.trim().isEmpty()) {
-            return Mono.empty();
-        }
-        return findById(PatientId.of(id));
-    }
-    
-    /**
-     * Método de compatibilidad para eliminar por id usando String
-     * @param id Identificador como String
-     * @return Mono que completa cuando la operación termina
-     */
-    default Mono<Void> deleteById(String id) {
-        if (id == null || id.trim().isEmpty()) {
-            return Mono.empty();
-        }
-        return deleteById(PatientId.of(id));
-    }
+    Mono<Boolean> existsById(String id);
 } 

@@ -1,15 +1,15 @@
 package odoonto.application.port.in.appointment;
 
 import odoonto.application.dto.response.AppointmentDTO;
-import java.util.List;
-import java.util.Optional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * Caso de uso para consultar citas
  */
 public interface AppointmentQueryUseCase {
-    Optional<AppointmentDTO> findById(String appointmentId);
-    List<AppointmentDTO> findAll();
-    List<AppointmentDTO> findByPatientId(String patientId);
-    List<AppointmentDTO> findByDoctorId(String doctorId);
+    Mono<AppointmentDTO> findById(String appointmentId);
+    Flux<AppointmentDTO> findAll();
+    Flux<AppointmentDTO> findByPatientId(String patientId);
+    Flux<AppointmentDTO> findByDoctorId(String doctorId);
 } 

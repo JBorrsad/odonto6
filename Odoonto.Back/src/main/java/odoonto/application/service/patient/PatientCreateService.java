@@ -7,7 +7,7 @@ import odoonto.application.dto.request.PatientCreateDTO;
 import odoonto.application.dto.response.PatientDTO;
 import odoonto.application.mapper.PatientMapper;
 import odoonto.application.port.in.patient.PatientCreateUseCase;
-import odoonto.application.port.out.PatientRepositoryPort;
+import odoonto.application.port.out.ReactivePatientRepository;
 import odoonto.domain.model.aggregates.Patient;
 import reactor.core.publisher.Mono;
 
@@ -17,11 +17,11 @@ import reactor.core.publisher.Mono;
 @Service
 public class PatientCreateService implements PatientCreateUseCase {
 
-    private final PatientRepositoryPort patientRepository;
+    private final ReactivePatientRepository patientRepository;
     private final PatientMapper patientMapper;
 
     @Autowired
-    public PatientCreateService(PatientRepositoryPort patientRepository, 
+    public PatientCreateService(ReactivePatientRepository patientRepository, 
                               PatientMapper patientMapper) {
         this.patientRepository = patientRepository;
         this.patientMapper = patientMapper;
@@ -34,10 +34,8 @@ public class PatientCreateService implements PatientCreateUseCase {
         // Convertir DTO a entidad de dominio
         Patient patient = patientMapper.toEntity(patientDTO);
         
-        // Persistir la entidad y convertir a Mono
-        return Mono.fromCallable(() -> {
-            Patient savedPatient = patientRepository.save(patient);
-            return patientMapper.toDTO(savedPatient);
-        });
+        // Persistir la entidad de forma reactiva
+        return patientRepository.save(patient)
+                .map(patientMapper::toDTO);
     }
 } 

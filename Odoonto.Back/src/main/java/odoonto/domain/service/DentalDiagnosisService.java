@@ -2,18 +2,15 @@ package odoonto.domain.service;
 
 import odoonto.domain.exceptions.DomainException;
 import odoonto.domain.model.aggregates.Odontogram;
-import odoonto.domain.model.entities.Lesion;
-import odoonto.domain.model.entities.Tooth;
-import odoonto.domain.model.entities.Treatment;
+
 import odoonto.domain.model.valueobjects.LesionType;
-import odoonto.domain.model.valueobjects.ToothFace;
+
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Collections;
-import java.util.stream.Collectors;
+
 
 /**
  * Servicio de dominio para realizar diagnósticos dentales.

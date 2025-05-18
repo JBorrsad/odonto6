@@ -2,13 +2,12 @@ package odoonto.infrastructure.config;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.firestore.Firestore;
-import com.google.cloud.spring.data.firestore.FirestoreReactiveOperations;
-import com.google.cloud.spring.data.firestore.FirestoreTemplate;
+
 import com.google.cloud.spring.data.firestore.mapping.FirestoreMappingContext;
+import com.google.cloud.spring.data.firestore.repository.config.EnableReactiveFirestoreRepositories;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.cloud.FirestoreClient;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
@@ -20,6 +19,7 @@ import java.io.InputStream;
  * Configuración para conectar con Firestore
  */
 @Configuration
+@EnableReactiveFirestoreRepositories(basePackages = "odoonto.infrastructure.persistence.reactive")
 public class FirestoreConfig {
 
     @Bean
@@ -44,8 +44,6 @@ public class FirestoreConfig {
         return new FirestoreMappingContext();
     }
     
-    @Bean
-    public FirestoreTemplate firestoreTemplate(Firestore firestore, FirestoreMappingContext mappingContext) {
-        return new FirestoreTemplate(firestore, mappingContext);
-    }
+    // La configuración de FirestoreTemplate se realizará automáticamente
+    // a través de la anotación EnableReactiveFirestoreRepositories
 } 

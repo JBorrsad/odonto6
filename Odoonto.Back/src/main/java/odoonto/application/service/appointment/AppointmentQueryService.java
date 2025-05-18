@@ -6,11 +6,10 @@ import org.springframework.stereotype.Service;
 import odoonto.application.dto.response.AppointmentDTO;
 import odoonto.application.mapper.AppointmentMapper;
 import odoonto.application.port.in.appointment.AppointmentQueryUseCase;
-import odoonto.domain.repository.AppointmentRepository;
+import odoonto.application.port.out.ReactiveAppointmentRepository;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * Implementación del caso de uso para consultar citas
@@ -18,21 +17,21 @@ import java.util.stream.Collectors;
 @Service
 public class AppointmentQueryService implements AppointmentQueryUseCase {
 
-    private final AppointmentRepository appointmentRepository;
+    private final ReactiveAppointmentRepository appointmentRepository;
     private final AppointmentMapper appointmentMapper;
 
     @Autowired
     public AppointmentQueryService(
-            AppointmentRepository appointmentRepository,
+            ReactiveAppointmentRepository appointmentRepository,
             AppointmentMapper appointmentMapper) {
         this.appointmentRepository = appointmentRepository;
         this.appointmentMapper = appointmentMapper;
     }
 
     @Override
-    public Optional<AppointmentDTO> findById(String appointmentId) {
+    public Mono<AppointmentDTO> findById(String appointmentId) {
         if (appointmentId == null || appointmentId.trim().isEmpty()) {
-            return Optional.empty();
+            return Mono.empty();
         }
         
         return appointmentRepository.findById(appointmentId)
@@ -40,31 +39,28 @@ public class AppointmentQueryService implements AppointmentQueryUseCase {
     }
 
     @Override
-    public List<AppointmentDTO> findAll() {
-        return appointmentRepository.findAll().stream()
-            .map(appointmentMapper::toDTO)
-            .collect(Collectors.toList());
+    public Flux<AppointmentDTO> findAll() {
+        return appointmentRepository.findAll()
+            .map(appointmentMapper::toDTO);
     }
 
     @Override
-    public List<AppointmentDTO> findByPatientId(String patientId) {
+    public Flux<AppointmentDTO> findByPatientId(String patientId) {
         if (patientId == null || patientId.trim().isEmpty()) {
-            return List.of();
+            return Flux.empty();
         }
         
-        return appointmentRepository.findByPatientId(patientId).stream()
-            .map(appointmentMapper::toDTO)
-            .collect(Collectors.toList());
+        return appointmentRepository.findByPatientId(patientId)
+            .map(appointmentMapper::toDTO);
     }
 
     @Override
-    public List<AppointmentDTO> findByDoctorId(String doctorId) {
+    public Flux<AppointmentDTO> findByDoctorId(String doctorId) {
         if (doctorId == null || doctorId.trim().isEmpty()) {
-            return List.of();
+            return Flux.empty();
         }
         
-        return appointmentRepository.findByDoctorId(doctorId).stream()
-            .map(appointmentMapper::toDTO)
-            .collect(Collectors.toList());
+        return appointmentRepository.findByDoctorId(doctorId)
+            .map(appointmentMapper::toDTO);
     }
 } 

@@ -1,9 +1,9 @@
 package odoonto.application.mapper;
 
 import odoonto.domain.model.aggregates.Odontogram;
-import odoonto.domain.model.aggregates.Odontogram.ToothRecord;
+
 import odoonto.application.dto.response.OdontogramDTO;
-import odoonto.application.dto.response.OdontogramDTO.ToothRecordDTO;
+
 import odoonto.application.dto.request.LesionCreateDTO;
 import odoonto.domain.model.valueobjects.ToothFace;
 import odoonto.domain.model.valueobjects.LesionType;

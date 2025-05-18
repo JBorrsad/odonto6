@@ -4,11 +4,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import odoonto.application.port.in.appointment.AppointmentCancelUseCase;
+import odoonto.application.port.out.ReactiveAppointmentRepository;
 import odoonto.domain.exceptions.DomainException;
-import odoonto.domain.model.aggregates.Appointment;
 import odoonto.domain.model.valueobjects.AppointmentStatus;
-import odoonto.domain.repository.AppointmentRepository;
-
+import reactor.core.publisher.Mono;
 
 /**
  * Implementación del caso de uso para cancelar una cita
@@ -16,38 +15,40 @@ import odoonto.domain.repository.AppointmentRepository;
 @Service
 public class AppointmentCancelService implements AppointmentCancelUseCase {
 
-    private final AppointmentRepository appointmentRepository;
+    private final ReactiveAppointmentRepository appointmentRepository;
 
     @Autowired
-    public AppointmentCancelService(AppointmentRepository appointmentRepository) {
+    public AppointmentCancelService(ReactiveAppointmentRepository appointmentRepository) {
         this.appointmentRepository = appointmentRepository;
     }
 
     @Override
-    public void cancelAppointment(String appointmentId) {
+    public Mono<Void> cancelAppointment(String appointmentId) {
         // Validaciones básicas
         if (appointmentId == null || appointmentId.trim().isEmpty()) {
-            throw new DomainException("El ID de la cita no puede ser nulo o vacío");
+            return Mono.error(new DomainException("El ID de la cita no puede ser nulo o vacío"));
         }
         
         // Buscar la cita existente y cancelarla
-        Appointment appointment = appointmentRepository.findById(appointmentId)
-            .orElseThrow(() -> new DomainException("No existe una cita con el ID: " + appointmentId));
-        
-        // Verificar si la cita ya está cancelada
-        if (appointment.getStatus() == AppointmentStatus.CANCELADA) {
-            throw new DomainException("La cita ya está cancelada");
-        }
-        
-        // Verificar si la cita ya está completada
-        if (appointment.getStatus() == AppointmentStatus.COMPLETADA) {
-            throw new DomainException("No se puede cancelar una cita que ya está completada");
-        }
-        
-        // Cambiar el estado de la cita a cancelada
-        appointment.setStatus(AppointmentStatus.CANCELADA);
-        
-        // Guardar los cambios
-        appointmentRepository.save(appointment);
+        return appointmentRepository.findById(appointmentId)
+            .switchIfEmpty(Mono.error(new DomainException("No existe una cita con el ID: " + appointmentId)))
+            .flatMap(appointment -> {
+                // Verificar si la cita ya está cancelada
+                if (appointment.getStatus() == AppointmentStatus.CANCELADA) {
+                    return Mono.error(new DomainException("La cita ya está cancelada"));
+                }
+                
+                // Verificar si la cita ya está completada
+                if (appointment.getStatus() == AppointmentStatus.COMPLETADA) {
+                    return Mono.error(new DomainException("No se puede cancelar una cita que ya está completada"));
+                }
+                
+                // Cambiar el estado de la cita a cancelada
+                appointment.setStatus(AppointmentStatus.CANCELADA);
+                
+                // Guardar los cambios
+                return appointmentRepository.save(appointment);
+            })
+            .then();
     }
 } 

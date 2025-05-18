@@ -11,12 +11,10 @@ import odoonto.application.exceptions.PatientNotFoundException;
 import odoonto.application.mapper.OdontogramMapper;
 import odoonto.application.mapper.MedicalRecordMapper;
 import odoonto.application.port.in.patient.PatientOdontogramUseCase;
-import odoonto.application.port.out.PatientRepositoryPort;
-import odoonto.application.port.out.OdontogramRepositoryPort;
-import odoonto.application.port.out.MedicalRecordRepositoryPort;
-import odoonto.domain.model.aggregates.Patient;
+import odoonto.application.port.out.ReactivePatientRepository;
+import odoonto.application.port.out.ReactiveOdontogramRepository;
+import odoonto.application.port.out.ReactiveMedicalRecordRepository;
 import odoonto.domain.model.aggregates.Odontogram;
-import odoonto.domain.model.aggregates.MedicalRecord;
 import odoonto.domain.model.valueobjects.MedicalRecordId;
 import odoonto.domain.model.valueobjects.PatientId;
 import reactor.core.publisher.Mono;
@@ -27,17 +25,17 @@ import reactor.core.publisher.Mono;
 @Service
 public class PatientOdontogramService implements PatientOdontogramUseCase {
 
-    private final PatientRepositoryPort patientRepository;
-    private final OdontogramRepositoryPort odontogramRepository;
-    private final MedicalRecordRepositoryPort medicalRecordRepository;
+    private final ReactivePatientRepository patientRepository;
+    private final ReactiveOdontogramRepository odontogramRepository;
+    private final ReactiveMedicalRecordRepository medicalRecordRepository;
     private final OdontogramMapper odontogramMapper;
     private final MedicalRecordMapper medicalRecordMapper;
 
     @Autowired
     public PatientOdontogramService(
-            PatientRepositoryPort patientRepository,
-            OdontogramRepositoryPort odontogramRepository,
-            MedicalRecordRepositoryPort medicalRecordRepository,
+            ReactivePatientRepository patientRepository,
+            ReactiveOdontogramRepository odontogramRepository,
+            ReactiveMedicalRecordRepository medicalRecordRepository,
             OdontogramMapper odontogramMapper,
             MedicalRecordMapper medicalRecordMapper) {
         this.patientRepository = patientRepository;
@@ -49,36 +47,39 @@ public class PatientOdontogramService implements PatientOdontogramUseCase {
 
     @Override
     public Mono<Odontogram> getPatientOdontogram(String patientId) {
-        // Convertir a operación reactiva
-        return Mono.fromCallable(() -> {
-            // Verificar que el paciente existe
-            patientRepository.findById(patientId)
-                    .orElseThrow(() -> new PatientNotFoundException("Paciente no encontrado con ID: " + patientId));
-            
-            // Buscar el odontograma asociado al paciente
-            return odontogramRepository.findByPatientId(patientId)
-                    .orElseThrow(() -> new OdontogramNotFoundException("Odontograma no encontrado para el paciente con ID: " + patientId));
-        });
+        return patientRepository.findById(patientId)
+                .switchIfEmpty(Mono.error(new PatientNotFoundException("Paciente no encontrado con ID: " + patientId)))
+                .then(odontogramRepository.findByPatientId(patientId)
+                     .switchIfEmpty(Mono.error(new OdontogramNotFoundException("Odontograma no encontrado para el paciente con ID: " + patientId))));
+    }
+
+    @Override
+    public Mono<OdontogramDTO> getPatientOdontogramDTO(String patientId) {
+        return getPatientOdontogram(patientId)
+                .map(odontogramMapper::toDTO);
+    }
+
+    @Override
+    public Mono<MedicalRecordDTO> getPatientMedicalRecordDTO(String patientId) {
+        return patientRepository.findById(patientId)
+                .switchIfEmpty(Mono.error(new PatientNotFoundException("Paciente no encontrado con ID: " + patientId)))
+                .then(medicalRecordRepository.findByPatientId(patientId)
+                     .switchIfEmpty(Mono.error(new MedicalRecordNotFoundException("Historial médico no encontrado para el paciente con ID: " + patientId))))
+                .map(medicalRecordMapper::toDTO);
     }
 
     @Override
     public Mono<MedicalRecordId> getPatientMedicalRecord(String patientId) {
-        // Convertir a operación reactiva
-        return Mono.fromCallable(() -> {
-            // Verificar que el paciente existe
-            patientRepository.findById(patientId)
-                    .orElseThrow(() -> new PatientNotFoundException("Paciente no encontrado con ID: " + patientId));
-            
-            // Buscar el historial médico asociado al paciente
-            MedicalRecord medicalRecord = medicalRecordRepository.findByPatientId(patientId)
-                    .orElseThrow(() -> new MedicalRecordNotFoundException("Historial médico no encontrado para el paciente con ID: " + patientId));
-            
-            // Crear MedicalRecordId a partir del ID del historial o del patientId
-            if (medicalRecord.getId() != null) {
-                return MedicalRecordId.of(medicalRecord.getId().toString());
-            } else {
-                return MedicalRecordId.fromPatientId(PatientId.of(patientId));
-            }
-        });
+        return patientRepository.findById(patientId)
+                .switchIfEmpty(Mono.error(new PatientNotFoundException("Paciente no encontrado con ID: " + patientId)))
+                .then(medicalRecordRepository.findByPatientId(patientId)
+                     .switchIfEmpty(Mono.error(new MedicalRecordNotFoundException("Historial médico no encontrado para el paciente con ID: " + patientId))))
+                .map(medicalRecord -> {
+                    if (medicalRecord.getId() != null) {
+                        return MedicalRecordId.of(medicalRecord.getId().toString());
+                    } else {
+                        return MedicalRecordId.fromPatientId(PatientId.of(patientId));
+                    }
+                });
     }
 } 

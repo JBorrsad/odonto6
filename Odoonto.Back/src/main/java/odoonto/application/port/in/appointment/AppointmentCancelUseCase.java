@@ -1,8 +1,10 @@
 package odoonto.application.port.in.appointment;
 
+import reactor.core.publisher.Mono;
+
 /**
  * Caso de uso para cancelar una cita
  */
 public interface AppointmentCancelUseCase {
-    void cancelAppointment(String appointmentId);
+    Mono<Void> cancelAppointment(String appointmentId);
 } 

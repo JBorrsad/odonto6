@@ -9,7 +9,7 @@ import odoonto.application.mapper.DoctorMapper;
 import odoonto.application.port.in.doctor.DoctorUpdateUseCase;
 import odoonto.application.port.out.ReactiveDoctorRepository;
 import odoonto.domain.exceptions.DomainException;
-import odoonto.domain.model.aggregates.Doctor;
+
 import odoonto.domain.model.valueobjects.Specialty;
 
 import reactor.core.publisher.Mono;

@@ -8,7 +8,7 @@ import odoonto.application.exceptions.OdontogramNotFoundException;
 import odoonto.application.mapper.OdontogramMapper;
 import odoonto.application.port.in.odontogram.LesionAddUseCase;
 import odoonto.application.port.out.ReactiveOdontogramRepository;
-import odoonto.domain.model.aggregates.Odontogram;
+
 import odoonto.domain.model.valueobjects.LesionType;
 import odoonto.domain.model.valueobjects.ToothFace;
 import reactor.core.publisher.Mono;

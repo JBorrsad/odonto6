@@ -147,15 +147,37 @@ public class Odontogram {
             throw new DomainException("El ID del diente no puede estar vacío");
         }
         
-        // Los ID de dientes deben ser números entre 11-48
         try {
             int id = Integer.parseInt(toothId);
-            if (id < 11 || id > 48) {
-                throw new DomainException("ID de diente fuera de rango: " + toothId);
+            if (!isValidToothId(id)) {
+                throw new DomainException("ID de diente inválido: " + toothId);
             }
         } catch (NumberFormatException e) {
             throw new DomainException("ID de diente debe ser un número: " + toothId);
         }
+    }
+    
+    /**
+     * Verifica si el ID numérico de un diente es válido (permanente o temporal)
+     * @param id ID numérico del diente
+     * @return true si es un ID válido
+     */
+    private boolean isValidToothId(int id) {
+        // Verificar si es un diente permanente
+        for (int permanentId : PERMANENT_IDS) {
+            if (permanentId == id) {
+                return true;
+            }
+        }
+        
+        // Verificar si es un diente temporal
+        for (int temporaryId : TEMPORARY_IDS) {
+            if (temporaryId == id) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     /**

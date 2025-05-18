@@ -40,6 +40,12 @@ public class MedicalRecordPolicy {
                                       MAX_ENTRY_CONTENT_LENGTH + " caracteres");
         }
         
+        // Validar longitud del tipo (usado como título)
+        if (entry.getType() != null && entry.getType().length() > MAX_ENTRY_TITLE_LENGTH) {
+            throw new DomainException("El título de la entrada médica no puede exceder los " + 
+                                     MAX_ENTRY_TITLE_LENGTH + " caracteres");
+        }
+        
         // Verificar que la fecha de registro no sea en el futuro
         if (entry.getRecordedAt().isAfter(LocalDateTime.now())) {
             throw new DomainException("La fecha de la entrada médica no puede ser en el futuro");
