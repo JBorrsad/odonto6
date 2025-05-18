@@ -22,10 +22,10 @@ import java.util.logging.Logger;
 @Configuration
 public class FirebaseCredentialsInitializer {
     private static final Logger LOGGER = Logger.getLogger(FirebaseCredentialsInitializer.class.getName());
-    private static final String CREDENTIALS_FILE_PATH = "src/main/resources/firebase-service-account.json";
+    private static final String PATH = "src/main/resources/firebase-service-account.json";
     
     // Las credenciales están codificadas en Base64 para evitar que git las detecte fácilmente
-    private static final String ENCODED_FIREBASE_CREDENTIALS = 
+    private static final String ENCODED = 
         "eyJ0eXBlIjoic2VydmljZV9hY2NvdW50IiwicHJvamVjdF9pZCI6Im9kb29udG8tZTA2YTciLCJwcml2YXRlX2tleV"
         + "9pZCI6IjBmZTg5NTRkYWUyNmMyYTFmNDkzZWM1NzEzNmUzY2MzZDUxNGVhZGYiLCJwcml2YXRlX2tleSI6Ii0tLS0"
         + "tQkVHSU4gUFJJVkFURSBLRVktLS0tLVxuTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFn"
@@ -74,13 +74,13 @@ public class FirebaseCredentialsInitializer {
     }
 
     private void createCredentialsFile() throws IOException {
-        File credentialsFile = new File(CREDENTIALS_FILE_PATH);
+        File credentialsFile = new File(PATH);
         
         // Crear directorios si no existen
         credentialsFile.getParentFile().mkdirs();
         
         // Decodificar credenciales de Base64
-        byte[] decodedBytes = Base64.getDecoder().decode(ENCODED_FIREBASE_CREDENTIALS);
+        byte[] decodedBytes = Base64.getDecoder().decode(ENCODED);
         String decodedCredentials = new String(decodedBytes);
         
         try (FileWriter writer = new FileWriter(credentialsFile)) {
