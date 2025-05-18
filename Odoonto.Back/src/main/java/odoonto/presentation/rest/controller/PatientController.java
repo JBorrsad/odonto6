@@ -25,8 +25,6 @@ public class PatientController {
     private final PatientCreateUseCase patientCreateUseCase;
     private final PatientUpdateUseCase patientUpdateUseCase;
     private final PatientDeleteUseCase patientDeleteUseCase;
-    private final PatientOdontogramUseCase patientOdontogramUseCase;
-    
     @Autowired
     public PatientController(
             PatientQueryUseCase patientQueryUseCase,
@@ -38,7 +36,6 @@ public class PatientController {
         this.patientCreateUseCase = patientCreateUseCase;
         this.patientUpdateUseCase = patientUpdateUseCase;
         this.patientDeleteUseCase = patientDeleteUseCase;
-        this.patientOdontogramUseCase = patientOdontogramUseCase;
     }
     
     /**

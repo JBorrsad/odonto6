@@ -18,14 +18,14 @@ import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
-import com.google.cloud.firestore.DocumentReference;
+
 import com.google.api.core.ApiFuture;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Optional;
+
 import java.util.concurrent.CompletableFuture;
 
 /**

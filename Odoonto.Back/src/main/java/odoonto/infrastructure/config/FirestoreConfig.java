@@ -8,13 +8,17 @@ import com.google.cloud.spring.data.firestore.repository.config.EnableReactiveFi
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.cloud.FirestoreClient;
+import jakarta.annotation.PreDestroy;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
-import org.springframework.core.io.ClassPathResource;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.util.logging.Logger;
 
 /**
  * Configuración para conectar con Firestore
@@ -22,52 +26,64 @@ import java.io.InputStream;
 @Configuration
 @EnableReactiveFirestoreRepositories(basePackages = "odoonto.infrastructure.persistence.reactive")
 public class FirestoreConfig {
+    private static final Logger LOGGER = Logger.getLogger(FirestoreConfig.class.getName());
+    private static final String CREDENTIALS_FILE_PATH = "src/main/resources/firebase-service-account.json";
+    
+    @Autowired
+    private FirebaseCredentialsInitializer firebaseCredentialsInitializer;
 
     @Bean
     @Profile("prod")
+    @DependsOn("firebaseCredentialsInitializer")
     public Firestore firestoreProd() throws IOException {
-        // Intenta cargar credenciales desde el classpath
-        InputStream serviceAccount = new ClassPathResource("firebase-service-account.json").getInputStream();
-        
-        FirebaseOptions options = FirebaseOptions.builder()
-                .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                .build();
-        
-        // Inicializa Firebase si no está ya inicializado
-        if (FirebaseApp.getApps().isEmpty()) {
-            FirebaseApp.initializeApp(options);
-        }
-        
-        return FirestoreClient.getFirestore();
+        return getFirestore();
     }
     
     @Bean
     @Profile("!prod")
+    @DependsOn("firebaseCredentialsInitializer")
     public Firestore firestore() throws IOException {
-        // Configuración de desarrollo/pruebas
-        // Si el archivo existe, usarlo, de lo contrario usar credenciales por defecto
-        FirebaseOptions options;
+        return getFirestore();
+    }
+    
+    private Firestore getFirestore() throws IOException {
+        File credentialsFile = new File(CREDENTIALS_FILE_PATH);
         
-        try {
-            InputStream serviceAccount = new ClassPathResource("firebase-service-account.json").getInputStream();
-            options = FirebaseOptions.builder()
+        if (!credentialsFile.exists()) {
+            LOGGER.severe("No se encontró el archivo de credenciales en: " + credentialsFile.getAbsolutePath());
+            throw new IOException("El archivo de credenciales no existe. Asegúrate de que FirebaseCredentialsInitializer se ejecute primero.");
+        }
+        
+        Firestore firestoreInstance;
+        
+        try (FileInputStream serviceAccount = new FileInputStream(credentialsFile)) {
+            FirebaseOptions options = FirebaseOptions.builder()
                     .setCredentials(GoogleCredentials.fromStream(serviceAccount))
                     .build();
-        } catch (IOException e) {
-            // En desarrollo, usar credenciales de aplicación por defecto
-            System.out.println("⚠️ Usando configuración de desarrollo para Firestore (no hay archivo firebase-service-account.json)");
-            options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.getApplicationDefault())
-                    .setProjectId("odoonto-dev")
-                    .build();
+            
+            // Inicializa Firebase si no está ya inicializado
+            if (FirebaseApp.getApps().isEmpty()) {
+                FirebaseApp.initializeApp(options);
+                LOGGER.info("Firebase inicializado correctamente usando el archivo de credenciales.");
+            }
+            
+            // Obtener instancia de Firestore
+            firestoreInstance = FirestoreClient.getFirestore();
+            
+            // No eliminamos el archivo de credenciales porque lo necesitan otros componentes
+            LOGGER.info("Firebase y Firestore inicializados correctamente.");
+            
+            return firestoreInstance;
         }
-        
-        // Inicializa Firebase si no está ya inicializado
-        if (FirebaseApp.getApps().isEmpty()) {
-            FirebaseApp.initializeApp(options);
+    }
+    
+    @PreDestroy
+    public void cleanUp() {
+        // Eliminar el archivo de credenciales al cerrar la aplicación
+        File credentialsFile = new File(CREDENTIALS_FILE_PATH);
+        if (credentialsFile.exists() && credentialsFile.delete()) {
+            LOGGER.info("Archivo de credenciales eliminado al cerrar la aplicación.");
         }
-        
-        return FirestoreClient.getFirestore();
     }
     
     @Bean
