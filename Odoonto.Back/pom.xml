@@ -20,6 +20,7 @@
 		<java.version>21</java.version>
 		<spring-cloud-gcp.version>6.1.1</spring-cloud-gcp.version>
 		<lombok.version>1.18.30</lombok.version>
+		<firebase-admin.version>9.2.0</firebase-admin.version>
 	</properties>
 
 	<!-- BOM de Spring Cloud GCP -->
@@ -54,6 +55,13 @@
 		<dependency>
 			<groupId>com.google.cloud</groupId>
 			<artifactId>spring-cloud-gcp-starter-data-firestore</artifactId>
+		</dependency>
+
+		<!-- Firebase Admin SDK -->
+		<dependency>
+			<groupId>com.google.firebase</groupId>
+			<artifactId>firebase-admin</artifactId>
+			<version>${firebase-admin.version}</version>
 		</dependency>
 
 		<!-- 3. Spring MVC + WebFlux (repos reactivos) -->

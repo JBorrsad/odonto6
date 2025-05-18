@@ -13,9 +13,6 @@ import reactor.core.publisher.Mono;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
-
 /**
  * Implementación del caso de uso para consultar odontogramas
  */
@@ -33,38 +30,32 @@ public class OdontogramQueryService implements OdontogramQueryUseCase {
     }
     
     @Override
-    public Optional<OdontogramDTO> findById(String odontogramId) {
+    public Mono<OdontogramDTO> findById(String odontogramId) {
         return odontogramRepository.findById(odontogramId)
-                .map(odontogramMapper::toDTO)
-                .blockOptional();
+                .map(odontogramMapper::toDTO);
     }
     
     @Override
-    public Optional<OdontogramDTO> findByPatientId(String patientId) {
+    public Mono<OdontogramDTO> findByPatientId(String patientId) {
         return odontogramRepository.findByPatientId(patientId)
-                .map(odontogramMapper::toDTO)
-                .blockOptional();
+                .map(odontogramMapper::toDTO);
     }
     
     @Override
-    public List<OdontogramDTO> findAll() {
+    public Flux<OdontogramDTO> findAll() {
         return odontogramRepository.findAll()
-                .map(odontogramMapper::toDTO)
-                .collectList()
-                .block();
+                .map(odontogramMapper::toDTO);
     }
     
     @Override
-    public boolean existsById(String odontogramId) {
+    public Mono<Boolean> existsById(String odontogramId) {
         return odontogramRepository.findById(odontogramId)
-                .hasElement()
-                .block();
+                .hasElement();
     }
     
     @Override
-    public boolean existsByPatientId(String patientId) {
-        return odontogramRepository.existsByPatientId(PatientId.of(patientId))
-                .block();
+    public Mono<Boolean> existsByPatientId(String patientId) {
+        return odontogramRepository.existsByPatientId(PatientId.of(patientId));
     }
     
     /**
@@ -72,13 +63,11 @@ public class OdontogramQueryService implements OdontogramQueryUseCase {
      * lanzando excepción si no existe
      * 
      * @param odontogramId ID del odontograma
-     * @return Odontograma
-     * @throws OdontogramNotFoundException si no existe
+     * @return Mono con el odontograma
      */
-    public Odontogram getOdontogramOrThrow(String odontogramId) {
+    public Mono<Odontogram> getOdontogramOrThrow(String odontogramId) {
         return odontogramRepository.findById(odontogramId)
-                .switchIfEmpty(Mono.error(new OdontogramNotFoundException("No se encontró el odontograma con ID: " + odontogramId)))
-                .block();
+                .switchIfEmpty(Mono.error(new OdontogramNotFoundException("No se encontró el odontograma con ID: " + odontogramId)));
     }
     
     /**
@@ -86,12 +75,10 @@ public class OdontogramQueryService implements OdontogramQueryUseCase {
      * lanzando excepción si no existe
      * 
      * @param patientId ID del paciente
-     * @return Odontograma
-     * @throws OdontogramNotFoundException si no existe
+     * @return Mono con el odontograma
      */
-    public Odontogram getOdontogramByPatientIdOrThrow(String patientId) {
+    public Mono<Odontogram> getOdontogramByPatientIdOrThrow(String patientId) {
         return odontogramRepository.findByPatientId(patientId)
-                .switchIfEmpty(Mono.error(new OdontogramNotFoundException("No se encontró odontograma para el paciente con ID: " + patientId)))
-                .block();
+                .switchIfEmpty(Mono.error(new OdontogramNotFoundException("No se encontró odontograma para el paciente con ID: " + patientId)));
     }
 } 

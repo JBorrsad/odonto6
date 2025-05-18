@@ -4,10 +4,13 @@ import odoonto.domain.exceptions.DomainException;
 import odoonto.domain.model.valueobjects.MedicalRecordId;
 import odoonto.domain.model.valueobjects.PatientId;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Representa el historial médico de un paciente.
@@ -18,6 +21,10 @@ public class MedicalRecord {
     private MedicalRecordId id;
     private final LocalDateTime createdAt;
     private final List<MedicalEntry> entries;
+    private LocalDate lastUpdated;
+    private List<String> allergies;
+    private List<String> medicalConditions;
+    private Map<String, Boolean> explicitChecks;
     
     /**
      * Constructor por defecto para frameworks
@@ -25,6 +32,10 @@ public class MedicalRecord {
     public MedicalRecord() {
         this.createdAt = LocalDateTime.now();
         this.entries = new ArrayList<>();
+        this.lastUpdated = LocalDate.now();
+        this.allergies = new ArrayList<>();
+        this.medicalConditions = new ArrayList<>();
+        this.explicitChecks = new HashMap<>();
     }
     
     /**
@@ -39,6 +50,10 @@ public class MedicalRecord {
         this.id = MedicalRecordId.fromPatientId(patientId);
         this.createdAt = LocalDateTime.now();
         this.entries = new ArrayList<>();
+        this.lastUpdated = LocalDate.now();
+        this.allergies = new ArrayList<>();
+        this.medicalConditions = new ArrayList<>();
+        this.explicitChecks = new HashMap<>();
     }
     
     /**
@@ -55,6 +70,36 @@ public class MedicalRecord {
         this.id = id;
         this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
         this.entries = entries != null ? new ArrayList<>(entries) : new ArrayList<>();
+        this.lastUpdated = LocalDate.now();
+        this.allergies = new ArrayList<>();
+        this.medicalConditions = new ArrayList<>();
+        this.explicitChecks = new HashMap<>();
+    }
+    
+    /**
+     * Constructor completo para reconstrucción desde persistencia con todos los campos
+     * @param id ID del historial médico
+     * @param createdAt Fecha de creación
+     * @param entries Lista de entradas médicas
+     * @param lastUpdated Fecha de última actualización
+     * @param allergies Lista de alergias
+     * @param medicalConditions Lista de condiciones médicas
+     * @param explicitChecks Mapa de verificaciones explícitas
+     */
+    public MedicalRecord(MedicalRecordId id, LocalDateTime createdAt, List<MedicalEntry> entries,
+                         LocalDate lastUpdated, List<String> allergies, List<String> medicalConditions,
+                         Map<String, Boolean> explicitChecks) {
+        if (id == null) {
+            throw new DomainException("El ID del historial médico no puede ser nulo");
+        }
+        
+        this.id = id;
+        this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
+        this.entries = entries != null ? new ArrayList<>(entries) : new ArrayList<>();
+        this.lastUpdated = lastUpdated != null ? lastUpdated : LocalDate.now();
+        this.allergies = allergies != null ? new ArrayList<>(allergies) : new ArrayList<>();
+        this.medicalConditions = medicalConditions != null ? new ArrayList<>(medicalConditions) : new ArrayList<>();
+        this.explicitChecks = explicitChecks != null ? new HashMap<>(explicitChecks) : new HashMap<>();
     }
     
     /**
@@ -67,6 +112,7 @@ public class MedicalRecord {
         }
         
         entries.add(entry);
+        this.lastUpdated = LocalDate.now();
     }
     
     /**
@@ -147,5 +193,106 @@ public class MedicalRecord {
      */
     public int getTotalEntries() {
         return entries.size();
+    }
+    
+    /**
+     * Obtiene la fecha de última actualización del historial
+     * @return Fecha de última actualización
+     */
+    public LocalDate getLastUpdated() {
+        return lastUpdated;
+    }
+    
+    /**
+     * Establece la fecha de última actualización
+     * @param lastUpdated Nueva fecha de última actualización
+     */
+    public void setLastUpdated(LocalDate lastUpdated) {
+        this.lastUpdated = lastUpdated;
+    }
+    
+    /**
+     * Obtiene la lista de alergias del paciente
+     * @return Lista inmutable de alergias
+     */
+    public List<String> getAllergies() {
+        return Collections.unmodifiableList(allergies);
+    }
+    
+    /**
+     * Establece la lista de alergias del paciente
+     * @param allergies Nueva lista de alergias
+     */
+    public void setAllergies(List<String> allergies) {
+        this.allergies = allergies != null ? new ArrayList<>(allergies) : new ArrayList<>();
+        this.lastUpdated = LocalDate.now();
+    }
+    
+    /**
+     * Añade una alergia a la lista
+     * @param allergy Alergia a añadir
+     */
+    public void addAllergy(String allergy) {
+        if (allergy != null && !allergy.trim().isEmpty()) {
+            this.allergies.add(allergy);
+            this.lastUpdated = LocalDate.now();
+        }
+    }
+    
+    /**
+     * Obtiene la lista de condiciones médicas del paciente
+     * @return Lista inmutable de condiciones médicas
+     */
+    public List<String> getMedicalConditions() {
+        return Collections.unmodifiableList(medicalConditions);
+    }
+    
+    /**
+     * Establece la lista de condiciones médicas del paciente
+     * @param medicalConditions Nueva lista de condiciones médicas
+     */
+    public void setMedicalConditions(List<String> medicalConditions) {
+        this.medicalConditions = medicalConditions != null ? new ArrayList<>(medicalConditions) : new ArrayList<>();
+        this.lastUpdated = LocalDate.now();
+    }
+    
+    /**
+     * Añade una condición médica a la lista
+     * @param condition Condición médica a añadir
+     */
+    public void addMedicalCondition(String condition) {
+        if (condition != null && !condition.trim().isEmpty()) {
+            this.medicalConditions.add(condition);
+            this.lastUpdated = LocalDate.now();
+        }
+    }
+    
+    /**
+     * Verifica si una comprobación específica ha sido marcada explícitamente
+     * @param checkCode Código de la comprobación
+     * @return true si la comprobación ha sido marcada explícitamente
+     */
+    public boolean isExplicitlyChecked(String checkCode) {
+        return explicitChecks.getOrDefault(checkCode, false);
+    }
+    
+    /**
+     * Marca una comprobación como verificada explícitamente
+     * @param checkCode Código de la comprobación
+     * @param checked Estado de la comprobación
+     */
+    public void setExplicitlyChecked(String checkCode, boolean checked) {
+        if (checkCode != null && !checkCode.trim().isEmpty()) {
+            explicitChecks.put(checkCode, checked);
+            this.lastUpdated = LocalDate.now();
+        }
+    }
+    
+    /**
+     * Obtiene el mapa completo de comprobaciones explícitas
+     * @return Mapa inmutable de comprobaciones explícitas
+     */
+    public Map<String, Boolean> getExplicitChecks() {
+        return Collections.unmodifiableMap(explicitChecks);
     }
 } 

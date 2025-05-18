@@ -7,9 +7,11 @@ import odoonto.application.dto.request.DoctorCreateDTO;
 import odoonto.application.dto.response.DoctorDTO;
 import odoonto.application.mapper.DoctorMapper;
 import odoonto.application.port.in.doctor.DoctorUpdateUseCase;
+import odoonto.application.port.out.ReactiveDoctorRepository;
 import odoonto.domain.exceptions.DomainException;
 import odoonto.domain.model.aggregates.Doctor;
-import odoonto.domain.repository.DoctorRepository;
+import odoonto.domain.model.valueobjects.Specialty;
+
 import reactor.core.publisher.Mono;
 
 /**
@@ -18,24 +20,24 @@ import reactor.core.publisher.Mono;
 @Service
 public class DoctorUpdateService implements DoctorUpdateUseCase {
 
-    private final DoctorRepository doctorRepository;
+    private final ReactiveDoctorRepository doctorRepository;
     private final DoctorMapper doctorMapper;
 
     @Autowired
-    public DoctorUpdateService(DoctorRepository doctorRepository, DoctorMapper doctorMapper) {
+    public DoctorUpdateService(ReactiveDoctorRepository doctorRepository, DoctorMapper doctorMapper) {
         this.doctorRepository = doctorRepository;
         this.doctorMapper = doctorMapper;
     }
 
     @Override
-    public DoctorDTO updateDoctor(String doctorId, DoctorCreateDTO doctorCreateDTO) {
+    public Mono<DoctorDTO> updateDoctor(String doctorId, DoctorCreateDTO doctorCreateDTO) {
         // Validaciones básicas
         if (doctorId == null || doctorId.trim().isEmpty()) {
-            throw new DomainException("El ID del doctor no puede ser nulo o vacío");
+            return Mono.error(new DomainException("El ID del doctor no puede ser nulo o vacío"));
         }
         
         if (doctorCreateDTO == null) {
-            throw new DomainException("Los datos del doctor no pueden ser nulos");
+            return Mono.error(new DomainException("Los datos del doctor no pueden ser nulos"));
         }
         
         // Buscar el doctor, actualizarlo y devolver el resultado
@@ -48,13 +50,12 @@ public class DoctorUpdateService implements DoctorUpdateUseCase {
                 }
                 
                 if (doctorCreateDTO.getEspecialidad() != null && !doctorCreateDTO.getEspecialidad().trim().isEmpty()) {
-                    existingDoctor.setEspecialidad(doctorCreateDTO.getEspecialidad());
+                    existingDoctor.setEspecialidad(Specialty.valueOf(doctorCreateDTO.getEspecialidad()));
                 }
                 
                 // Guardar los cambios
                 return doctorRepository.save(existingDoctor);
             })
-            .map(doctorMapper::toDTO)
-            .block(); // Bloquear para obtener el resultado (en un entorno real, sería mejor mantenerlo reactivo)
+            .map(doctorMapper::toDTO);
     }
 } 

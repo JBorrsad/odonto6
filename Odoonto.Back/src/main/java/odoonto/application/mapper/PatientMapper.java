@@ -1,17 +1,14 @@
 package odoonto.application.mapper;
 
 import odoonto.domain.model.aggregates.Patient;
-import odoonto.domain.model.aggregates.Odontogram;
 import odoonto.application.dto.response.PatientDTO;
 import odoonto.application.dto.request.PatientCreateDTO;
 import odoonto.domain.model.valueobjects.EmailAddress;
 import odoonto.domain.model.valueobjects.PhoneNumber;
 import odoonto.domain.model.valueobjects.Sexo;
 
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.Period;
-import java.time.ZoneId;
+
 
 import org.springframework.stereotype.Component;
 
@@ -32,16 +29,16 @@ public class PatientMapper {
             return null;
         }
         
-        return new PatientDTO(
-            patient.getId(),
-            patient.getNombre(),
-            patient.getApellido(),
-            patient.getFechaNacimiento(),
-            patient.getSexo().toString(),
-            patient.getTelefono().getValue(),
-            patient.getEmail().getValue(),
-            patient.getId()
-        );
+        PatientDTO dto = new PatientDTO();
+        dto.setId(patient.getId().toString());
+        dto.setNombre(patient.getNombre());
+        dto.setApellido(patient.getApellido());
+        dto.setFechaNacimiento(patient.getFechaNacimiento());
+        dto.setSexo(patient.getSexo().toString());
+        dto.setTelefono(patient.getTelefono().getValue());
+        dto.setEmail(patient.getEmail().getValue());
+        
+        return dto;
     }
     
     /**
@@ -55,32 +52,27 @@ public class PatientMapper {
         Sexo sexo = Sexo.valueOf(dto.getSexo());
         PhoneNumber telefono = new PhoneNumber(dto.getTelefono());
         EmailAddress email = new EmailAddress(dto.getEmail());
-        Instant fechaNacimiento = Instant.parse(dto.getFechaNacimiento());
         
-        // Calculamos la edad basada en la fecha de nacimiento
-        int edad = Period.between(
-            LocalDate.ofInstant(fechaNacimiento, ZoneId.systemDefault()),
-            LocalDate.now()
-        ).getYears();
+        // Obtener fecha de nacimiento
+        LocalDate fechaNacimiento = dto.getFechaNacimiento();
         
-        // Creamos un nuevo paciente con su odontograma
+        // Creamos un nuevo paciente
         return new Patient(
             dto.getNombre(), 
             dto.getApellido(), 
             fechaNacimiento, 
             sexo, 
             telefono, 
-            email, 
-            edad
+            email
         );
     }
     
     /**
      * Actualiza una entidad existente con datos de un DTO
      */
-    public void updatePatientFromDTO(PatientCreateDTO dto, Patient patient) {
+    public Patient updateEntityFromDTO(PatientCreateDTO dto, Patient patient) {
         if (dto == null || patient == null) {
-            return;
+            return patient;
         }
         
         if (dto.getNombre() != null) {
@@ -104,15 +96,9 @@ public class PatientMapper {
         }
         
         if (dto.getFechaNacimiento() != null) {
-            Instant fechaNacimiento = Instant.parse(dto.getFechaNacimiento());
-            patient.setFechaNacimiento(fechaNacimiento.toString());
-            
-            // Actualizar también la edad
-            int edad = Period.between(
-                LocalDate.ofInstant(fechaNacimiento, ZoneId.systemDefault()),
-                LocalDate.now()
-            ).getYears();
-            patient.setAge(edad);
+            patient.setFechaNacimiento(dto.getFechaNacimiento());
         }
+        
+        return patient;
     }
 } 

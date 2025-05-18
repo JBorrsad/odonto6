@@ -10,7 +10,6 @@ import odoonto.application.port.in.doctor.DoctorCreateUseCase;
 import odoonto.domain.exceptions.DomainException;
 import odoonto.domain.model.aggregates.Doctor;
 import odoonto.domain.repository.DoctorRepository;
-import reactor.core.publisher.Mono;
 
 /**
  * Implementación del caso de uso para crear un doctor
@@ -38,8 +37,7 @@ public class DoctorCreateService implements DoctorCreateUseCase {
         Doctor doctor = doctorMapper.toEntity(doctorCreateDTO);
         
         // Guardar el doctor y convertir la respuesta a DTO
-        return doctorRepository.save(doctor)
-            .map(doctorMapper::toDTO)
-            .block(); // Bloquear para obtener el resultado (en un entorno real, sería mejor mantenerlo reactivo)
+        Doctor savedDoctor = doctorRepository.save(doctor);
+        return doctorMapper.toDTO(savedDoctor);
     }
 } 

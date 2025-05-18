@@ -65,7 +65,7 @@ public class MedicalRecordService {
         
         List<MedicalEntry> result = new ArrayList<>();
         for (MedicalEntry entry : record.getEntries()) {
-            LocalDate entryDate = entry.getDate();
+            LocalDate entryDate = entry.getRecordedAt().toLocalDate();
             if ((from == null || !entryDate.isBefore(from)) && 
                 (to == null || !entryDate.isAfter(to))) {
                 result.add(entry);
@@ -98,13 +98,13 @@ public class MedicalRecordService {
                 matches = true;
             }
             
-            if (entry.getDiagnosis() != null && 
-                entry.getDiagnosis().toLowerCase().contains(lowerCaseSearch)) {
+            if (entry.getNotes() != null && 
+                entry.getNotes().toLowerCase().contains(lowerCaseSearch)) {
                 matches = true;
             }
             
-            if (entry.getProcedure() != null && 
-                entry.getProcedure().toLowerCase().contains(lowerCaseSearch)) {
+            if (entry.getType() != null && 
+                entry.getType().toLowerCase().contains(lowerCaseSearch)) {
                 matches = true;
             }
             
@@ -150,7 +150,7 @@ public class MedicalRecordService {
         MedicalRecordSummary summary = new MedicalRecordSummary();
         
         // Datos básicos
-        summary.setPatientId(record.getPatientId());
+        summary.setPatientId(record.extractPatientId() != null ? record.extractPatientId().getValue() : null);
         summary.setTotalEntries(record.getEntries().size());
         summary.setAllergies(new ArrayList<>(record.getAllergies()));
         summary.setMedicalConditions(new ArrayList<>(record.getMedicalConditions()));
@@ -167,14 +167,17 @@ public class MedicalRecordService {
         int controlCount = 0;
         
         for (MedicalEntry entry : record.getEntries()) {
-            if (entry.getDiagnosis() != null && !entry.getDiagnosis().isEmpty()) {
+            // Contar entradas de diagnóstico
+            if (entry.getType() != null && entry.getType().equalsIgnoreCase("diagnostico")) {
                 diagnosisCount++;
             }
             
-            if (entry.getProcedure() != null && !entry.getProcedure().isEmpty()) {
+            // Contar entradas de tratamiento
+            if (entry.getType() != null && entry.getType().equalsIgnoreCase("tratamiento")) {
                 treatmentCount++;
             }
             
+            // Contar entradas de control
             if (entry.getType() != null && entry.getType().equalsIgnoreCase("control")) {
                 controlCount++;
             }
@@ -194,7 +197,7 @@ public class MedicalRecordService {
      */
     private LocalDate findFirstVisitDate(MedicalRecord record) {
         return record.getEntries().stream()
-                .map(MedicalEntry::getDate)
+                .map(entry -> entry.getRecordedAt().toLocalDate())
                 .min(LocalDate::compareTo)
                 .orElse(null);
     }
@@ -206,7 +209,7 @@ public class MedicalRecordService {
      */
     private LocalDate findLastVisitDate(MedicalRecord record) {
         return record.getEntries().stream()
-                .map(MedicalEntry::getDate)
+                .map(entry -> entry.getRecordedAt().toLocalDate())
                 .max(LocalDate::compareTo)
                 .orElse(null);
     }

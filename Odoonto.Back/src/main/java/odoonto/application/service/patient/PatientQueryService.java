@@ -12,6 +12,8 @@ import odoonto.domain.model.aggregates.Patient;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * Implementación del caso de uso para consultar pacientes
@@ -30,26 +32,30 @@ public class PatientQueryService implements PatientQueryUseCase {
     }
 
     @Override
-    public List<PatientDTO> getAllPatients() {
+    public Flux<PatientDTO> getAllPatients() {
         List<Patient> patients = patientRepository.findAll();
-        return patients.stream()
+        return Flux.fromIterable(
+            patients.stream()
                 .map(patientMapper::toDTO)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList())
+        );
     }
 
     @Override
-    public PatientDTO getPatientById(String id) {
+    public Mono<PatientDTO> getPatientById(String id) {
         Patient patient = patientRepository.findById(id)
                 .orElseThrow(() -> new PatientNotFoundException("Paciente no encontrado con ID: " + id));
         
-        return patientMapper.toDTO(patient);
+        return Mono.just(patientMapper.toDTO(patient));
     }
 
     @Override
-    public List<PatientDTO> searchPatients(String searchQuery) {
+    public Flux<PatientDTO> searchPatients(String searchQuery) {
         List<Patient> patients = patientRepository.findByNameOrLastName(searchQuery);
-        return patients.stream()
+        return Flux.fromIterable(
+            patients.stream()
                 .map(patientMapper::toDTO)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList())
+        );
     }
 } 

@@ -10,6 +10,7 @@ import odoonto.domain.repository.AppointmentRepository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Implementación del caso de uso para consultar citas
@@ -34,19 +35,15 @@ public class AppointmentQueryService implements AppointmentQueryUseCase {
             return Optional.empty();
         }
         
-        return Optional.ofNullable(
-            appointmentRepository.findById(appointmentId)
-                .map(appointmentMapper::toDTO)
-                .block() // Bloquear para obtener el resultado
-        );
+        return appointmentRepository.findById(appointmentId)
+                .map(appointmentMapper::toDTO);
     }
 
     @Override
     public List<AppointmentDTO> findAll() {
-        return appointmentRepository.findAll()
+        return appointmentRepository.findAll().stream()
             .map(appointmentMapper::toDTO)
-            .collectList()
-            .block(); // Bloquear para obtener el resultado
+            .collect(Collectors.toList());
     }
 
     @Override
@@ -55,10 +52,9 @@ public class AppointmentQueryService implements AppointmentQueryUseCase {
             return List.of();
         }
         
-        return appointmentRepository.findByPatientId(patientId)
+        return appointmentRepository.findByPatientId(patientId).stream()
             .map(appointmentMapper::toDTO)
-            .collectList()
-            .block(); // Bloquear para obtener el resultado
+            .collect(Collectors.toList());
     }
 
     @Override
@@ -67,9 +63,8 @@ public class AppointmentQueryService implements AppointmentQueryUseCase {
             return List.of();
         }
         
-        return appointmentRepository.findByDoctorId(doctorId)
+        return appointmentRepository.findByDoctorId(doctorId).stream()
             .map(appointmentMapper::toDTO)
-            .collectList()
-            .block(); // Bloquear para obtener el resultado
+            .collect(Collectors.toList());
     }
 } 

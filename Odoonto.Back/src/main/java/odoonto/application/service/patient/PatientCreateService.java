@@ -9,6 +9,7 @@ import odoonto.application.mapper.PatientMapper;
 import odoonto.application.port.in.patient.PatientCreateUseCase;
 import odoonto.application.port.out.PatientRepositoryPort;
 import odoonto.domain.model.aggregates.Patient;
+import reactor.core.publisher.Mono;
 
 /**
  * Implementación del caso de uso para crear pacientes
@@ -27,16 +28,16 @@ public class PatientCreateService implements PatientCreateUseCase {
     }
 
     @Override
-    public PatientDTO createPatient(PatientCreateDTO patientDTO) {
+    public Mono<PatientDTO> createPatient(PatientCreateDTO patientDTO) {
         // Validar datos del paciente (podría lanzar excepciones de dominio)
         
         // Convertir DTO a entidad de dominio
         Patient patient = patientMapper.toEntity(patientDTO);
         
-        // Persistir la entidad
-        Patient savedPatient = patientRepository.save(patient);
-        
-        // Convertir entidad guardada a DTO de respuesta
-        return patientMapper.toDTO(savedPatient);
+        // Persistir la entidad y convertir a Mono
+        return Mono.fromCallable(() -> {
+            Patient savedPatient = patientRepository.save(patient);
+            return patientMapper.toDTO(savedPatient);
+        });
     }
 } 

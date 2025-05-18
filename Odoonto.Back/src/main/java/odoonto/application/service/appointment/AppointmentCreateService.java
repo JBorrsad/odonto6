@@ -45,21 +45,20 @@ public class AppointmentCreateService implements AppointmentCreateUseCase {
         }
         
         // Verificar que el doctor existe
-        return doctorRepository.findById(appointmentCreateDTO.getDoctorId())
-            .switchIfEmpty(Mono.error(new DomainException("No existe un doctor con el ID: " + appointmentCreateDTO.getDoctorId())))
-            // Verificar que el paciente existe
-            .flatMap(doctor -> patientRepository.findById(appointmentCreateDTO.getPatientId())
-                .switchIfEmpty(Mono.error(new DomainException("No existe un paciente con el ID: " + appointmentCreateDTO.getPatientId())))
-                // Verificar disponibilidad del doctor (simplificado)
-                .flatMap(patient -> {
-                    // Convertir DTO a entidad de dominio
-                    Appointment appointment = appointmentMapper.toEntity(appointmentCreateDTO);
-                    
-                    // Guardar la cita
-                    return appointmentRepository.save(appointment);
-                })
-            )
-            .map(appointmentMapper::toDTO)
-            .block(); // Bloquear para obtener el resultado
+        doctorRepository.findById(appointmentCreateDTO.getDoctorId())
+            .orElseThrow(() -> new DomainException("No existe un doctor con el ID: " + appointmentCreateDTO.getDoctorId()));
+            
+        // Verificar que el paciente existe
+        patientRepository.findById(appointmentCreateDTO.getPatientId())
+            .orElseThrow(() -> new DomainException("No existe un paciente con el ID: " + appointmentCreateDTO.getPatientId()));
+            
+        // Convertir DTO a entidad de dominio
+        Appointment appointment = appointmentMapper.toEntity(appointmentCreateDTO);
+        
+        // Guardar la cita
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+        
+        // Convertir entidad a DTO y devolver
+        return appointmentMapper.toDTO(savedAppointment);
     }
 } 

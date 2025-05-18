@@ -5,12 +5,13 @@ import odoonto.application.dto.response.DoctorDTO;
 import odoonto.application.dto.request.DoctorCreateDTO;
 import odoonto.application.exceptions.DoctorNotFoundException;
 import odoonto.application.mapper.DoctorMapper;
-import odoonto.domain.repository.DoctorRepository;
+import odoonto.application.port.out.ReactiveDoctorRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * Servicio de aplicación para gestionar doctores
@@ -18,73 +19,70 @@ import java.util.List;
 @Service
 public class DoctorService {
 
-    private final DoctorRepository doctorRepository;
+    private final ReactiveDoctorRepository doctorRepository;
     private final DoctorMapper doctorMapper;
 
     @Autowired
-    public DoctorService(DoctorRepository doctorRepository, DoctorMapper doctorMapper) {
+    public DoctorService(ReactiveDoctorRepository doctorRepository, DoctorMapper doctorMapper) {
         this.doctorRepository = doctorRepository;
         this.doctorMapper = doctorMapper;
     }
 
     /**
      * Obtiene todos los doctores
-     * @return Lista de DTOs de doctores
+     * @return Flux de DTOs de doctores
      */
-    public List<DoctorDTO> getAllDoctors() {
+    public Flux<DoctorDTO> getAllDoctors() {
         return doctorRepository.findAll()
-                .map(doctorMapper::toDTO)
-                .collectList()
-                .block();
+                .map(doctorMapper::toDTO);
     }
 
     /**
      * Obtiene un doctor por su ID
      * @param id ID del doctor
-     * @return DTO del doctor
+     * @return Mono con el DTO del doctor
      * @throws DoctorNotFoundException si no se encuentra el doctor
      */
-    public DoctorDTO getDoctorById(String id) {
+    public Mono<DoctorDTO> getDoctorById(String id) {
         return doctorRepository.findById(id)
                 .map(doctorMapper::toDTO)
-                .blockOptional()
-                .orElseThrow(() -> new DoctorNotFoundException(id));
+                .switchIfEmpty(Mono.error(new DoctorNotFoundException(id)));
     }
 
     /**
      * Crea un nuevo doctor
      * @param createDTO DTO con los datos del doctor
-     * @return DTO del doctor creado
+     * @return Mono con el DTO del doctor creado
      */
-    public DoctorDTO createDoctor(DoctorCreateDTO createDTO) {
+    public Mono<DoctorDTO> createDoctor(DoctorCreateDTO createDTO) {
         Doctor doctor = doctorMapper.toEntity(createDTO);
-        Doctor savedDoctor = doctorRepository.save(doctor).block();
-        return doctorMapper.toDTO(savedDoctor);
+        return doctorRepository.save(doctor)
+                .map(doctorMapper::toDTO);
     }
 
     /**
      * Actualiza un doctor existente
      * @param id ID del doctor a actualizar
      * @param updateDTO DTO con los datos actualizados
-     * @return DTO del doctor actualizado
+     * @return Mono con el DTO del doctor actualizado
      * @throws DoctorNotFoundException si no se encuentra el doctor
      */
-    public DoctorDTO updateDoctor(String id, DoctorCreateDTO updateDTO) {
+    public Mono<DoctorDTO> updateDoctor(String id, DoctorCreateDTO updateDTO) {
         return doctorRepository.findById(id)
-                .map(existingDoctor -> {
+                .switchIfEmpty(Mono.error(new DoctorNotFoundException(id)))
+                .flatMap(existingDoctor -> {
                     doctorMapper.updateDoctorFromDTO(updateDTO, existingDoctor);
-                    return doctorRepository.save(existingDoctor).block();
+                    return doctorRepository.save(existingDoctor);
                 })
-                .map(doctorMapper::toDTO)
-                .blockOptional()
-                .orElseThrow(() -> new DoctorNotFoundException(id));
+                .map(doctorMapper::toDTO);
     }
 
     /**
      * Elimina un doctor
      * @param id ID del doctor a eliminar
+     * @return Mono<Void> que completa cuando se elimina el doctor
      */
-    public void deleteDoctor(String id) {
-        doctorRepository.deleteById(id).block();
+    public Mono<Void> deleteDoctor(String id) {
+        return doctorRepository.deleteById(id);
     }
 } 

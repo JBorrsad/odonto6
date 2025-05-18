@@ -3,6 +3,7 @@ package odoonto.application.mapper;
 import odoonto.domain.model.aggregates.Doctor;
 import odoonto.application.dto.response.DoctorDTO;
 import odoonto.application.dto.request.DoctorCreateDTO;
+import odoonto.domain.model.valueobjects.Specialty;
 
 import org.springframework.stereotype.Component;
 
@@ -20,11 +21,11 @@ public class DoctorMapper {
             return null;
         }
         
-        return new DoctorDTO(
-            doctor.getId(),
-            doctor.getNombreCompleto(),
-            doctor.getEspecialidad()
-        );
+        DoctorDTO dto = new DoctorDTO();
+        dto.setId(doctor.getId());
+        dto.setNombreCompleto(doctor.getNombreCompleto());
+        dto.setEspecialidad(doctor.getEspecialidad().name());
+        return dto;
     }
     
     /**
@@ -35,9 +36,12 @@ public class DoctorMapper {
             return null;
         }
         
+        // Convertir String a Specialty enum
+        Specialty especialidad = Specialty.valueOf(dto.getEspecialidad());
+        
         return new Doctor(
             dto.getNombreCompleto(),
-            dto.getEspecialidad()
+            especialidad
         );
     }
     
@@ -54,7 +58,7 @@ public class DoctorMapper {
         }
         
         if (dto.getEspecialidad() != null) {
-            doctor.setEspecialidad(dto.getEspecialidad());
+            doctor.setEspecialidad(Specialty.valueOf(dto.getEspecialidad()));
         }
     }
 } 

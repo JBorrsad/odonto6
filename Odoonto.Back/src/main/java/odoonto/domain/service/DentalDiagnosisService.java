@@ -40,7 +40,7 @@ public class DentalDiagnosisService {
         
         // Conteo de dientes afectados
         int affectedTeethCount = countAffectedTeeth(odontogram);
-        int totalTeeth = odontogram.getTeethCount();
+        int totalTeeth = odontogram.getTeeth().size();
         diagnosis.put("affectedTeethCount", affectedTeethCount);
         diagnosis.put("totalTeethCount", totalTeeth);
         
@@ -71,9 +71,9 @@ public class DentalDiagnosisService {
     private Map<LesionType, Integer> countLesionsByType(Odontogram odontogram) {
         Map<LesionType, Integer> counts = new HashMap<>();
         
-        for (Tooth tooth : odontogram.getTeeth()) {
-            for (Lesion lesion : tooth.getLesions()) {
-                LesionType type = lesion.getType();
+        for (Map.Entry<String, Odontogram.ToothRecord> entry : odontogram.getTeeth().entrySet()) {
+            for (Map.Entry<String, LesionType> lesionEntry : entry.getValue().getFaces().entrySet()) {
+                LesionType type = lesionEntry.getValue();
                 counts.put(type, counts.getOrDefault(type, 0) + 1);
             }
         }
@@ -87,9 +87,7 @@ public class DentalDiagnosisService {
      * @return Número de dientes afectados
      */
     private int countAffectedTeeth(Odontogram odontogram) {
-        return (int) odontogram.getTeeth().stream()
-                .filter(tooth -> !tooth.getLesions().isEmpty())
-                .count();
+        return odontogram.getTeeth().size();
     }
     
     /**
@@ -114,9 +112,8 @@ public class DentalDiagnosisService {
      * @return Nivel de riesgo (BAJO, MEDIO, ALTO, MUY ALTO)
      */
     private String determineRiskLevel(double healthPercentage, Map<LesionType, Integer> lesionCounts) {
-        // Contar lesiones severas (CARIES_AVANZADA, ABSCESO, FRACTURA)
-        int severeLesions = lesionCounts.getOrDefault(LesionType.CARIES_AVANZADA, 0) +
-                            lesionCounts.getOrDefault(LesionType.ABSCESO, 0) +
+        // Contar lesiones severas
+        int severeLesions = lesionCounts.getOrDefault(LesionType.CARIES, 0) +
                             lesionCounts.getOrDefault(LesionType.FRACTURA, 0);
         
         if (healthPercentage >= 90) {
@@ -149,9 +146,10 @@ public class DentalDiagnosisService {
         zoneLesionCount.put("PREMOLARES", 0);
         zoneLesionCount.put("MOLARES", 0);
         
-        for (Tooth tooth : odontogram.getTeeth()) {
-            int toothNumber = tooth.getNumber();
-            int lesionCount = tooth.getLesions().size();
+        for (Map.Entry<String, Odontogram.ToothRecord> entry : odontogram.getTeeth().entrySet()) {
+            String toothId = entry.getKey();
+            int toothNumber = Integer.parseInt(toothId);
+            int lesionCount = entry.getValue().getFaces().size();
             
             // Determinar cuadrante
             String quadrant;
@@ -217,20 +215,12 @@ public class DentalDiagnosisService {
         List<String> recommendations = new ArrayList<>();
         
         // Recomendaciones basadas en tipos de lesiones
-        if (lesionCounts.getOrDefault(LesionType.CARIES_INCIPIENTE, 0) > 0) {
-            recommendations.add("Aplicación de flúor para caries incipientes");
+        if (lesionCounts.getOrDefault(LesionType.CARIES, 0) > 0) {
+            recommendations.add("Tratamiento para caries");
         }
         
-        if (lesionCounts.getOrDefault(LesionType.CARIES_MODERADA, 0) > 0) {
-            recommendations.add("Obturaciones para caries moderadas");
-        }
-        
-        if (lesionCounts.getOrDefault(LesionType.CARIES_AVANZADA, 0) > 0) {
-            recommendations.add("Tratamiento de conducto para caries avanzadas");
-        }
-        
-        if (lesionCounts.getOrDefault(LesionType.ABSCESO, 0) > 0) {
-            recommendations.add("Tratamiento de abscesos y posible extracción");
+        if (lesionCounts.getOrDefault(LesionType.DESGASTE, 0) > 0) {
+            recommendations.add("Tratamiento para desgaste dental");
         }
         
         if (lesionCounts.getOrDefault(LesionType.FRACTURA, 0) > 0) {
@@ -261,14 +251,17 @@ public class DentalDiagnosisService {
      * @param odontogram Odontograma a analizar (objeto de valor del paciente)
      * @return Lista de dientes que requieren atención inmediata
      */
-    public List<Tooth> identifyPriorityTeeth(Odontogram odontogram) {
-        List<Tooth> priorityTeeth = new ArrayList<>();
+    public List<String> identifyPriorityTeeth(Odontogram odontogram) {
+        List<String> priorityTeeth = new ArrayList<>();
         
-        for (Tooth tooth : odontogram.getTeeth()) {
-            for (Lesion lesion : tooth.getLesions()) {
-                if (requiresImmediateAttention(lesion.getType())) {
-                    priorityTeeth.add(tooth);
-                    break;
+        for (Map.Entry<String, Odontogram.ToothRecord> entry : odontogram.getTeeth().entrySet()) {
+            String toothId = entry.getKey();
+            Odontogram.ToothRecord tooth = entry.getValue();
+            
+            for (LesionType lesionType : tooth.getFaces().values()) {
+                if (requiresImmediateAttention(lesionType)) {
+                    priorityTeeth.add(toothId);
+                    break; // Ya encontramos una lesión que requiere atención inmediata en este diente
                 }
             }
         }
@@ -282,15 +275,9 @@ public class DentalDiagnosisService {
      * @return true si requiere atención inmediata
      */
     private boolean requiresImmediateAttention(LesionType lesionType) {
-        switch (lesionType) {
-            case CARIES_PROFUNDA:
-            case PULPITIS:
-            case ABSCESO:
-            case FRACTURA:
-                return true;
-            default:
-                return false;
-        }
+        return lesionType == LesionType.CARIES || 
+               lesionType == LesionType.FRACTURA ||
+               lesionType == LesionType.AUSENTE;
     }
     
     /**
@@ -305,10 +292,9 @@ public class DentalDiagnosisService {
             summary.put(type, 0);
         }
         
-        for (Tooth tooth : odontogram.getTeeth()) {
-            for (Lesion lesion : tooth.getLesions()) {
-                LesionType type = lesion.getType();
-                summary.put(type, summary.get(type) + 1);
+        for (Map.Entry<String, Odontogram.ToothRecord> entry : odontogram.getTeeth().entrySet()) {
+            for (LesionType lesionType : entry.getValue().getFaces().values()) {
+                summary.put(lesionType, summary.get(lesionType) + 1);
             }
         }
         
@@ -327,10 +313,11 @@ public class DentalDiagnosisService {
         summary.put("Inferior Izquierda", 0);
         summary.put("Inferior Derecha", 0);
         
-        for (Tooth tooth : odontogram.getTeeth()) {
-            String region = getRegionForTooth(tooth.getNumber());
-            int currentCount = summary.get(region);
-            summary.put(region, currentCount + tooth.getLesions().size());
+        for (Map.Entry<String, Odontogram.ToothRecord> entry : odontogram.getTeeth().entrySet()) {
+            String toothId = entry.getKey();
+            String region = getRegionForTooth(Integer.parseInt(toothId));
+            int lesionCount = entry.getValue().getFaces().size();
+            summary.put(region, summary.get(region) + lesionCount);
         }
         
         return summary;
@@ -358,10 +345,9 @@ public class DentalDiagnosisService {
     public RiskLevel calculateCariesRisk(Odontogram odontogram) {
         int cariesCount = 0;
         
-        for (Tooth tooth : odontogram.getTeeth()) {
-            for (Lesion lesion : tooth.getLesions()) {
-                if (lesion.getType() == LesionType.CARIES || 
-                    lesion.getType() == LesionType.CARIES_PROFUNDA) {
+        for (Map.Entry<String, Odontogram.ToothRecord> entry : odontogram.getTeeth().entrySet()) {
+            for (LesionType lesionType : entry.getValue().getFaces().values()) {
+                if (lesionType == LesionType.CARIES) {
                     cariesCount++;
                 }
             }

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 
 import odoonto.application.port.in.patient.PatientDeleteUseCase;
 import odoonto.application.port.out.PatientRepositoryPort;
+import reactor.core.publisher.Mono;
 
 /**
  * Implementación del caso de uso para eliminar pacientes
@@ -20,12 +21,10 @@ public class PatientDeleteService implements PatientDeleteUseCase {
     }
 
     @Override
-    public void deletePatient(String id) {
-        // Si quisiéramos verificar que existe primero:
-        // patientRepository.findById(id)
-        //     .orElseThrow(() -> new PatientNotFoundException("Paciente no encontrado con ID: " + id));
-        
-        // Eliminar el paciente
-        patientRepository.deleteById(id);
+    public Mono<Void> deletePatient(String id) {
+        // Eliminar el paciente y retornar un Mono vacío
+        return Mono.fromRunnable(() -> {
+            patientRepository.deleteById(id);
+        }).then();
     }
 } 

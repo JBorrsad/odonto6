@@ -1,15 +1,15 @@
 package odoonto.application.port.in.doctor;
 
 import odoonto.application.dto.response.DoctorDTO;
-import java.util.List;
-import java.util.Optional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * Caso de uso para consultar doctores
  */
 public interface DoctorQueryUseCase {
-    Optional<DoctorDTO> findById(String doctorId);
-    List<DoctorDTO> findAll();
-    List<DoctorDTO> findByEspecialidad(String especialidad);
-    List<DoctorDTO> findByNombre(String nombre);
+    Mono<DoctorDTO> findById(String doctorId);
+    Flux<DoctorDTO> findAll();
+    Flux<DoctorDTO> findByEspecialidad(String especialidad);
+    Flux<DoctorDTO> findByNombre(String nombre);
 } 

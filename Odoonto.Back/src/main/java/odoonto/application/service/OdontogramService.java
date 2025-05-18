@@ -8,27 +8,25 @@ import odoonto.domain.model.valueobjects.LesionType;
 import odoonto.domain.model.valueobjects.OdontogramId;
 import odoonto.domain.model.valueobjects.PatientId;
 import odoonto.domain.model.valueobjects.ToothFace;
-import odoonto.domain.repository.OdontogramRepository;
+import odoonto.application.port.out.ReactiveOdontogramRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 /**
  * Servicio de aplicación para gestionar odontogramas.
+ * Implementación reactiva completa.
  */
 @Service
 public class OdontogramService {
 
-    private final OdontogramRepository odontogramRepository;
+    private final ReactiveOdontogramRepository odontogramRepository;
     private final OdontogramMapper odontogramMapper;
     
     @Autowired
-    public OdontogramService(OdontogramRepository odontogramRepository, OdontogramMapper odontogramMapper) {
+    public OdontogramService(ReactiveOdontogramRepository odontogramRepository, OdontogramMapper odontogramMapper) {
         this.odontogramRepository = odontogramRepository;
         this.odontogramMapper = odontogramMapper;
     }
@@ -105,8 +103,8 @@ public class OdontogramService {
      * @param id ID del odontograma
      * @return DTO del odontograma o error si no existe
      */
-    public OdontogramDTO getOdontogramById(String id) {
-        return findById(id).block();
+    public Mono<OdontogramDTO> getOdontogramById(String id) {
+        return findById(id);
     }
     
     /**
@@ -141,9 +139,9 @@ public class OdontogramService {
      * @param lesionType Tipo de lesión
      * @return DTO del odontograma actualizado
      */
-    public OdontogramDTO addLesion(String odontogramId, int toothNumber, String face, String lesionType) {
+    public Mono<OdontogramDTO> addLesion(String odontogramId, int toothNumber, String face, String lesionType) {
         String toothId = String.valueOf(toothNumber);
-        return addLesionToOdontogram(odontogramId, toothId, face, lesionType).block();
+        return addLesionToOdontogram(odontogramId, toothId, face, lesionType);
     }
     
     /**
@@ -217,9 +215,9 @@ public class OdontogramService {
      * @param face Cara del diente
      * @return DTO del odontograma actualizado
      */
-    public OdontogramDTO removeLesion(String odontogramId, int toothNumber, String face) {
+    public Mono<OdontogramDTO> removeLesion(String odontogramId, int toothNumber, String face) {
         String toothId = String.valueOf(toothNumber);
-        return removeLesionFromOdontogram(odontogramId, toothId, face).block();
+        return removeLesionFromOdontogram(odontogramId, toothId, face);
     }
     
     /**
@@ -284,10 +282,10 @@ public class OdontogramService {
      * @param treatmentType Tipo de tratamiento
      * @return DTO del odontograma actualizado
      */
-    public OdontogramDTO addTreatment(String odontogramId, int toothNumber, String treatmentType) {
+    public Mono<OdontogramDTO> addTreatment(String odontogramId, int toothNumber, String treatmentType) {
         String toothId = String.valueOf(toothNumber);
         // Implementar lógica para añadir tratamiento
-        return null; // Implementación pendiente
+        return Mono.empty(); // Implementación pendiente
     }
     
     /**
@@ -296,10 +294,10 @@ public class OdontogramService {
      * @param toothNumber Número del diente
      * @return DTO del odontograma actualizado
      */
-    public OdontogramDTO removeTreatment(String odontogramId, int toothNumber) {
+    public Mono<OdontogramDTO> removeTreatment(String odontogramId, int toothNumber) {
         String toothId = String.valueOf(toothNumber);
         // Implementar lógica para eliminar tratamiento
-        return null; // Implementación pendiente
+        return Mono.empty(); // Implementación pendiente
     }
     
     /**

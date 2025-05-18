@@ -19,11 +19,11 @@ public class AppointmentSpecification {
      */
     public static Specification<Appointment> byDoctor(String doctorId) {
         return appointment -> {
-            if (doctorId == null || doctorId.trim().isEmpty()) {
+            if (doctorId == null || doctorId.isEmpty()) {
                 return true;
             }
             
-            return doctorId.equals(appointment.getDoctorId());
+            return appointment.getDoctorId().equals(doctorId);
         };
     }
     
@@ -34,11 +34,11 @@ public class AppointmentSpecification {
      */
     public static Specification<Appointment> byPatient(String patientId) {
         return appointment -> {
-            if (patientId == null || patientId.trim().isEmpty()) {
+            if (patientId == null || patientId.isEmpty()) {
                 return true;
             }
             
-            return patientId.equals(appointment.getPatientId());
+            return appointment.getPatientId().equals(patientId);
         };
     }
     
@@ -53,7 +53,7 @@ public class AppointmentSpecification {
                 return true;
             }
             
-            return status == appointment.getStatus();
+            return appointment.getStatus() == status;
         };
     }
     
@@ -68,7 +68,8 @@ public class AppointmentSpecification {
                 return true;
             }
             
-            return appointment.getDateTime().toLocalDate().equals(date);
+            LocalDate appointmentDate = appointment.getDateTime().toLocalDate();
+            return appointmentDate.equals(date);
         };
     }
     
@@ -80,12 +81,21 @@ public class AppointmentSpecification {
      */
     public static Specification<Appointment> betweenDates(LocalDate startDate, LocalDate endDate) {
         return appointment -> {
+            if (startDate == null && endDate == null) {
+                return true;
+            }
+            
             LocalDate appointmentDate = appointment.getDateTime().toLocalDate();
             
-            boolean afterStart = startDate == null || !appointmentDate.isBefore(startDate);
-            boolean beforeEnd = endDate == null || !appointmentDate.isAfter(endDate);
+            if (startDate == null) {
+                return !appointmentDate.isAfter(endDate);
+            }
             
-            return afterStart && beforeEnd;
+            if (endDate == null) {
+                return !appointmentDate.isBefore(startDate);
+            }
+            
+            return !appointmentDate.isBefore(startDate) && !appointmentDate.isAfter(endDate);
         };
     }
     
@@ -97,12 +107,12 @@ public class AppointmentSpecification {
      */
     public static Specification<Appointment> duringTimeRange(LocalTime startTime, LocalTime endTime) {
         return appointment -> {
+            if (startTime == null || endTime == null) {
+                return true;
+            }
+            
             LocalTime appointmentTime = appointment.getDateTime().toLocalTime();
-            
-            boolean afterStart = startTime == null || !appointmentTime.isBefore(startTime);
-            boolean beforeEnd = endTime == null || !appointmentTime.isAfter(endTime);
-            
-            return afterStart && beforeEnd;
+            return !appointmentTime.isBefore(startTime) && !appointmentTime.isAfter(endTime);
         };
     }
     
@@ -114,7 +124,7 @@ public class AppointmentSpecification {
         return appointment -> {
             LocalDateTime now = LocalDateTime.now();
             return appointment.getDateTime().isAfter(now) && 
-                   appointment.getStatus() != AppointmentStatus.CANCELLED;
+                   appointment.getStatus() != AppointmentStatus.CANCELADA;
         };
     }
     
@@ -124,7 +134,7 @@ public class AppointmentSpecification {
      * @return Especificación resultante
      */
     public static Specification<Appointment> withMinimumDuration(int minDuration) {
-        return appointment -> appointment.getDuration() >= minDuration;
+        return appointment -> appointment.getDurationSlots() >= minDuration;
     }
     
     /**
@@ -133,7 +143,7 @@ public class AppointmentSpecification {
      */
     public static Specification<Appointment> needsConfirmation() {
         return appointment -> {
-            return appointment.getStatus() == AppointmentStatus.SCHEDULED &&
+            return appointment.getStatus() == AppointmentStatus.PENDIENTE &&
                    appointment.getDateTime().isBefore(LocalDateTime.now().plusDays(2));
         };
     }

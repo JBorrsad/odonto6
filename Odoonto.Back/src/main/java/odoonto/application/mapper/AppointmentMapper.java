@@ -3,11 +3,9 @@ package odoonto.application.mapper;
 import odoonto.domain.model.aggregates.Appointment;
 import odoonto.application.dto.response.AppointmentDTO;
 import odoonto.application.dto.request.AppointmentCreateDTO;
-import odoonto.domain.model.valueobjects.AppointmentStatus;
 
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
@@ -29,10 +27,20 @@ public class AppointmentMapper {
         dto.setId(appointment.getId());
         dto.setPatientId(appointment.getPatientId());
         dto.setDoctorId(appointment.getDoctorId());
-        dto.setStart(appointment.getStart());
-        dto.setEnd(appointment.end().toString());
+        
+        // Convertir LocalDateTime a formato ISO
+        LocalDateTime dateTime = appointment.getDateTime();
+        String startIso = dateTime.atZone(ZoneId.systemDefault()).toInstant().toString();
+        dto.setStart(startIso);
+        
+        // Calcular fecha y hora de fin (30 minutos por slot)
+        LocalDateTime endDateTime = dateTime.plusMinutes(appointment.getDurationSlots() * 30);
+        String endIso = endDateTime.atZone(ZoneId.systemDefault()).toInstant().toString();
+        dto.setEnd(endIso);
+        
         dto.setDurationSlots(appointment.getDurationSlots());
         dto.setStatus(appointment.getStatus().toString());
+        dto.setNotes(appointment.getNotes());
         
         return dto;
     }
@@ -45,18 +53,30 @@ public class AppointmentMapper {
             return null;
         }
         
-        // Convertir String ISO a LocalDateTime para el constructor del dominio
-        LocalDateTime startTime = LocalDateTime.ofInstant(
-            Instant.parse(dto.getStart()), 
-            ZoneId.systemDefault()
-        );
+        // Combinar fecha y hora en un LocalDateTime
+        LocalDateTime dateTime = null;
+        if (dto.getDate() != null && dto.getTime() != null) {
+            dateTime = LocalDateTime.of(dto.getDate(), dto.getTime());
+        } else {
+            throw new IllegalArgumentException("La fecha y hora son obligatorias");
+        }
+        
+        // Calcular slots de duración (30 minutos por slot)
+        int durationSlots = 1; // Por defecto, 1 slot (30 minutos)
+        if (dto.getDuration() != null && dto.getDuration() > 0) {
+            durationSlots = (dto.getDuration() + 29) / 30; // Redondear hacia arriba
+        }
         
         Appointment appointment = new Appointment(
             dto.getPatientId(),
             dto.getDoctorId(),
-            startTime,
-            dto.getDurationSlots()
+            dateTime,
+            durationSlots
         );
+        
+        if (dto.getNotes() != null) {
+            appointment.setNotes(dto.getNotes());
+        }
         
         return appointment;
     }
@@ -70,26 +90,51 @@ public class AppointmentMapper {
             return;
         }
         
-        // En este caso, debemos crear una nueva instancia ya que Appointment
-        // valida sus datos críticos en el constructor
-        if (dto.getStart() != null || dto.getDurationSlots() > 0) {
-            LocalDateTime startTime = dto.getStart() != null ? 
-                LocalDateTime.ofInstant(Instant.parse(dto.getStart()), ZoneId.systemDefault()) :
-                appointment.getStartAsLocalDateTime();
-                
-            int durationSlots = dto.getDurationSlots() > 0 ? 
-                dto.getDurationSlots() : appointment.getDurationSlots();
-                
-            // Solo actualiza si cambió algo
-            if (!startTime.equals(appointment.getStartAsLocalDateTime()) || 
-                durationSlots != appointment.getDurationSlots()) {
-                
-                // Nota: En una implementación completa, habría que preservar el id y el status
-                appointment.setPatientId(dto.getPatientId() != null ? dto.getPatientId() : appointment.getPatientId());
-                appointment.setDoctorId(dto.getDoctorId() != null ? dto.getDoctorId() : appointment.getDoctorId());
-                appointment.setStart(startTime.atZone(ZoneId.systemDefault()).toInstant().toString());
-                appointment.setDurationSlots(durationSlots);
-            }
+        // Actualizar IDs si están presentes
+        if (dto.getPatientId() != null && !dto.getPatientId().isEmpty()) {
+            appointment.setPatientId(dto.getPatientId());
+        }
+        
+        if (dto.getDoctorId() != null && !dto.getDoctorId().isEmpty()) {
+            appointment.setDoctorId(dto.getDoctorId());
+        }
+        
+        // Actualizar fecha/hora si están presentes
+        boolean timeChanged = false;
+        LocalDateTime newDateTime = appointment.getDateTime();
+        
+        if (dto.getDate() != null) {
+            // Mantener la hora, actualizar solo la fecha
+            newDateTime = LocalDateTime.of(
+                dto.getDate(), 
+                newDateTime.toLocalTime()
+            );
+            timeChanged = true;
+        }
+        
+        if (dto.getTime() != null) {
+            // Mantener la fecha, actualizar solo la hora
+            newDateTime = LocalDateTime.of(
+                newDateTime.toLocalDate(),
+                dto.getTime()
+            );
+            timeChanged = true;
+        }
+        
+        // Si cambió la fecha u hora, actualizar
+        if (timeChanged) {
+            appointment.setDateTime(newDateTime);
+        }
+        
+        // Actualizar duración si está presente
+        if (dto.getDuration() != null && dto.getDuration() > 0) {
+            int durationSlots = (dto.getDuration() + 29) / 30; // Redondear hacia arriba
+            appointment.setDurationSlots(durationSlots);
+        }
+        
+        // Actualizar notas si están presentes
+        if (dto.getNotes() != null) {
+            appointment.setNotes(dto.getNotes());
         }
     }
 } 

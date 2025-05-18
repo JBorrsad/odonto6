@@ -8,7 +8,6 @@ import odoonto.domain.exceptions.InvalidAppointmentTimeException;
 import odoonto.domain.model.aggregates.Appointment;
 import odoonto.domain.model.aggregates.Doctor;
 import odoonto.domain.model.valueobjects.AppointmentTime;
-import odoonto.domain.service.AppointmentValidationService;
 
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -18,19 +17,15 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Servicio reactivo para validación de citas.
- * Adapta el servicio de dominio a una interfaz reactiva.
  */
 @Service
 public class ReactiveAppointmentValidationService {
     
     private final ReactiveAppointmentRepository appointmentRepository;
     private final ReactiveDoctorRepository doctorRepository;
-    private final AppointmentValidationService domainService;
     
     // Constantes de negocio
     private static final int MIN_APPOINTMENT_DURATION = 30; // minutos
@@ -43,11 +38,9 @@ public class ReactiveAppointmentValidationService {
      */
     public ReactiveAppointmentValidationService(
             ReactiveAppointmentRepository appointmentRepository,
-            ReactiveDoctorRepository doctorRepository,
-            AppointmentValidationService domainService) {
+            ReactiveDoctorRepository doctorRepository) {
         this.appointmentRepository = appointmentRepository;
         this.doctorRepository = doctorRepository;
-        this.domainService = domainService;
     }
     
     /**

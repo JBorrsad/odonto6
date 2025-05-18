@@ -6,7 +6,8 @@ import org.springframework.stereotype.Service;
 import odoonto.application.port.in.doctor.DoctorDeleteUseCase;
 import odoonto.domain.exceptions.DomainException;
 import odoonto.domain.repository.DoctorRepository;
-import reactor.core.publisher.Mono;
+
+import java.util.Optional;
 
 /**
  * Implementación del caso de uso para eliminar un doctor
@@ -29,9 +30,12 @@ public class DoctorDeleteService implements DoctorDeleteUseCase {
         }
         
         // Verificar que el doctor existe antes de eliminarlo
-        doctorRepository.findById(doctorId)
-            .switchIfEmpty(Mono.error(new DomainException("No se encontró un doctor con el ID: " + doctorId)))
-            .flatMap(doctor -> doctorRepository.deleteById(doctorId))
-            .block(); // Bloquear para esperar a que termine la operación
+        boolean exists = doctorRepository.findById(doctorId).isPresent();
+        if (!exists) {
+            throw new DomainException("No se encontró un doctor con el ID: " + doctorId);
+        }
+        
+        // Eliminar el doctor
+        doctorRepository.deleteById(doctorId);
     }
 } 

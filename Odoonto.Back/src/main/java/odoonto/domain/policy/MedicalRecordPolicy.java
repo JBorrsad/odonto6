@@ -5,6 +5,7 @@ import odoonto.domain.model.entities.MedicalEntry;
 import odoonto.domain.model.entities.MedicalRecord;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,29 +31,17 @@ public class MedicalRecordPolicy {
      * @throws DomainException Si no cumple con las reglas
      */
     public void validateMedicalEntry(MedicalEntry entry) {
-        if (entry.getTitle() == null || entry.getTitle().trim().isEmpty()) {
-            throw new DomainException("El título de la entrada médica no puede estar vacío");
+        if (entry.getDescription() == null || entry.getDescription().trim().isEmpty()) {
+            throw new DomainException("La descripción de la entrada médica no puede estar vacía");
         }
         
-        if (entry.getTitle().length() > MAX_ENTRY_TITLE_LENGTH) {
-            throw new DomainException("El título de la entrada médica no puede exceder los " + 
-                                      MAX_ENTRY_TITLE_LENGTH + " caracteres");
-        }
-        
-        if (entry.getContent() == null || entry.getContent().trim().isEmpty()) {
-            throw new DomainException("El contenido de la entrada médica no puede estar vacío");
-        }
-        
-        if (entry.getContent().length() > MAX_ENTRY_CONTENT_LENGTH) {
-            throw new DomainException("El contenido de la entrada médica no puede exceder los " + 
+        if (entry.getDescription().length() > MAX_ENTRY_CONTENT_LENGTH) {
+            throw new DomainException("La descripción de la entrada médica no puede exceder los " + 
                                       MAX_ENTRY_CONTENT_LENGTH + " caracteres");
         }
         
-        if (entry.getDate() == null) {
-            throw new DomainException("La fecha de la entrada médica es obligatoria");
-        }
-        
-        if (entry.getDate().isAfter(LocalDate.now())) {
+        // Verificar que la fecha de registro no sea en el futuro
+        if (entry.getRecordedAt().isAfter(LocalDateTime.now())) {
             throw new DomainException("La fecha de la entrada médica no puede ser en el futuro");
         }
         
@@ -62,17 +51,37 @@ public class MedicalRecordPolicy {
     }
     
     /**
+     * Determina si una entrada médica puede ser añadida al historial
+     * @param record Historial médico
+     * @param entry Entrada a añadir
+     * @return true si la entrada puede ser añadida
+     */
+    public boolean canAddEntry(MedicalRecord record, MedicalEntry entry) {
+        if (record == null || entry == null) {
+            return false;
+        }
+        
+        try {
+            validateMedicalEntry(entry);
+            return true;
+        } catch (DomainException e) {
+            return false;
+        }
+    }
+    
+    /**
      * Determina si una entrada médica puede ser modificada según las políticas
      * @param entry Entrada a verificar
      * @return true si puede ser modificada
      */
     public boolean canModifyEntry(MedicalEntry entry) {
-        if (entry.getDate() == null) {
+        if (entry.getRecordedAt() == null) {
             return false;
         }
         
+        LocalDate entryDate = entry.getRecordedAt().toLocalDate();
         LocalDate today = LocalDate.now();
-        Period period = Period.between(entry.getDate(), today);
+        Period period = Period.between(entryDate, today);
         
         return period.getDays() <= MAX_DAYS_TO_MODIFY_ENTRY;
     }

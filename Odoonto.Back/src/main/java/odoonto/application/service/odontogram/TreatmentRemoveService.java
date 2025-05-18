@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 
 import odoonto.application.port.in.odontogram.TreatmentRemoveUseCase;
 import odoonto.domain.exceptions.DomainException;
-import odoonto.domain.repository.OdontogramRepository;
+import odoonto.application.port.out.ReactiveOdontogramRepository;
 import reactor.core.publisher.Mono;
 
 /**
@@ -14,35 +14,34 @@ import reactor.core.publisher.Mono;
 @Service
 public class TreatmentRemoveService implements TreatmentRemoveUseCase {
 
-    private final OdontogramRepository odontogramRepository;
+    private final ReactiveOdontogramRepository odontogramRepository;
 
     @Autowired
-    public TreatmentRemoveService(OdontogramRepository odontogramRepository) {
+    public TreatmentRemoveService(ReactiveOdontogramRepository odontogramRepository) {
         this.odontogramRepository = odontogramRepository;
     }
 
     @Override
-    public void removeTreatment(String odontogramId, String toothNumber, String treatmentId) {
+    public Mono<Void> removeTreatment(String odontogramId, String toothNumber, String treatmentId) {
         // Validaciones básicas
         if (odontogramId == null || odontogramId.trim().isEmpty()) {
-            throw new DomainException("El ID del odontograma no puede ser nulo o vacío");
+            return Mono.error(new DomainException("El ID del odontograma no puede ser nulo o vacío"));
         }
         
         if (toothNumber == null || toothNumber.trim().isEmpty()) {
-            throw new DomainException("El número de diente no puede ser nulo o vacío");
+            return Mono.error(new DomainException("El número de diente no puede ser nulo o vacío"));
         }
         
         if (treatmentId == null || treatmentId.trim().isEmpty()) {
-            throw new DomainException("El ID del tratamiento no puede ser nulo o vacío");
+            return Mono.error(new DomainException("El ID del tratamiento no puede ser nulo o vacío"));
         }
         
         // Verificar que el odontograma existe antes de eliminar el tratamiento
-        odontogramRepository.findById(odontogramId)
+        return odontogramRepository.findById(odontogramId)
             .switchIfEmpty(Mono.error(new DomainException("No existe un odontograma con el ID: " + odontogramId)))
-            .flatMap(odontogram -> {
+            .flatMap(odontogram -> 
                 // Eliminar tratamiento usando el método del repositorio
-                return odontogramRepository.removeTreatment(odontogramId, toothNumber, treatmentId);
-            })
-            .block(); // Bloquear para esperar a que termine la operación
+                odontogramRepository.removeTreatment(odontogramId, toothNumber, treatmentId)
+            );
     }
 } 

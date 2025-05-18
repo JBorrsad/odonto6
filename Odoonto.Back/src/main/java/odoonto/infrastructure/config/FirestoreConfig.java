@@ -2,10 +2,8 @@ package odoonto.infrastructure.config;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.FirestoreOptions;
 import com.google.cloud.spring.data.firestore.FirestoreReactiveOperations;
 import com.google.cloud.spring.data.firestore.FirestoreTemplate;
-import com.google.cloud.spring.data.firestore.mapping.FirestoreClassMappingContext;
 import com.google.cloud.spring.data.firestore.mapping.FirestoreMappingContext;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
@@ -43,7 +41,7 @@ public class FirestoreConfig {
     
     @Bean
     public FirestoreMappingContext firestoreMappingContext() {
-        return new FirestoreClassMappingContext();
+        return new FirestoreMappingContext();
     }
     
     @Bean

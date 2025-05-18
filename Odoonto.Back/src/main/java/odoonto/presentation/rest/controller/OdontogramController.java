@@ -30,17 +30,18 @@ public class OdontogramController {
         this.patientOdontogramUseCase = patientOdontogramUseCase;
     }
 
-    // API sincrónica tradicional
-    
+    // API reactiva
+
     /**
      * Obtiene un odontograma por su ID
      * @param id ID del odontograma
      * @return DTO del odontograma
      */
     @GetMapping("/api/odontograms/{id}")
-    public ResponseEntity<OdontogramDTO> getOdontogramById(@PathVariable String id) {
-        OdontogramDTO odontogram = odontogramService.getOdontogramById(id);
-        return ResponseEntity.ok(odontogram);
+    public Mono<ResponseEntity<OdontogramDTO>> getOdontogramById(@PathVariable String id) {
+        return odontogramService.getOdontogramById(id)
+            .map(ResponseEntity::ok)
+            .defaultIfEmpty(ResponseEntity.notFound().build());
     }
     
     /**
@@ -49,8 +50,10 @@ public class OdontogramController {
      * @return Odontograma del paciente
      */
     @GetMapping("/api/patients/{patientId}/odontogram")
-    public ResponseEntity<Object> getPatientOdontogram(@PathVariable String patientId) {
-        return ResponseEntity.ok(patientOdontogramUseCase.getPatientOdontogram(patientId));
+    public Mono<ResponseEntity<Object>> getPatientOdontogram(@PathVariable String patientId) {
+        return Mono.fromCallable(() -> patientOdontogramUseCase.getPatientOdontogram(patientId))
+            .map(ResponseEntity::ok)
+            .onErrorResume(e -> Mono.just(ResponseEntity.notFound().build()));
     }
     
     /**
@@ -62,14 +65,15 @@ public class OdontogramController {
      * @return Odontograma actualizado
      */
     @PostMapping("/api/odontograms/{id}/teeth/{toothNumber}/faces/{face}/lesions")
-    public ResponseEntity<OdontogramDTO> addLesion(
+    public Mono<ResponseEntity<OdontogramDTO>> addLesion(
             @PathVariable String id,
             @PathVariable int toothNumber,
             @PathVariable String face,
             @RequestParam String lesionType) {
         
-        OdontogramDTO updated = odontogramService.addLesion(id, toothNumber, face, lesionType);
-        return ResponseEntity.status(HttpStatus.CREATED).body(updated);
+        return odontogramService.addLesion(id, toothNumber, face, lesionType)
+            .map(updated -> ResponseEntity.status(HttpStatus.CREATED).body(updated))
+            .defaultIfEmpty(ResponseEntity.notFound().build());
     }
     
     /**
@@ -80,13 +84,14 @@ public class OdontogramController {
      * @return Odontograma actualizado
      */
     @DeleteMapping("/api/odontograms/{id}/teeth/{toothNumber}/faces/{face}/lesions")
-    public ResponseEntity<OdontogramDTO> removeLesion(
+    public Mono<ResponseEntity<OdontogramDTO>> removeLesion(
             @PathVariable String id,
             @PathVariable int toothNumber,
             @PathVariable String face) {
         
-        OdontogramDTO updated = odontogramService.removeLesion(id, toothNumber, face);
-        return ResponseEntity.ok(updated);
+        return odontogramService.removeLesion(id, toothNumber, face)
+            .map(ResponseEntity::ok)
+            .defaultIfEmpty(ResponseEntity.notFound().build());
     }
     
     /**
@@ -97,13 +102,14 @@ public class OdontogramController {
      * @return Odontograma actualizado
      */
     @PostMapping("/api/odontograms/{id}/teeth/{toothNumber}/treatments")
-    public ResponseEntity<OdontogramDTO> addTreatment(
+    public Mono<ResponseEntity<OdontogramDTO>> addTreatment(
             @PathVariable String id,
             @PathVariable int toothNumber,
             @RequestParam String treatmentType) {
         
-        OdontogramDTO updated = odontogramService.addTreatment(id, toothNumber, treatmentType);
-        return ResponseEntity.status(HttpStatus.CREATED).body(updated);
+        return odontogramService.addTreatment(id, toothNumber, treatmentType)
+            .map(updated -> ResponseEntity.status(HttpStatus.CREATED).body(updated))
+            .defaultIfEmpty(ResponseEntity.notFound().build());
     }
     
     /**
@@ -113,18 +119,17 @@ public class OdontogramController {
      * @return Odontograma actualizado
      */
     @DeleteMapping("/api/odontograms/{id}/teeth/{toothNumber}/treatments")
-    public ResponseEntity<OdontogramDTO> removeTreatment(
+    public Mono<ResponseEntity<OdontogramDTO>> removeTreatment(
             @PathVariable String id,
             @PathVariable int toothNumber) {
         
-        OdontogramDTO updated = odontogramService.removeTreatment(id, toothNumber);
-        return ResponseEntity.ok(updated);
+        return odontogramService.removeTreatment(id, toothNumber)
+            .map(ResponseEntity::ok)
+            .defaultIfEmpty(ResponseEntity.notFound().build());
     }
     
-    // API reactiva
-    
     /**
-     * Obtiene un odontograma por su ID de forma reactiva
+     * Obtiene un odontograma por su ID de forma reactiva (endpoint alternativo)
      * @param id ID del odontograma
      * @return Mono con el DTO del odontograma
      */
@@ -134,7 +139,7 @@ public class OdontogramController {
     }
     
     /**
-     * Obtiene el odontograma de un paciente de forma reactiva
+     * Obtiene el odontograma de un paciente de forma reactiva (endpoint alternativo)
      * @param patientId ID del paciente
      * @return Mono con el odontograma del paciente
      */
@@ -144,7 +149,7 @@ public class OdontogramController {
     }
     
     /**
-     * Registra una lesión en un diente de forma reactiva
+     * Registra una lesión en un diente de forma reactiva (endpoint alternativo)
      * @param id ID del odontograma
      * @param toothNumber Número del diente
      * @param face Cara del diente
@@ -162,7 +167,7 @@ public class OdontogramController {
     }
     
     /**
-     * Elimina una lesión de un diente de forma reactiva
+     * Elimina una lesión de un diente de forma reactiva (endpoint alternativo)
      * @param id ID del odontograma
      * @param toothNumber Número del diente
      * @param face Cara del diente
@@ -178,7 +183,7 @@ public class OdontogramController {
     }
     
     /**
-     * Registra un tratamiento en un diente de forma reactiva
+     * Registra un tratamiento en un diente de forma reactiva (endpoint alternativo)
      * @param id ID del odontograma
      * @param toothNumber Número del diente
      * @param treatmentType Tipo de tratamiento
@@ -191,12 +196,11 @@ public class OdontogramController {
             @PathVariable int toothNumber,
             @RequestParam String treatmentType) {
         
-        return Mono.fromCallable(() -> odontogramService.addTreatment(id, toothNumber, treatmentType))
-                .onErrorResume(OdontogramNotFoundException.class, e -> Mono.empty());
+        return odontogramService.addTreatment(id, toothNumber, treatmentType);
     }
     
     /**
-     * Elimina un tratamiento de un diente de forma reactiva
+     * Elimina un tratamiento de un diente de forma reactiva (endpoint alternativo)
      * @param id ID del odontograma
      * @param toothNumber Número del diente
      * @return Mono con el odontograma actualizado
@@ -206,7 +210,6 @@ public class OdontogramController {
             @PathVariable String id,
             @PathVariable int toothNumber) {
         
-        return Mono.fromCallable(() -> odontogramService.removeTreatment(id, toothNumber))
-                .onErrorResume(OdontogramNotFoundException.class, e -> Mono.empty());
+        return odontogramService.removeTreatment(id, toothNumber);
     }
 } 

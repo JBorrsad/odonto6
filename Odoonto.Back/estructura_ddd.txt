@@ -33,16 +33,9 @@ Odoonto.Back/src/main/java/odoonto/
 │   │       ├── PatientId.java *          # Identificador de paciente
 │   │       ├── MedicalRecordId.java *    # Identificador del historial médico
 │   │       └── AppointmentId.java *      # Identificador de cita
-│   ├── repository/          # Interfaces de repositorios (puertos - solo interfaces)
-│   │   ├── PatientRepository.java *              # Interfaz para repositorio de pacientes
-│   │   ├── DoctorRepository.java *               # Interfaz para repositorio de doctores
-│   │   ├── OdontogramRepository.java *           # Interfaz para repositorio de odontogramas
-│   │   ├── MedicalRecordRepository.java *        # Interfaz para repositorio de historiales médicos
-│   │   └── AppointmentRepository.java *          # Interfaz para repositorio de citas
 │   ├── service/             # Servicios de dominio (lógica que no pertenece a una entidad)
 │   │   ├── DentalDiagnosisService.java *  # Servicio para diagnóstico dental
-│   │   ├── TreatmentPlanService.java *    # Servicio para planificación de tratamientos
-│   │   └── AppointmentValidationService.java * # Validación de citas
+│   │   └── TreatmentPlanService.java *    # Servicio para planificación de tratamientos
 │   ├── events/              # Eventos de dominio 
 │   │   ├── DomainEvent.java *             # Interface base para eventos
 │   │   ├── PatientRegisteredEvent.java *  # Evento cuando se registra un paciente
@@ -128,6 +121,7 @@ Odoonto.Back/src/main/java/odoonto/
 │   │   ├── DoctorMapper.java *                   # Conversión entre Doctor y DoctorDTO
 │   │   └── AppointmentMapper.java *              # Conversión entre Appointment y AppointmentDTO
 │   ├── service/             # Implementaciones de servicios (adaptadores)
+│   │   ├── ReactiveAppointmentValidationService.java * # Servicio reactivo para validación de citas
 │   │   ├── patient/         # Implementaciones para pacientes
 │   │   │   ├── PatientCreateService.java *       # Implementación de creación
 │   │   │   ├── PatientUpdateService.java *       # Implementación de actualización
@@ -135,10 +129,10 @@ Odoonto.Back/src/main/java/odoonto/
 │   │   │   ├── PatientQueryService.java *        # Implementación de consulta
 │   │   │   └── PatientOdontogramService.java *   # Implementación de gestión de odontogramas
 │   │   ├── odontogram/      # Implementaciones para odontogramas
-│   │   │   ├── OdontogramQueryService.java *     # Implementación de consulta
+│   │   │   ├── OdontogramQueryService.java *     # Implementación de consulta (completamente reactiva)
 │   │   │   ├── LesionAddService.java *           # Implementación de añadir lesión
 │   │   │   ├── LesionRemoveService.java *        # Implementación de eliminar lesión
-│   │   │   ├── TreatmentAddService.java ✓        # Implementación de añadir tratamiento
+│   │   │   ├── TreatmentAddService.java *        # Implementación de añadir tratamiento
 │   │   │   └── TreatmentRemoveService.java *     # Implementación de eliminar tratamiento
 │   │   ├── medicalrecord/   # Implementaciones para historiales médicos
 │   │   │   ├── MedicalRecordQueryService.java *  # Implementación de consulta
@@ -163,18 +157,12 @@ Odoonto.Back/src/main/java/odoonto/
 │
 ├── infrastructure/          # Implementaciones técnicas (adaptadores)
 │   ├── persistence/         # Implementaciones de repositorios (adaptadores)
-│   │   ├── firestore/       # Adaptadores para Firestore
-│   │   │   ├── FirestorePatientRepository.java *     # Adaptador para PatientRepository
-│   │   │   ├── FirestoreOdontogramRepository.java *  # Adaptador para OdontogramRepository
-│   │   │   ├── FirestoreMedicalRecordRepository.java * # Adaptador para MedicalRecordRepository
-│   │   │   ├── FirestoreDoctorRepository.java *      # Adaptador para DoctorRepository
-│   │   │   └── FirestoreAppointmentRepository.java * # Adaptador para AppointmentRepository
-│   │   ├── reactive/        # Adaptadores reactivos para los repositorios
-│   │   │   ├── ReactivePatientRepositoryAdapter.java *       # Adaptador reactivo para PatientRepository
-│   │   │   ├── ReactiveOdontogramRepositoryAdapter.java *    # Adaptador reactivo para OdontogramRepository
-│   │   │   ├── ReactiveMedicalRecordRepositoryAdapter.java * # Adaptador reactivo para MedicalRecordRepository
-│   │   │   ├── ReactiveDoctorRepositoryAdapter.java *        # Adaptador reactivo para DoctorRepository
-│   │   │   └── ReactiveAppointmentRepositoryAdapter.java *   # Adaptador reactivo para AppointmentRepository
+│   │   ├── reactive/        # Implementaciones reactivas de repositorios
+│   │   │   ├── ReactivePatientRepositoryAdapter.java *       # Implementación reactiva para repositorio de pacientes
+│   │   │   ├── ReactiveOdontogramRepositoryAdapter.java *    # Implementación reactiva para repositorio de odontogramas
+│   │   │   ├── ReactiveMedicalRecordRepositoryAdapter.java * # Implementación reactiva para repositorio de historiales
+│   │   │   ├── ReactiveDoctorRepositoryAdapter.java *        # Implementación reactiva para repositorio de doctores
+│   │   │   └── ReactiveAppointmentRepositoryAdapter.java *   # Implementación reactiva para repositorio de citas
 │   │   └── entity/          # Entidades de persistencia (si son distintas)
 │   │       ├── FirestorePatientEntity.java *        # Mapeo de Patient para Firestore
 │   │       ├── FirestoreOdontogramEntity.java *     # Mapeo de Odontogram para Firestore
@@ -581,4 +569,51 @@ Servicios refactorizados para usar adaptadores reactivos:
 3. **TreatmentAddService** ✓
 4. **ReactiveAppointmentValidationService** ✓
 5. **PatientService** ✓
-6. **MedicalRecordQueryService** ✓ 
+6. **MedicalRecordQueryService** ✓
+7. **AppointmentService** ✓
+8. **OdontogramService** ✓
+9. **PatientService** ✓
+10. **LesionRemoveService** ✓
+11. **TreatmentRemoveService** ✓
+
+## ACTUALIZACIÓN A PROGRAMACIÓN COMPLETAMENTE REACTIVA
+
+Se han transformado los siguientes servicios y casos de uso para utilizar un enfoque completamente reactivo:
+
+1. **OdontogramService**: Convertido para utilizar ReactiveOdontogramRepository y retornar tipos Mono/Flux.
+2. **AppointmentService**: Convertido para utilizar ReactiveAppointmentRepository, ReactivePatientRepository y ReactiveDoctorRepository.
+3. **PatientService**: Eliminadas las llamadas a .block() y .blockOptional(), actualizadas las interfaces de casos de uso.
+4. **LesionRemoveService**: Convertido para usar ReactiveOdontogramRepository y retornar Mono<Void>.
+5. **TreatmentRemoveService**: Convertido para usar ReactiveOdontogramRepository y retornar Mono<Void>.
+
+Los cambios incluyen:
+- Reemplazo de las interfaces de repositorio por sus versiones reactivas
+- Eliminación de métodos de bloqueo (block/blockOptional)
+- Actualización de interfaces de casos de uso para trabajar con tipos Mono/Flux
+- Manejo reactivo consistente de errores mediante switchIfEmpty/Mono.error
+
+## NUEVA IMPLEMENTACIÓN DE OdontogramService Y OdontogramQueryService
+
+```java
+// ... existing code ...
+│   │   ├── odontogram/      # Implementaciones para odontogramas
+│   │   │   ├── OdontogramQueryService.java *     # Implementación de consulta
+│   │   │   └── OdontogramMapService.java *          # Conversión entre Odontogram y OdontogramDTO
+│   │   └── presentation/            # API y controladores (adaptadores primarios)
+│   │       └── rest/                # API REST
+│   │           └── controller/      # Controladores REST (adaptadores que usan puertos)
+│   │               └── OdontogramController.java *          # Endpoints de odontogramas (implementación reactiva completa)
+```
+
+## NUEVA IMPLEMENTACIÓN DE OdontogramService Y OdontogramQueryService
+
+```java
+// ... existing code ...
+│   │   ├── odontogram/      # Implementaciones para odontogramas
+│   │   │   ├── OdontogramQueryService.java *     # Implementación de consulta
+│   │   │   └── OdontogramMapService.java *          # Conversión entre Odontogram y OdontogramDTO
+│   │   └── presentation/            # API y controladores (adaptadores primarios)
+│   │       └── rest/                # API REST
+│   │           └── controller/      # Controladores REST (adaptadores que usan puertos)
+│   │               └── OdontogramController.java *          # Endpoints de odontogramas (implementación reactiva completa)
+``` 

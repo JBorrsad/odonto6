@@ -1,6 +1,6 @@
 package odoonto.application.port.out;
 
-import odoonto.domain.model.entities.MedicalRecord;
+import odoonto.domain.model.aggregates.MedicalRecord;
 import odoonto.domain.model.entities.MedicalEntry;
 import odoonto.domain.model.valueobjects.MedicalRecordId;
 import odoonto.domain.model.valueobjects.PatientId;
@@ -9,6 +9,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 /**
  * Puerto de salida reactivo para el repositorio de historiales médicos.
@@ -28,14 +29,14 @@ public interface ReactiveMedicalRecordRepository {
      * @param id Identificador único del historial médico
      * @return Mono con el historial médico encontrado o empty si no existe
      */
-    Mono<MedicalRecord> findById(MedicalRecordId id);
+    Mono<MedicalRecord> findById(UUID id);
     
     /**
      * Busca un historial médico por el identificador del paciente
      * @param patientId Identificador único del paciente
      * @return Mono con el historial médico encontrado o empty si no existe
      */
-    Mono<MedicalRecord> findByPatientId(PatientId patientId);
+    Mono<MedicalRecord> findByPatientId(UUID patientId);
     
     /**
      * Guarda un historial médico en el repositorio
@@ -49,7 +50,7 @@ public interface ReactiveMedicalRecordRepository {
      * @param id Identificador único del historial médico
      * @return Mono que completa cuando la operación termina
      */
-    Mono<Void> deleteById(MedicalRecordId id);
+    Mono<Void> deleteById(UUID id);
     
     /**
      * Añade una entrada al historial médico
@@ -124,7 +125,7 @@ public interface ReactiveMedicalRecordRepository {
         if (id == null || id.trim().isEmpty()) {
             return Mono.empty();
         }
-        return findById(MedicalRecordId.of(id));
+        return findById(UUID.fromString(id));
     }
     
     /**
@@ -136,7 +137,7 @@ public interface ReactiveMedicalRecordRepository {
         if (patientId == null || patientId.trim().isEmpty()) {
             return Mono.empty();
         }
-        return findByPatientId(PatientId.of(patientId));
+        return findByPatientId(UUID.fromString(patientId));
     }
     
     /**
@@ -148,6 +149,6 @@ public interface ReactiveMedicalRecordRepository {
         if (id == null || id.trim().isEmpty()) {
             return Mono.empty();
         }
-        return deleteById(MedicalRecordId.of(id));
+        return deleteById(UUID.fromString(id));
     }
 } 
