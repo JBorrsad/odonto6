@@ -9,7 +9,7 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.cloud.FirestoreClient;
 import jakarta.annotation.PreDestroy;
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
@@ -29,9 +29,6 @@ public class FirestoreConfig {
     private static final Logger LOGGER = Logger.getLogger(FirestoreConfig.class.getName());
     private static final String CONFIG_PATH = "src/main/resources/config-data.json";
     
-    @Autowired
-    private ServiceInitializer serviceInit;
-
     @Bean
     @Profile("prod")
     @DependsOn("serviceInitializer")

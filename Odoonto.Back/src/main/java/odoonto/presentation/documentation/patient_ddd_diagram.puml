@@ -1,0 +1,143 @@
+@startuml "Patient - Diagrama DDD End-to-End"
+
+!theme plain
+
+' Configuración de estilos simplificada compatible con versiones recientes
+skinparam backgroundColor white
+skinparam stereotypeCBackgroundColor white
+skinparam stereotypeCBorderColor black
+skinparam stereotypeNBackgroundColor white
+skinparam stereotypeNBorderColor black
+skinparam usecaseStereotypeFontColor black
+skinparam usecaseStereotypeFontName Verdana
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+
+' Definición de paquetes y clases
+package "Domain" as domain #e1f5fe {
+  class "PatientRegisteredEvent" {
+    - patientId: String
+    - name: String
+    - lastName: String
+    - documentNumber: String
+    - email: String
+
+    + getPatientId(): String
+    + getName(): String
+    + getLastName(): String
+    + getDocumentNumber(): String
+    + getEmail(): String
+    + toString(): String
+  }
+  
+  class "Patient" {
+    - id: PatientId
+    - nombre: String
+    - apellido: String
+    - fechaNacimiento: LocalDate
+    - sexo: Sexo
+    - telefono: PhoneNumber
+    - email: EmailAddress
+    - odontogram: Odontogram
+    - appointmentIds: List<String>
+    - lastVisitDate: LocalDate
+
+    - validateBasicInfo(String nombre, String apellido, LocalDate fechaNacimiento): void
+    + getEdad(): int
+    + updateOdontogram(Odontogram odontogram): void
+    + deriveOdontogramId(): OdontogramId
+    + deriveMedicalRecordId(): MedicalRecordId
+    + getId(): PatientId
+  }
+  
+  class "PatientId" {
+    - value: String
+
+    + of(String value): PatientId
+    + generate(): PatientId
+    + getValue(): String
+    + toString(): String
+  }
+}
+
+package "Infrastructure" as infrastructure #f1f8e9 {
+  class "FirestorePatientEntity" {
+    - id: String
+    - nombre: String
+    - apellido: String
+    - fechaNacimiento: String
+    - sexo: String
+    - telefono: String
+    - email: String
+
+    + getId(): String
+    + getNombre(): String
+  }
+  
+  class "ReactivePatientRepositoryAdapter" {
+    - COLLECTION_NAME: String
+    - firestore: Firestore
+
+    + findById(String id): Mono<Patient>
+    + save(Patient patient): Mono<Patient>
+  }
+}
+
+package "Presentation" as presentation #fff8e1 {
+  class "PatientController" {
+    - patientQueryUseCase: PatientQueryUseCase
+    - patientCreateUseCase: PatientCreateUseCase
+
+    + getAllPatients(): Flux<PatientDTO>
+    + getPatientById(String id): Mono<PatientDTO>
+  }
+}
+
+package "Application" as application #e0f7fa {
+  class "PatientCreateDTO" {
+    - nombre: String
+    - apellido: String
+    - fechaNacimiento: LocalDate
+    - sexo: String
+    - email: String
+    - telefono: String
+
+    + getNombre(): String
+    + getApellido(): String
+  }
+  
+  class "PatientDTO" {
+    - id: String
+    - nombre: String
+    - apellido: String
+    - fechaNacimiento: LocalDate
+    - sexo: String
+    - email: String
+    - telefono: String
+
+    + getId(): String
+    + getNombre(): String
+  }
+  
+  interface "PatientCreateUseCase" {
+    ~ createPatient(PatientCreateDTO patientDTO): Mono<PatientDTO>
+  }
+  
+  interface "PatientQueryUseCase" {
+    ~ getAllPatients(): Flux<PatientDTO>
+    ~ getPatientById(String id): Mono<PatientDTO>
+  }
+}
+
+' Relaciones entre clases
+Patient --> PatientId : contiene
+PatientCreateUseCase <.. PatientController : usa
+PatientQueryUseCase <.. PatientController : usa
+ReactivePatientRepositoryAdapter ..> Patient : persiste
+PatientController ..> PatientDTO : devuelve
+PatientCreateUseCase ..> PatientDTO : devuelve
+PatientController ..> PatientCreateDTO : recibe
+
+@enduml

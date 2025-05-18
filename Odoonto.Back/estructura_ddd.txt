@@ -168,9 +168,14 @@ Odoonto.Back/src/main/java/odoonto/
 │   │       └── FirestoreAppointmentEntity.java *    # Mapeo de Appointment para Firestore
 │   ├── config/              # Configuraciones (Spring, etc.)
 │   │   ├── FirestoreConfig.java *                  # Configuración de Firestore
+│   │   ├── DiagramGeneratorConfig.java *           # Configuración para generación de diagramas DDD
+│   │   ├── StartupMenuConfig.java *                # Menú interactivo al inicio de la aplicación
 │   │   └── WebConfig.java *                        # Configuración web
 │   ├── security/            # Implementaciones de seguridad
 │   │   └── SecurityConfig.java *                   # Configuración de seguridad
+│   ├── tools/               # Herramientas y utilidades
+│   │   ├── DDDDiagramGenerator.java *              # Generador de diagramas PlantUML para arquitectura DDD
+│   │   └── GenerateDDDDiagrams.java *              # Punto de entrada para generar diagramas
 │   └── testing/             # Testing de infraestructura
 │       └── DataSeeder.java *                       # Carga de datos iniciales
 │
@@ -185,7 +190,11 @@ Odoonto.Back/src/main/java/odoonto/
     │   └── advice/          # Manejadores de excepciones para REST
     │       └── GlobalExceptionHandler.java *       # Manejo global de excepciones 
     └── documentation/       # Documentación de API
-        └── SwaggerConfig.java *                    # Configuración de Swagger
+        ├── SwaggerConfig.java *                    # Configuración de Swagger
+        ├── DDDDocumentation.java *                 # Controlador para acceder a documentación DDD
+        ├── README.md *                             # Documentación sobre la generación de diagramas
+        ├── patient_ddd_diagram.puml                # Diagrama PlantUML de la entidad Paciente
+        └── index.html                              # Página HTML con información sobre los diagramas
 ```
 
 ## EXPLICACIONES Y RECOMENDACIONES
