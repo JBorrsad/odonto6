@@ -188,4 +188,50 @@ El proyecto incluye herramientas para generar diagramas PlantUML que documentan 
 2. Los diagramas generados se guardan en:
    ```
    src/main/java/odoonto/documentation/plantuml/
-   ``` 
+   ```
+
+## Requisitos Previos
+- Java 21 o superior
+- Maven 3.8.0 o superior
+- Cuenta de Google Cloud Platform con Firestore habilitado
+- Archivo de credenciales de Google Cloud Platform (service-account.json)
+
+## Instrucciones de Instalación y Ejecución
+
+### 1. Configuración del Entorno
+1. Asegúrate de tener Java 21 instalado. Puedes verificarlo ejecutando:
+   ```bash
+   java -version
+   ```
+
+2. Verifica que Maven esté instalado:
+   ```bash
+   mvn -version
+   ```
+
+
+
+### 2. Instalación de Dependencias
+1. Abre una terminal en la carpeta raíz del proyecto (Odoonto.Back)
+2. Ejecuta el siguiente comando para instalar todas las dependencias:
+   ```bash
+   mvn clean install
+   ```
+
+### 3. Ejecución del Proyecto
+1. Para iniciar el servidor en modo desarrollo, ejecuta:
+   ```bash
+   mvn spring-boot:run
+   ```
+
+2. El servidor se iniciará por defecto en `http://localhost:8080`
+
+3. Puedes acceder a la documentación de la API en:
+   ```
+   http://localhost:8080/swagger-ui.html
+   ```
+
+### Solución de Problemas Comunes
+- Si encuentras errores relacionados con Java, asegúrate de tener la versión correcta instalada
+- Si hay problemas con las credenciales de Google Cloud, verifica que el archivo service-account.json esté en la ubicación correcta
+- Para problemas de puerto en uso, puedes cambiar el puerto en el archivo `application.properties` 
