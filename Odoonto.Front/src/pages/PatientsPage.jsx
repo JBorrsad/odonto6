@@ -39,6 +39,35 @@ function PatientsPage() {
   const [error, setError] = useState(null);
   const [viewMode, setViewMode] = useState("table");
 
+  // Función para formatear la dirección desde el objeto direccion del backend
+  const formatAddress = (direccion) => {
+    if (!direccion) return "Sin dirección registrada";
+    
+    const parts = [];
+    if (direccion.calle) parts.push(direccion.calle);
+    if (direccion.numero) parts.push(direccion.numero);
+    if (direccion.colonia) parts.push(direccion.colonia);
+    if (direccion.ciudad) parts.push(direccion.ciudad);
+    
+    return parts.length > 0 ? parts.join(', ') : "Sin dirección registrada";
+  };
+
+  // Función para formatear fecha desde el backend
+  const formatDate = (dateString) => {
+    if (!dateString) return "Sin fecha";
+    
+    try {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat('es-ES', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      }).format(date);
+    } catch (error) {
+      return "Fecha inválida";
+    }
+  };
+
   useEffect(() => {
     const fetchPatients = async () => {
       try {
@@ -49,18 +78,19 @@ function PatientsPage() {
         const formattedPatients = data.map(patient => {
           const initial = `${patient.nombre?.charAt(0) || ''}${patient.apellido?.charAt(0) || ''}`;
           
-          // Si no tiene último tratamiento, ponemos "Tooth Scaling" como placeholder
-          let lastTreatment = patient.ultimoTratamiento || 'Tooth Scaling';
-          
           return {
             id: patient.id,
-            name: `${patient.nombre || ''} ${patient.apellido || ''}`,
-            phone: patient.telefono || '-',
-            email: patient.email || '-',
-            address: "address placeholder", // Dirección placeholder para todos los pacientes
-            registered: patient.fechaRegistro || 'Mar 06, 2021',
-            lastVisit: patient.ultimaVisita || '01 May 2021',
-            lastTreatment: lastTreatment,
+            // Usar datos reales del backend
+            name: `${patient.nombre || 'Sin nombre'} ${patient.apellido || 'Sin apellido'}`.trim(),
+            phone: patient.telefono || 'Sin teléfono',
+            email: patient.email || 'Sin email',
+            address: formatAddress(patient.direccion),
+            
+            // Placeholders para mantener la estructura visual
+            registered: formatDate(patient.fechaNacimiento) || 'Mar 06, 2021', // Usando fechaNacimiento como placeholder hasta tener fechaRegistro
+            lastVisit: '01 May 2021', // Placeholder - este dato no está en el backend aún
+            lastTreatment: 'Tooth Scaling', // Placeholder - este dato no está en el backend aún
+            
             initials: initial
           };
         });

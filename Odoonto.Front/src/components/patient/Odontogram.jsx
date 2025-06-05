@@ -1,18 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { addLesions, removeLesions } from '../../services/api';
+import * as odontogramService from '../../services/odontogramService';
 
 function Odontogram({ patientId, data, isChild = false, isEditable = false, onUpdate }) {
   const [selectedLesion, setSelectedLesion] = useState('CARIES');
   const [loading, setLoading] = useState(false);
   const [toothData, setToothData] = useState({});
+  const [odontogramId, setOdontogramId] = useState(null);
   
   useEffect(() => {
     if (data) {
-      setToothData(data);
+      // Si ya tenemos datos del odontograma, usarlos
+      if (data.teeth) {
+        // Backend format: { teeth: { "11": { faces: { "VESTIBULAR": "CARIES" } } } }
+        const formattedData = {};
+        Object.keys(data.teeth).forEach(toothId => {
+          if (data.teeth[toothId].faces) {
+            formattedData[toothId] = data.teeth[toothId].faces;
+          }
+        });
+        setToothData(formattedData);
+      } else if (data.dientes) {
+        // Frontend format: { dientes: { "11": { "VESTIBULAR": "CARIES" } } }
+        setToothData(data.dientes);
+      }
+      setOdontogramId(data.id || data.odontogramId);
+    } else {
+      // Si no hay data, inicializamos con un objeto vacío
+      setToothData({});
+      // Generar ID de odontograma basado en el ID del paciente según la arquitectura del backend
+      if (patientId) {
+        setOdontogramId(`odontogram_${patientId}`);
+      }
     }
-  }, [data]);
+  }, [data, patientId]);
   
-  if (!toothData) {
+  if (!patientId) {
+    return <div className="p-4 border rounded bg-red-50 text-red-600">Error: ID de paciente requerido.</div>;
+  }
+  
+  if (!data && !isEditable) {
     return <div className="p-4 border rounded bg-gray-50">No hay datos de odontograma disponibles.</div>;
   }
   
@@ -27,54 +53,96 @@ function Odontogram({ patientId, data, isChild = false, isEditable = false, onUp
   // Tipos de lesiones para seleccionar
   const lesionTypes = [
     { value: 'CARIES', label: 'Caries', color: 'bg-red-500' },
-    { value: 'TREATMENT', label: 'Tratamiento', color: 'bg-blue-500' },
-    { value: 'ABSENT', label: 'Ausente', color: 'bg-gray-500' },
-    { value: 'CROWN', label: 'Corona', color: 'bg-yellow-500' },
-    { value: 'ROOT_CANAL', label: 'Endodoncia', color: 'bg-purple-500' }
+    { value: 'OBTURACION', label: 'Obturación', color: 'bg-green-500' },
+    { value: 'CORONA', label: 'Corona', color: 'bg-yellow-500' },
+    { value: 'AUSENTE', label: 'Ausente', color: 'bg-gray-500' },
+    { value: 'ENDODONCIA', label: 'Endodoncia', color: 'bg-purple-500' }
   ];
 
   // Manejar clic en una cara del diente
   const handleFaceClick = async (toothId, face) => {
-    if (!isEditable || loading) return;
+    if (!isEditable || loading || !odontogramId) return;
     
     const tooth = toothData[toothId] || {};
-    const faceData = tooth.faces || {};
-    const currentLesion = faceData[face];
+    const currentLesion = tooth[face];
     
     setLoading(true);
     
     try {
       if (currentLesion) {
-        // Remover lesión
-        await removeLesions(patientId, [{ toothId, face }]);
+        // Remover lesión usando el nuevo servicio
+        const updatedOdontogram = await odontogramService.removeLesion(odontogramId, parseInt(toothId), face);
         
-        // Actualizar estado local
-        const updatedToothData = { ...toothData };
-        if (updatedToothData[toothId]?.faces) {
-          delete updatedToothData[toothId].faces[face];
+        // Actualizar estado local desde la respuesta del backend
+        if (updatedOdontogram && updatedOdontogram.teeth) {
+          const formattedData = {};
+          Object.keys(updatedOdontogram.teeth).forEach(tId => {
+            if (updatedOdontogram.teeth[tId].faces) {
+              formattedData[tId] = updatedOdontogram.teeth[tId].faces;
+            }
+          });
+          setToothData(formattedData);
+        } else {
+          // Fallback: actualizar estado local manualmente
+          const updatedToothData = { ...toothData };
+          if (updatedToothData[toothId]) {
+            delete updatedToothData[toothId][face];
+            if (Object.keys(updatedToothData[toothId]).length === 0) {
+              delete updatedToothData[toothId];
+            }
+          }
+          setToothData(updatedToothData);
         }
-        setToothData(updatedToothData);
       } else {
-        // Añadir lesión
-        await addLesions(patientId, [{ toothId, face, lesion: selectedLesion }]);
+        // Añadir lesión usando el nuevo servicio
+        const updatedOdontogram = await odontogramService.addLesion(odontogramId, parseInt(toothId), face, selectedLesion);
         
-        // Actualizar estado local
-        const updatedToothData = { ...toothData };
-        if (!updatedToothData[toothId]) {
-          updatedToothData[toothId] = { faces: {} };
+        // Actualizar estado local desde la respuesta del backend
+        if (updatedOdontogram && updatedOdontogram.teeth) {
+          const formattedData = {};
+          Object.keys(updatedOdontogram.teeth).forEach(tId => {
+            if (updatedOdontogram.teeth[tId].faces) {
+              formattedData[tId] = updatedOdontogram.teeth[tId].faces;
+            }
+          });
+          setToothData(formattedData);
+        } else {
+          // Fallback: actualizar estado local manualmente
+          const updatedToothData = { ...toothData };
+          if (!updatedToothData[toothId]) {
+            updatedToothData[toothId] = {};
+          }
+          updatedToothData[toothId][face] = selectedLesion;
+          setToothData(updatedToothData);
         }
-        if (!updatedToothData[toothId].faces) {
-          updatedToothData[toothId].faces = {};
-        }
-        updatedToothData[toothId].faces[face] = selectedLesion;
-        setToothData(updatedToothData);
       }
       
       // Notificar al componente padre si es necesario
-      if (onUpdate) onUpdate(toothData);
+      if (onUpdate) {
+        onUpdate({
+          id: odontogramId,
+          teeth: toothData
+        });
+      }
       
     } catch (error) {
       console.error('Error al actualizar odontograma:', error);
+      
+      // Mostrar mensaje de error específico al usuario
+      let errorMessage = 'Error al actualizar el odontograma.';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.status === 404) {
+        errorMessage = 'El odontograma no existe. Por favor, recarga la página.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Error del servidor. Por favor, inténtalo de nuevo.';
+      }
+      
+      // Mostrar el error en una notificación más amigable
+      if (window.confirm(`${errorMessage}\n\n¿Deseas recargar la página para intentar solucionarlo?`)) {
+        window.location.reload();
+      }
     } finally {
       setLoading(false);
     }
@@ -83,8 +151,7 @@ function Odontogram({ patientId, data, isChild = false, isEditable = false, onUp
   // Obtener color para una cara basado en el tipo de lesión
   const getFaceColor = (toothId, face) => {
     const tooth = toothData[toothId] || {};
-    const faceData = tooth.faces || {};
-    const lesion = faceData[face];
+    const lesion = tooth[face];
     
     if (!lesion) return 'bg-white';
     

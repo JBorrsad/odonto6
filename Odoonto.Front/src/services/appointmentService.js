@@ -24,24 +24,13 @@ export const getById = async (id) => {
   }
 };
 
-// Crear una nueva cita (simple CRUD, sin validación de solapamientos)
+// Crear una nueva cita
 export const create = async (appointment) => {
   try {
     const response = await axios.post(API_URL, appointment);
     return response.data;
   } catch (error) {
     console.error('Error al crear cita:', error);
-    throw error;
-  }
-};
-
-// Reservar cita (con validación de solapamientos)
-export const book = async (appointment) => {
-  try {
-    const response = await axios.post(`${API_URL}/book`, appointment);
-    return response.data;
-  } catch (error) {
-    console.error('Error al reservar cita:', error);
     throw error;
   }
 };
@@ -68,9 +57,59 @@ export const remove = async (id) => {
   }
 };
 
-// Funciones auxiliares para filtrar citas
+// Confirmar una cita
+export const confirm = async (id) => {
+  try {
+    const response = await axios.put(`${API_URL}/${id}/confirm`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error al confirmar cita ${id}:`, error);
+    throw error;
+  }
+};
 
-// Obtener citas por fecha
+// Cancelar una cita
+export const cancel = async (id, reason = null) => {
+  try {
+    const params = reason ? { reason } : {};
+    await axios.delete(`${API_URL}/${id}/cancel`, { params });
+    return true;
+  } catch (error) {
+    console.error(`Error al cancelar cita ${id}:`, error);
+    throw error;
+  }
+};
+
+// Obtener citas por doctor y rango de fechas
+export const getByDoctorAndDateRange = async (doctorId, fromDate, toDate) => {
+  try {
+    const response = await axios.get(`${API_URL}/doctor/${doctorId}`, {
+      params: {
+        from: fromDate,
+        to: toDate
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error al obtener citas para el doctor ${doctorId}:`, error);
+    throw error;
+  }
+};
+
+// Obtener citas por paciente usando el endpoint específico del backend
+export const getByPatient = async (patientId) => {
+  try {
+    const response = await axios.get(`${API_URL}/patient/${patientId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error al obtener citas para el paciente ${patientId}:`, error);
+    throw error;
+  }
+};
+
+// Funciones auxiliares mantenidas para compatibilidad
+
+// Obtener citas por fecha (implementación local para compatibilidad)
 export const getByDate = async (date) => {
   try {
     const allAppointments = await getAll();
@@ -89,24 +128,13 @@ export const getByDate = async (date) => {
   }
 };
 
-// Obtener citas por doctor
+// Obtener citas por doctor (versión simple para compatibilidad)
 export const getByDoctor = async (doctorId) => {
   try {
     const allAppointments = await getAll();
     return allAppointments.filter(appointment => appointment.doctorId === doctorId);
   } catch (error) {
     console.error(`Error al obtener citas para el doctor ${doctorId}:`, error);
-    throw error;
-  }
-};
-
-// Obtener citas por paciente
-export const getByPatient = async (patientId) => {
-  try {
-    const allAppointments = await getAll();
-    return allAppointments.filter(appointment => appointment.patientId === patientId);
-  } catch (error) {
-    console.error(`Error al obtener citas para el paciente ${patientId}:`, error);
     throw error;
   }
 }; 

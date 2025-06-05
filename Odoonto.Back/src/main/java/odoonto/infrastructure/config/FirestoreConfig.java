@@ -15,9 +15,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
 
 /**
@@ -54,8 +56,13 @@ public class FirestoreConfig {
         Firestore dbInstance;
         
         try (FileInputStream serviceData = new FileInputStream(configFile)) {
+            // Leer el contenido del archivo con codificación UTF-8
+            String jsonContent = new String(serviceData.readAllBytes(), StandardCharsets.UTF_8);
+            LOGGER.info("Contenido del archivo de configuración leído correctamente");
+            
+            // Crear las opciones de Firebase
             FirebaseOptions options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(serviceData))
+                    .setCredentials(GoogleCredentials.fromStream(new ByteArrayInputStream(jsonContent.getBytes(StandardCharsets.UTF_8))))
                     .build();
             
             // Inicializa si no está ya inicializado
@@ -67,10 +74,12 @@ public class FirestoreConfig {
             // Obtener instancia
             dbInstance = FirestoreClient.getFirestore();
             
-            // No eliminamos el archivo porque lo necesitan otros componentes
             LOGGER.info("Conexiones inicializadas correctamente.");
             
             return dbInstance;
+        } catch (Exception e) {
+            LOGGER.severe("Error al inicializar Firestore: " + e.getMessage());
+            throw e;
         }
     }
     

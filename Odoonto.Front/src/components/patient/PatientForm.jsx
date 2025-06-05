@@ -6,14 +6,18 @@ function PatientForm({ patient, onSubmit, onCancel }) {
     nombre: '',
     apellido: '',
     fechaNacimiento: '',
-    age: '',
-    sexo: 'MALE',
-    telefono: {
-      numero: ''
-    },
-    email: {
-      address: ''
-    },
+    sexo: 'MASCULINO',
+    telefono: '',
+    email: '',
+    direccion: {
+      calle: '',
+      numero: '',
+      colonia: '',
+      codigoPostal: '',
+      ciudad: '',
+      estado: '',
+      pais: ''
+    }
   });
 
   const [errors, setErrors] = useState({});
@@ -29,14 +33,18 @@ function PatientForm({ patient, onSubmit, onCancel }) {
         nombre: patient.nombre || '',
         apellido: patient.apellido || '',
         fechaNacimiento,
-        age: patient.age || '',
-        sexo: patient.sexo || 'MALE',
-        telefono: {
-          numero: patient.telefono?.numero || ''
-        },
-        email: {
-          address: patient.email?.address || ''
-        },
+        sexo: patient.sexo || 'MASCULINO',
+        telefono: patient.telefono || '',
+        email: patient.email || '',
+        direccion: {
+          calle: patient.direccion?.calle || '',
+          numero: patient.direccion?.numero || '',
+          colonia: patient.direccion?.colonia || '',
+          codigoPostal: patient.direccion?.codigoPostal || '',
+          ciudad: patient.direccion?.ciudad || '',
+          estado: patient.direccion?.estado || '',
+          pais: patient.direccion?.pais || ''
+        }
       });
     }
   }, [patient]);
@@ -44,14 +52,14 @@ function PatientForm({ patient, onSubmit, onCancel }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    // Manejar campos anidados
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
+    // Manejar campos anidados de dirección
+    if (name.startsWith('direccion.')) {
+      const field = name.split('.')[1];
       setForm({
         ...form,
-        [parent]: {
-          ...form[parent],
-          [child]: value
+        direccion: {
+          ...form.direccion,
+          [field]: value
         }
       });
     } else {
@@ -77,16 +85,16 @@ function PatientForm({ patient, onSubmit, onCancel }) {
     if (!form.apellido) newErrors.apellido = 'El apellido es obligatorio';
     if (!form.fechaNacimiento) newErrors.fechaNacimiento = 'La fecha de nacimiento es obligatoria';
     
-    if (!form.telefono.numero) {
-      newErrors['telefono.numero'] = 'El teléfono es obligatorio';
-    } else if (!/^\d{9}$/.test(form.telefono.numero)) {
-      newErrors['telefono.numero'] = 'El teléfono debe tener 9 dígitos';
+    if (!form.telefono) {
+      newErrors.telefono = 'El teléfono es obligatorio';
+    } else if (!/^\d{9,}$/.test(form.telefono.replace(/\D/g, ''))) {
+      newErrors.telefono = 'El teléfono debe tener al menos 9 dígitos';
     }
     
-    if (!form.email.address) {
-      newErrors['email.address'] = 'El email es obligatorio';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.address)) {
-      newErrors['email.address'] = 'El email no es válido';
+    if (!form.email) {
+      newErrors.email = 'El email es obligatorio';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      newErrors.email = 'El email no es válido';
     }
     
     setErrors(newErrors);
@@ -97,19 +105,24 @@ function PatientForm({ patient, onSubmit, onCancel }) {
     e.preventDefault();
     
     if (validate()) {
-      // Convertir la fecha a objeto Date para backend
+      // Formatear datos para enviar al backend
       const patientData = {
-        ...form,
-        fechaNacimiento: form.fechaNacimiento ? new Date(form.fechaNacimiento).toISOString() : null,
-        age: form.age ? parseInt(form.age, 10) : null,
+        nombre: form.nombre,
+        apellido: form.apellido,
+        fechaNacimiento: form.fechaNacimiento,
+        sexo: form.sexo,
+        telefono: form.telefono,
+        email: form.email,
+        direccion: form.direccion
       };
       
       onSubmit(patientData);
     }
   };
 
+  // Función para calcular edad (solo para mostrar, no se envía)
   const calculateAge = (birthdate) => {
-    if (!birthdate) return;
+    if (!birthdate) return '';
     
     const today = new Date();
     const birthDate = new Date(birthdate);
@@ -120,111 +133,191 @@ function PatientForm({ patient, onSubmit, onCancel }) {
       age--;
     }
     
-    setForm({
-      ...form,
-      age: age.toString()
-    });
+    return age;
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Nombre</label>
-        <input
-          type="text"
-          name="nombre"
-          value={form.nombre}
-          onChange={handleChange}
-          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-            errors.nombre ? 'border-red-300' : ''
-          }`}
-        />
-        {errors.nombre && <p className="mt-1 text-sm text-red-600">{errors.nombre}</p>}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Nombre</label>
+          <input
+            type="text"
+            name="nombre"
+            value={form.nombre}
+            onChange={handleChange}
+            className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+              errors.nombre ? 'border-red-300' : ''
+            }`}
+          />
+          {errors.nombre && <p className="mt-1 text-sm text-red-600">{errors.nombre}</p>}
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Apellido</label>
+          <input
+            type="text"
+            name="apellido"
+            value={form.apellido}
+            onChange={handleChange}
+            className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+              errors.apellido ? 'border-red-300' : ''
+            }`}
+          />
+          {errors.apellido && <p className="mt-1 text-sm text-red-600">{errors.apellido}</p>}
+        </div>
       </div>
       
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Apellido</label>
-        <input
-          type="text"
-          name="apellido"
-          value={form.apellido}
-          onChange={handleChange}
-          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-            errors.apellido ? 'border-red-300' : ''
-          }`}
-        />
-        {errors.apellido && <p className="mt-1 text-sm text-red-600">{errors.apellido}</p>}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Fecha de Nacimiento</label>
+          <input
+            type="date"
+            name="fechaNacimiento"
+            value={form.fechaNacimiento}
+            onChange={handleChange}
+            className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+              errors.fechaNacimiento ? 'border-red-300' : ''
+            }`}
+          />
+          {errors.fechaNacimiento && <p className="mt-1 text-sm text-red-600">{errors.fechaNacimiento}</p>}
+          {form.fechaNacimiento && (
+            <p className="mt-1 text-sm text-gray-500">Edad: {calculateAge(form.fechaNacimiento)} años</p>
+          )}
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Sexo</label>
+          <select
+            name="sexo"
+            value={form.sexo}
+            onChange={handleChange}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option value="MASCULINO">Masculino</option>
+            <option value="FEMENINO">Femenino</option>
+          </select>
+        </div>
       </div>
       
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Fecha de Nacimiento</label>
-        <input
-          type="date"
-          name="fechaNacimiento"
-          value={form.fechaNacimiento}
-          onChange={(e) => {
-            handleChange(e);
-            calculateAge(e.target.value);
-          }}
-          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-            errors.fechaNacimiento ? 'border-red-300' : ''
-          }`}
-        />
-        {errors.fechaNacimiento && <p className="mt-1 text-sm text-red-600">{errors.fechaNacimiento}</p>}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Teléfono</label>
+          <input
+            type="tel"
+            name="telefono"
+            value={form.telefono}
+            onChange={handleChange}
+            placeholder="Ej: 612345678"
+            className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+              errors.telefono ? 'border-red-300' : ''
+            }`}
+          />
+          {errors.telefono && <p className="mt-1 text-sm text-red-600">{errors.telefono}</p>}
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Email</label>
+          <input
+            type="email"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            placeholder="ejemplo@correo.com"
+            className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
+              errors.email ? 'border-red-300' : ''
+            }`}
+          />
+          {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+        </div>
       </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Edad</label>
-        <input
-          type="number"
-          name="age"
-          value={form.age}
-          onChange={handleChange}
-          min="0"
-          max="120"
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Sexo</label>
-        <select
-          name="sexo"
-          value={form.sexo}
-          onChange={handleChange}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-        >
-          <option value="MALE">Masculino</option>
-          <option value="FEMALE">Femenino</option>
-        </select>
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Teléfono</label>
-        <input
-          type="tel"
-          name="telefono.numero"
-          value={form.telefono.numero}
-          onChange={handleChange}
-          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-            errors['telefono.numero'] ? 'border-red-300' : ''
-          }`}
-        />
-        {errors['telefono.numero'] && <p className="mt-1 text-sm text-red-600">{errors['telefono.numero']}</p>}
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Email</label>
-        <input
-          type="email"
-          name="email.address"
-          value={form.email.address}
-          onChange={handleChange}
-          className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 ${
-            errors['email.address'] ? 'border-red-300' : ''
-          }`}
-        />
-        {errors['email.address'] && <p className="mt-1 text-sm text-red-600">{errors['email.address']}</p>}
+
+      <div className="border-t pt-4">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Dirección</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Calle</label>
+            <input
+              type="text"
+              name="direccion.calle"
+              value={form.direccion.calle}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Número</label>
+            <input
+              type="text"
+              name="direccion.numero"
+              value={form.direccion.numero}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Colonia</label>
+            <input
+              type="text"
+              name="direccion.colonia"
+              value={form.direccion.colonia}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Código Postal</label>
+            <input
+              type="text"
+              name="direccion.codigoPostal"
+              value={form.direccion.codigoPostal}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Ciudad</label>
+            <input
+              type="text"
+              name="direccion.ciudad"
+              value={form.direccion.ciudad}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Estado</label>
+            <input
+              type="text"
+              name="direccion.estado"
+              value={form.direccion.estado}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700">País</label>
+            <input
+              type="text"
+              name="direccion.pais"
+              value={form.direccion.pais}
+              onChange={handleChange}
+              placeholder="España"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
+          </div>
+        </div>
       </div>
       
       <div className="flex justify-end space-x-2 pt-4">

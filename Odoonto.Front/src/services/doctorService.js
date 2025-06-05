@@ -55,4 +55,28 @@ export const remove = async (id) => {
     console.error(`Error al eliminar doctor ${id}:`, error);
     throw error;
   }
+};
+
+// Buscar doctores por nombre
+export const search = async (query) => {
+  try {
+    const response = await axios.get(`${API_URL}/search`, {
+      params: { query }
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error al buscar doctores con query "${query}":`, error);
+    throw error;
+  }
+};
+
+// Buscar doctores por especialidad
+export const getByEspecialidad = async (especialidad) => {
+  try {
+    const response = await axios.get(`${API_URL}/especialidad/${especialidad}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error al obtener doctores por especialidad "${especialidad}":`, error);
+    throw error;
+  }
 }; 

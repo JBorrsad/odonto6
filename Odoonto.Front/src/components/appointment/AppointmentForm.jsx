@@ -109,10 +109,19 @@ function AppointmentForm({ appointment, onSubmit, onCancel, patientId, loading =
       const start = new Date(form.date);
       start.setHours(hours, minutes, 0, 0);
       
+      // Calcular fecha de fin basada en la duración
+      const end = new Date(start);
+      end.setMinutes(end.getMinutes() + (parseInt(form.durationSlots, 10) * 30));
+      
       const appointmentData = {
-        ...form,
+        id: appointment?.id, // Para actualizaciones
+        patientId: form.patientId,
+        doctorId: form.doctorId,
         start: start.toISOString(),
-        durationSlots: parseInt(form.durationSlots, 10)
+        end: end.toISOString(),
+        durationSlots: parseInt(form.durationSlots, 10),
+        status: form.status,
+        notes: form.notes
       };
       
       onSubmit(appointmentData);

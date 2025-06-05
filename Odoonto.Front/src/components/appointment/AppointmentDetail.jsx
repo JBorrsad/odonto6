@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { updateAppointmentStatus } from '../../services/api';
+import * as appointmentService from '../../services/appointmentService';
 import Button from '../common/Button';
 
 function AppointmentDetail({ appointment, onClose, onUpdate }) {
@@ -67,7 +67,10 @@ function AppointmentDetail({ appointment, onClose, onUpdate }) {
       setLoading(true);
       setError(null);
       
-      await updateAppointmentStatus(appointment.id, newStatus);
+      await appointmentService.update(appointment.id, {
+        ...appointment,
+        status: newStatus
+      });
       
       // Actualizar la cita en el componente padre
       if (onUpdate) {

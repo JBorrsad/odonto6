@@ -271,4 +271,41 @@ public class Appointment {
     public LocalDateTime getStartAsLocalDateTime() {
         return dateTime;
     }
+    
+    // ========================================
+    // Métodos para recuperación desde persistencia
+    // ========================================
+    
+    /**
+     * Establece el ID del paciente sin validación (solo para recuperación de datos)
+     * NOTA: Este método es usado únicamente para mapear datos desde persistencia
+     */
+    public void setPatientIdDirect(String patientId) {
+        this.patientId = patientId;
+    }
+    
+    /**
+     * Establece el ID del doctor sin validación (solo para recuperación de datos)
+     * NOTA: Este método es usado únicamente para mapear datos desde persistencia
+     */
+    public void setDoctorIdDirect(String doctorId) {
+        this.doctorId = doctorId;
+    }
+    
+    /**
+     * Establece la fecha y hora sin validación (solo para recuperación de datos)
+     * NOTA: Este método es usado únicamente para mapear datos desde persistencia,
+     * incluyendo datos antiguos que pueden tener fechas pasadas
+     */
+    public void setDateTimeDirect(LocalDateTime dateTime) {
+        this.dateTime = dateTime;
+    }
+    
+    /**
+     * Establece la duración en slots sin validación (solo para recuperación de datos)
+     * NOTA: Este método es usado únicamente para mapear datos desde persistencia
+     */
+    public void setDurationSlotsDirect(int durationSlots) {
+        this.durationSlots = durationSlots;
+    }
 }

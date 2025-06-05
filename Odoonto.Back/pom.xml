@@ -87,6 +87,12 @@
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 
+		<!-- 5.1. Spring AOP para trazado de métodos -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-aop</artifactId>
+		</dependency>
+
 		<!-- 6. Lombok -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>

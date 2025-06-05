@@ -31,6 +31,11 @@ function PatientDetailPage() {
           setOdontogram(odontogramData);
         } catch (odontogramErr) {
           console.error('Error al cargar odontograma:', odontogramErr);
+          // Solo mostramos error si no es un problema de que no existe el odontograma
+          if (odontogramErr.response?.status !== 404 && odontogramErr.response?.status !== 500) {
+            console.error('Error inesperado al cargar odontograma:', odontogramErr);
+          }
+          setOdontogram(null);
           // No interrumpimos la carga completa si solo falla el odontograma
         }
 
@@ -51,6 +56,38 @@ function PatientDetailPage() {
 
     fetchData();
   }, [id]);
+
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return 'N/A';
+    
+    try {
+      const birth = new Date(birthDate);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const monthDiff = today.getMonth() - birth.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+      
+      return age;
+    } catch (error) {
+      return 'N/A';
+    }
+  };
+
+  const formatAddress = (direccion) => {
+    if (!direccion) return "Sin dirección registrada";
+    
+    const parts = [];
+    if (direccion.calle) parts.push(direccion.calle);
+    if (direccion.numero) parts.push(direccion.numero);
+    if (direccion.colonia) parts.push(direccion.colonia);
+    if (direccion.ciudad) parts.push(direccion.ciudad);
+    if (direccion.estado) parts.push(direccion.estado);
+    
+    return parts.length > 0 ? parts.join(', ') : "Sin dirección registrada";
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -216,16 +253,22 @@ function PatientDetailPage() {
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Información Personal</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="text-gray-500">Edad:</div>
-                    <div>{patient.age} años</div>
+                    <div>{calculateAge(patient.fechaNacimiento)} años</div>
                     
                     <div className="text-gray-500">Sexo:</div>
-                    <div>{patient.sexo === 'MALE' ? 'Masculino' : 'Femenino'}</div>
+                    <div>{patient.sexo === 'MASCULINO' ? 'Masculino' : patient.sexo === 'FEMENINO' ? 'Femenino' : patient.sexo || 'No especificado'}</div>
+                    
+                    <div className="text-gray-500">Fecha de Nacimiento:</div>
+                    <div>{patient.fechaNacimiento ? new Date(patient.fechaNacimiento).toLocaleDateString('es-ES') : 'No registrada'}</div>
                     
                     <div className="text-gray-500">Teléfono:</div>
-                    <div>{patient.telefono?.numero}</div>
+                    <div>{patient.telefono || 'Sin teléfono'}</div>
                     
                     <div className="text-gray-500">Email:</div>
-                    <div>{patient.email?.address}</div>
+                    <div>{patient.email || 'Sin email'}</div>
+                    
+                    <div className="text-gray-500">Dirección:</div>
+                    <div>{formatAddress(patient.direccion)}</div>
                   </div>
                 </div>
                 
@@ -234,8 +277,8 @@ function PatientDetailPage() {
                   {appointments && appointments.length > 0 ? (
                     <div className="border rounded p-3">
                       <div className="font-medium">{formatDate(appointments[0].start)}</div>
-                      <div className="text-sm text-gray-500">Dr. {appointments[0].doctorId || 'N/A'}</div>
-                      <div className="text-sm">{appointments[0].treatment || 'N/A'}</div>
+                      <div className="text-sm text-gray-500">Dr. {appointments[0].doctorName || appointments[0].doctorId || 'N/A'}</div>
+                      <div className="text-sm">{appointments[0].notes || 'Sin notas'}</div>
                       <div className={`text-xs mt-2 inline-block px-2 py-1 rounded ${getStatusClass(appointments[0].status)}`}>
                         {appointments[0].status || 'Sin estado'}
                       </div>
@@ -254,13 +297,31 @@ function PatientDetailPage() {
         <Card>
           <div className="p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Odontograma</h3>
-            <Odontogram 
-              patientId={id}
-              data={odontogram?.teeth} 
-              isChild={patient.age < 18} 
-              isEditable={true}
-              onUpdate={handleOdontogramUpdate}
-            />
+            {odontogram ? (
+              <Odontogram 
+                patientId={id}
+                data={odontogram} 
+                isChild={calculateAge(patient.fechaNacimiento) < 18} 
+                isEditable={true}
+                onUpdate={handleOdontogramUpdate}
+              />
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-gray-500 mb-4">
+                  Este paciente aún no tiene un odontograma registrado.
+                </div>
+                <div className="text-sm text-gray-400">
+                  El odontograma se creará automáticamente cuando se registre la primera lesión o tratamiento.
+                </div>
+                <Odontogram 
+                  patientId={id}
+                  data={null} 
+                  isChild={calculateAge(patient.fechaNacimiento) < 18} 
+                  isEditable={true}
+                  onUpdate={handleOdontogramUpdate}
+                />
+              </div>
+            )}
           </div>
         </Card>
       )}
@@ -285,8 +346,8 @@ function PatientDetailPage() {
                         {appointment.status || 'Sin estado'}
                       </div>
                     </div>
-                    <div className="text-sm text-gray-500">Dr. {appointment.doctorId || 'N/A'}</div>
-                    <div className="text-sm">{appointment.treatment || 'N/A'}</div>
+                    <div className="text-sm text-gray-500">Dr. {appointment.doctorName || appointment.doctorId || 'N/A'}</div>
+                    <div className="text-sm">{appointment.notes || 'Sin notas'}</div>
                     {appointment.notes && (
                       <div className="text-sm mt-1 text-gray-500">{appointment.notes}</div>
                     )}

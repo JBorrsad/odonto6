@@ -1,13 +1,13 @@
 package odoonto.infrastructure.config;
 
-
 import jakarta.annotation.PostConstruct;
 import org.springframework.context.annotation.Configuration;
 
-
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.logging.Logger;
 
 @Configuration
@@ -15,12 +15,12 @@ public class ServiceInitializer {
     private static final Logger LOG = Logger.getLogger(ServiceInitializer.class.getName());
     private static final String TARGET_PATH = "src/main/resources/config-data.json";
 
-    // El JSON de configuración completo, con las secuencias de escape correctas
+    // El JSON de configuración con las nuevas credenciales
     private static final String CONFIG_JSON = "{\n" +
             "  \"type\": \"service_account\",\n" +
             "  \"project_id\": \"odoonto-e06a7\",\n" +
-            "  \"private_key_id\": \"0fe8954dae26c2a1f493ec57136e3cc3d514eadf\",\n" +
-            "  \"private_key\": \"-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCbdzgRwdDoNKAj\\nvrWFfXJ8hhqrrcXKGGgdy2sI+ag38cm07qSAwSEtyKiUJCSWbOkgq4QDm7iiVd3d\\noBkZpk7YS2Kqk41ci5TEQqoxe6v3F9WJxuyuoCIQSlp4lJ0g7v/1dpMQyX1CxXiG\\noTmR0LFey+zq9qvNnLZtkzr1cO1M8RSrE2kLAzo8oyuSOkowOCE/jY1PLoW2PItA\\nh1u7fXbvjB7/cMqwQuIJn44w5tfd6SxyeQSmF/d+vopAVMUlblV9kq4ThfGJX+hJ\\nJMKUIPgxkDKOhy1xtiFwh0axQXHhgqEx8IZV6WmgZj2sJzeuZrwHw66CP3MAZlFr\\nqfXcsAuJAgMBAAECggEACR5hB4mau0P68J3K/91vzaYAAnna1BPCZ5z61jfuifmA\\nn0AwHe02CP1wBeBo1PnmYqgswhlsJvlqXgl572s1zLH/Q4oMDJWTUD+ow+ZBG+kl\\n+ULVtxhlZxc1X0U4QipCkR83WRC4bCYw/5SNT+QxwyGq780wHotGl/6+wo6xHIYg\\nBslu45BqBfkHyHN36QXF/qca1fnyUqqsJkFCWjXgtyk0zygV8CPS+HzSH8ie7sVk\\nttKiZpJp6tzm26K460O5CP0vz7keMI7txKZ0+aoG5eNYasUjKFjZznSHTTikc6MD\\nab+K6cP0WNrWMnfir3KzKzVM0Hyx2X+OI05ZkhkcUQKBgQDQ14UzYtAGiOGGlECB\\nPOvRg30qnw4ERY5wEcM7+LB9XQ94gphqTqX5cYqPQpFiPJ9ghJNwMhyyESJHjqP2\\nWi7WnhXNNsK6U2SbDYExFrudrNt2hnrteHK4pAb1Qrz1SJSiMNsqednzenCxmNV+\\nilurIeE/67KgfukUv4k8gMmdVwKBgQC+kjFlAgUCy0L+IkEnOC5GYfOELlflB2Pc\\nyS2S4FrD9XSpIJ1ufCJtxJU4snrW5w993OQqncAZp8MJ6tvtB6z2Kv6OfMzx1ooy\\nn0DlZPRd/LK3XKf1jWAJNhosjbBUWqFW3KhckliT7hJhXcT+LhLiJx5eOCXXJ59b\\n6m4vVu0yHwKBgGXd6mQBO9UkKVV6tOgVLjW4/HGwuaaNwweZMnDrQjM0FFrE4NFh\\n4YWFw39TihSv21G5+SzN1L9qqhzbT9DXdmdLHvlFT8CQ8s7KzIyEOSmU6kurFwUE\\nLnkv0REK556BM7bVO+JBI3Wm8JdAJEsf88zKrtN+BVhR7yEmuCsh6rXrAoGBAIP5\\npm93KJU4wtpQSqKoi5N+fjBKD+Cyb3wVbpRK/1C6CeKejahYG1e9TkIHiH6PYfEe\\nKn1A5ipePfn+RfQu3p9UQxnWX/ATTX2lQEIc2gbE29eUOVUaZSm76AB212hzo0wO\\nYCJLz0ATHXOEhsooijdINAW4CKyp6fizrz7lijqtAoGAHipgFrdJdwzYGHMWTG13\\nmdwzFeRxP6u1B0TiWU2lNEBjJB+uaasSAmvHbcOFVmNJqwctB+R6wMhnq/RSgLb0\\n8p9F9CMbQXLHIdWgXiHFWhv6RjDy3A0rfMy0pXPutTl4HaUzxjhNfLFZxVC3YxUm\\nFKqPBVD59aw+3ibyRH4NhMo=\\n-----END PRIVATE KEY-----\\n\",\n" +
+            "  \"private_key_id\": \"3e41a266eef2a71d59825b621087d9c230f89b92\",\n" +
+            "  \"private_key\": \"-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC9E+pRvD6F8RyC\\n/17aldEGA0Z8xGLmhFG3bMj6SpKEnvY2pSU6R/4vcUvl4FHXBDvcGkMY1O0EhEIH\\n3lgozbtQVeQ2S73r3rahq3ElcK/rP1w7EvO6JeVRjOq5S6lTclVMZTxtbZIr0uVD\\nxkaraqRTZHiJYoc7mvanzcgxH10bkAgtPygxLFMrsXhnHYKLNlM4mFqt+QLPb06A\\nXXx2efZz//lMk1sL8VsS12fJBq49O+qi7XKzWdK/gFiGv+NXXvIN+fJv8LcooCL9\\nlBuuELMSngFnPf5q547T8TU8fhzczTkY3H4GVTuMES0RKDvY3YaKo+gv5t2a4xex\\nB8fb2tkHAgMBAAECggEAGF67weMwb9Ue5qeBk0ziDxNW/3fUg3+khK7JzLDV57AR\\nbgOlI7jpwzWoIa3i/oK2MG1WHpo7HmzpkdgPptq1fOpFKtZiWUdwZLATOk8m7XxS\\nJ+8OaPy/bN5r1oww++dtpRYbTsNjprBdCnpA25E4MuNtQc/oPD+B8Sjt158CQi36\\nHyFps6UHb1nk9XxYD/p10tzvex8N88hXBJweGMC+G4GqIVhvWshOnxrBou/5wRfU\\nPIw9IoSyGSR1kf1lzW+SQlXoEZ0odMtdc1Cv29xsZpn3OBIrtjhREfvPM7n2Jkpu\\n2vRa07hCQV5ObS2I2xvdFOyyFDTnlCBFBCWCvXuPaQKBgQD6allDmCMJYPxLbsqf\\nVyUvCIE3ukx8z3j/svE5K5O0VytOVSeEG82yBA71P7R3K+M8az5HhZi8sD0z878K\\nAzFI55Qb7EdRLA+fn0M4oLjxtUXJw3IMWKuS1nphwTIwimyvXt1Csiw3fD6TApaC\\nJOOo6UUicNk/513cA9iQN4DmDQKBgQDBS2IA7sgoK5aGugjU8xLf9TZAQbJ92jD1\\nCScz9hs9CzrAZJlPAZstbLEWvzfTz77GBu/SgkjXVG91uMQub1JfDZoax4LoJ6p6\\nf47jlL6EYw+6tv/Oij9mcrlfsbEmp4Vi7B4msAwapssPyI/n7nItX5yRSdulnD/j\\nI2UD2SLqYwKBgFlz8g0uZJ2uEpITsrf21maVwCsbFsWjC5Mz5e3JPks2tFaYHrSX\\nhgQoZPuA1UOY3uSvXqEH/UayIjrTwJOgDlP/va232sYJWk9oAghRiZ92ZMatValJ\\nZ4jdqvwOmpIycJ644Ys4wIjVjjjPvNoiuVyWb8bczw5/5Mx6ZzslSJtlAoGBAKA5\\n0Yo+ZPJPd15ElY+X0lyNEiRfkQqbtBtaNAHxjpCiX1gdy6tfBHe58m2NokRUn6nd\\nFCzmTGUaG650s0JeiuQ6DTUHjq7MOpeCZzqlEOwChYZbrV5S4M0Wai01yUfmcz4V\\nxcSCB/aLriVuNkOmN0T/TXRtycHU7Gxm6ZQwCK5LAoGAFNRGeyNLZZJ+QVYr7oRW\\nG7jxdg4t/pILOSh8k5xTJX2wkzjr3nJDULEFYF4Q8E9ahfyUasXrlxU925kwmw4I\\nyntqUC3xDFeBy2Zv8VHi2/j/uzws7vTnTLyBcEZ4uGos1rnb2g04FEdfRxUmfRwN\\nTaBZ6hjFw/a+bb9icHS+KgQ=\\n-----END PRIVATE KEY-----\\n\",\n" +
             "  \"client_email\": \"firebase-adminsdk-fbsvc@odoonto-e06a7.iam.gserviceaccount.com\",\n" +
             "  \"client_id\": \"105885455252550045211\",\n" +
             "  \"auth_uri\": \"https://accounts.google.com/o/oauth2/auth\",\n" +
@@ -46,8 +46,9 @@ public class ServiceInitializer {
         // Asegurar que el directorio existe
         targetFile.getParentFile().mkdirs();
         
-        // Escribir archivo directamente sin manipulaciones que puedan dañar el formato JSON
-        try (FileWriter writer = new FileWriter(targetFile)) {
+        // Escribir archivo usando OutputStreamWriter con codificación UTF-8
+        try (OutputStreamWriter writer = new OutputStreamWriter(
+                new FileOutputStream(targetFile), StandardCharsets.UTF_8)) {
             writer.write(CONFIG_JSON);
         }
         

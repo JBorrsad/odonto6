@@ -292,12 +292,35 @@ public class ReactiveAppointmentRepositoryAdapter implements ReactiveAppointment
             AppointmentStatus status = (statusStr != null) ? 
                 AppointmentStatus.valueOf(statusStr) : AppointmentStatus.PENDIENTE;
             
-            // Crear y devolver la cita
-            return new Appointment(id, patientId, doctorId, dateTime, durationSlots, status, notes);
+            // Crear la cita usando un constructor especial para datos de persistencia
+            // que no valide fechas pasadas (para permitir recuperar datos antiguos)
+            return createAppointmentFromPersistence(id, patientId, doctorId, dateTime, durationSlots, status, notes);
         } catch (Exception e) {
             System.err.println("Error al mapear documento a Appointment: " + e.getMessage());
             return null;
         }
+    }
+    
+    /**
+     * Crea una cita desde datos de persistencia sin validar fechas pasadas
+     * Este método es usado para recuperar datos existentes, incluidos los antiguos que pueden tener fechas pasadas
+     */
+    private Appointment createAppointmentFromPersistence(String id, String patientId, String doctorId, 
+                                                       LocalDateTime dateTime, int durationSlots, 
+                                                       AppointmentStatus status, String notes) {
+        // Crear instancia usando el constructor vacío
+        Appointment appointment = new Appointment();
+        
+        // Asignar valores directamente sin pasar por las validaciones del constructor
+        appointment.setId(id);
+        appointment.setPatientIdDirect(patientId);
+        appointment.setDoctorIdDirect(doctorId);
+        appointment.setDateTimeDirect(dateTime);
+        appointment.setDurationSlotsDirect(durationSlots);
+        appointment.setStatus(status != null ? status : AppointmentStatus.PENDIENTE);
+        appointment.setNotes(notes);
+        
+        return appointment;
     }
     
     private Object mapToFirestore(Appointment appointment) {

@@ -9,7 +9,7 @@ const api = axios.create({
   }
 });
 
-// Interceptor para detectar respuestas HTML
+// Interceptor para detectar respuestas HTML y manejar errores
 api.interceptors.response.use(
   response => {
     // Si la respuesta es un string que parece HTML, lanzar un error
@@ -20,227 +20,82 @@ api.interceptors.response.use(
     return response;
   },
   error => {
-    // Agregar más información de depuración
+    // Agregar más información de depuración y manejo específico de errores
     if (error.response) {
       // La solicitud fue realizada y el servidor respondió con un código de estado
-      console.error('Error de respuesta:', error.response.status, error.response.data);
+      const status = error.response.status;
+      const url = error.config?.url || 'URL desconocida';
+      
+      // Mensajes específicos según el tipo de error
+      if (status === 404) {
+        console.log(`Recurso no encontrado (404): ${url}`);
+        // Para odontogramas, solo interceptar si NO es una llamada desde el test de API
+        if (url.includes('/odontogram') && !window.location.href.includes('api-test')) {
+          console.log('El odontograma aún no existe para este paciente');
+        }
+      } else if (status === 500) {
+        console.error(`Error interno del servidor (500): ${url}`, error.response.data);
+        // No agregar userMessage para odontogramas si es desde el test de API
+        if (!url.includes('/odontogram') || window.location.href.includes('api-test')) {
+          error.userMessage = 'Error interno del servidor. Por favor, inténtalo de nuevo más tarde.';
+        }
+      } else if (status === 400) {
+        console.error(`Solicitud incorrecta (400): ${url}`, error.response.data);
+        error.userMessage = 'Datos incorrectos enviados al servidor.';
+      } else if (status === 401) {
+        console.error(`No autorizado (401): ${url}`);
+        error.userMessage = 'No tienes autorización para realizar esta acción.';
+      } else if (status === 403) {
+        console.error(`Prohibido (403): ${url}`);
+        error.userMessage = 'Acceso prohibido a este recurso.';
+      } else {
+        console.error(`Error de respuesta (${status}): ${url}`, error.response.data);
+      }
     } else if (error.request) {
       // La solicitud fue realizada pero no se recibió respuesta
       console.error('Error de solicitud (sin respuesta):', error.request);
+      error.userMessage = 'No se pudo conectar con el servidor. Verifica tu conexión a internet.';
     } else {
       // Algo sucedió al configurar la solicitud
       console.error('Error general:', error.message);
+      error.userMessage = error.message;
     }
     return Promise.reject(error);
   }
 );
 
-// Servicios para Pacientes
-export const getPatients = async () => {
-  try {
-    const response = await api.get('/api/patients');
-    return response.data;
-  } catch (error) {
-    console.error('Error al obtener pacientes:', error);
-    throw error;
-  }
-};
+// Re-exportar servicios modulares para mantener compatibilidad
+import * as patientService from './patientService.js';
+import * as doctorService from './doctorService.js';
+import * as appointmentService from './appointmentService.js';
+import * as odontogramService from './odontogramService.js';
+import * as medicalRecordService from './medicalRecordService.js';
 
-export const getPatientById = async (id) => {
-  try {
-    const response = await api.get(`/api/patients/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error(`Error al obtener paciente con ID ${id}:`, error);
-    throw error;
-  }
-};
+// Servicios para Pacientes (usando servicios modulares)
+export const getPatients = patientService.getAll;
+export const getPatientById = patientService.getById;
+export const createPatient = patientService.create;
+export const updatePatient = patientService.update;
+export const deletePatient = patientService.remove;
 
-export const createPatient = async (patientData) => {
-  try {
-    const response = await api.post('/api/patients', patientData);
-    return response.data;
-  } catch (error) {
-    console.error('Error al crear paciente:', error);
-    throw error;
-  }
-};
+// Servicios para Doctores (usando servicios modulares)
+export const getDoctors = doctorService.getAll;
+export const getDoctorById = doctorService.getById;
+export const createDoctor = doctorService.create;
+export const updateDoctor = doctorService.update;
+export const deleteDoctor = doctorService.remove;
 
-export const updatePatient = async (id, patientData) => {
-  try {
-    const response = await api.put(`/api/patients/${id}`, patientData);
-    return response.data;
-  } catch (error) {
-    console.error(`Error al actualizar paciente con ID ${id}:`, error);
-    throw error;
-  }
-};
+// Servicios para Citas (usando servicios modulares)
+export const getAppointments = appointmentService.getAll;
+export const createAppointment = appointmentService.create;
+export const updateAppointment = appointmentService.update;
+export const deleteAppointment = appointmentService.remove;
 
-export const deletePatient = async (id) => {
-  try {
-    await api.delete(`/api/patients/${id}`);
-    return true;
-  } catch (error) {
-    console.error(`Error al eliminar paciente con ID ${id}:`, error);
-    throw error;
-  }
-};
+// Funciones específicas de citas que usan los endpoints correctos del backend
+export const getAppointmentsByDoctor = appointmentService.getByDoctor;
+export const getAppointmentsByPatient = appointmentService.getByPatient;
 
-// Servicios para Doctores
-export const getDoctors = async () => {
-  try {
-    const response = await api.get('/api/doctors');
-    return response.data;
-  } catch (error) {
-    console.error('Error al obtener doctores:', error);
-    throw error;
-  }
-};
-
-export const getDoctorById = async (id) => {
-  try {
-    const response = await api.get(`/api/doctors/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error(`Error al obtener doctor con ID ${id}:`, error);
-    throw error;
-  }
-};
-
-export const createDoctor = async (doctorData) => {
-  try {
-    const response = await api.post('/api/doctors', doctorData);
-    return response.data;
-  } catch (error) {
-    console.error('Error al crear doctor:', error);
-    throw error;
-  }
-};
-
-export const updateDoctor = async (id, doctorData) => {
-  try {
-    const response = await api.put(`/api/doctors/${id}`, doctorData);
-    return response.data;
-  } catch (error) {
-    console.error(`Error al actualizar doctor con ID ${id}:`, error);
-    throw error;
-  }
-};
-
-export const deleteDoctor = async (id) => {
-  try {
-    await api.delete(`/api/doctors/${id}`);
-    return true;
-  } catch (error) {
-    console.error(`Error al eliminar doctor con ID ${id}:`, error);
-    throw error;
-  }
-};
-
-// Servicios para Citas
-export const getAppointments = async (date) => {
-  try {
-    const params = date ? { date: date.toISOString() } : {};
-    const response = await api.get('/api/appointments', { params });
-    return response.data;
-  } catch (error) {
-    console.error('Error al obtener citas:', error);
-    throw error;
-  }
-};
-
-export const getAppointmentsByDoctor = async (doctorId, date) => {
-  try {
-    const params = date ? { date: date.toISOString() } : {};
-    const response = await api.get(`/api/doctors/${doctorId}/appointments`, { params });
-    return response.data;
-  } catch (error) {
-    console.error(`Error al obtener citas para el doctor ${doctorId}:`, error);
-    throw error;
-  }
-};
-
-export const getAppointmentsByPatient = async (patientId) => {
-  try {
-    const response = await api.get(`/api/patients/${patientId}/appointments`);
-    return response.data;
-  } catch (error) {
-    console.error(`Error al obtener citas para el paciente ${patientId}:`, error);
-    throw error;
-  }
-};
-
-export const createAppointment = async (appointmentData) => {
-  try {
-    const response = await api.post('/api/appointments', appointmentData);
-    return response.data;
-  } catch (error) {
-    console.error('Error al crear cita:', error);
-    throw error;
-  }
-};
-
-export const updateAppointment = async (id, appointmentData) => {
-  try {
-    const response = await api.put(`/api/appointments/${id}`, appointmentData);
-    return response.data;
-  } catch (error) {
-    console.error(`Error al actualizar cita ${id}:`, error);
-    throw error;
-  }
-};
-
-export const updateAppointmentStatus = async (id, status) => {
-  try {
-    const response = await api.patch(`/api/appointments/${id}/status`, { status });
-    return response.data;
-  } catch (error) {
-    console.error(`Error al actualizar estado de cita ${id}:`, error);
-    throw error;
-  }
-};
-
-export const deleteAppointment = async (id) => {
-  try {
-    await api.delete(`/api/appointments/${id}`);
-    return true;
-  } catch (error) {
-    console.error(`Error al eliminar cita ${id}:`, error);
-    throw error;
-  }
-};
-
-// Servicios para Odontograma
-export const getOdontogramByPatientId = async (patientId) => {
-  try {
-    const response = await api.get(`/api/patients/${patientId}/odontogram`);
-    return response.data;
-  } catch (error) {
-    console.error(`Error al obtener odontograma para paciente ${patientId}:`, error);
-    throw error;
-  }
-};
-
-export const addLesions = async (patientId, lesions) => {
-  try {
-    const response = await api.post(`/api/patients/${patientId}/odontogram/lesions`, lesions);
-    return response.data;
-  } catch (error) {
-    console.error(`Error al añadir lesiones al odontograma del paciente ${patientId}:`, error);
-    throw error;
-  }
-};
-
-export const removeLesions = async (patientId, lesions) => {
-  try {
-    const response = await api.delete(`/api/patients/${patientId}/odontogram/lesions`, {
-      data: lesions
-    });
-    return response.data;
-  } catch (error) {
-    console.error(`Error al eliminar lesiones del odontograma del paciente ${patientId}:`, error);
-    throw error;
-  }
-};
+// Servicios para Odontograma (usando servicios modulares)
+export const getOdontogramByPatientId = odontogramService.getOdontogram;
 
 export default api;
