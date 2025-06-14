@@ -1,0 +1,371 @@
+---
+description: Validación obligatoria de tests de arquitectura antes de generar código de dominio
+globs: src/main/java/odoonto/domain/**/*.java
+alwaysApply: true
+---
+
+<rule>
+  <meta>
+    <title>Architecture Validation - Mandatory Test Review</title>
+    <description>Validación obligatoria de tests de arquitectura antes de generar código de dominio</description>
+    <created-at utc-timestamp="1744240920">January 10, 2025, 09:22 AM</created-at>
+    <last-updated-at utc-timestamp="1744240920">January 10, 2025, 09:22 AM</last-updated-at>
+    <applies-to>
+      <file-matcher glob="src/main/java/odoonto/domain/**/*.java">Todos los archivos del dominio</file-matcher>
+      <action-matcher action="domain-code-generation">Generación de código de dominio</action-matcher>
+    </applies-to>
+  </meta>
+
+  <requirements>
+    <non-negotiable priority="critical">
+      <description>OBLIGATORIO revisar TODOS los tests de arquitectura ANTES de generar cualquier código de dominio. Debe examinar AccesTest.java, AcopplementTest.java, CleanCodeTest.java, DependencyTest.java, DomainDrivenDesignTest.java, GoodPracticeTest.java, JMoleculesTest.java, NameTest.java, SolidTest.java, UbicationTest.java y checkstyle.xml para entender las reglas que debe cumplir el código.</description>
+      <examples>
+        <example title="Mandatory Architecture Test Review">
+          <correct-example title="Pre-generation validation" conditions="Before generating domain code" expected-result="Code passes all tests" correctness-criteria="Reviewed all architecture tests first"><![CDATA[
+// 1. FIRST: Review all architecture tests
+// - AccesTest.java: Layer access rules
+// - AcopplementTest.java: Coupling rules  
+// - CleanCodeTest.java: Clean code practices
+// - DependencyTest.java: Dependency rules
+// - DomainDrivenDesignTest.java: DDD compliance
+// - GoodPracticeTest.java: Best practices
+// - JMoleculesTest.java: jMolecules annotations
+// - NameTest.java: Naming conventions
+// - SolidTest.java: SOLID principles
+// - UbicationTest.java: Package structure
+// - checkstyle.xml: Code style rules
+
+// 2. THEN: Generate domain code that complies with all rules
+@AggregateRoot
+public class PatientAggregate {
+    private final PatientId patientId;
+    private final EmailAddress email;
+    
+    public PatientAggregate(PatientId patientId, EmailAddress email) {
+        this.patientId = patientId;
+        this.email = email;
+    }
+    
+    public void register() {
+        DomainEvents.raise(new PatientRegisteredEvent(
+            EventId.generate(),
+            TimestampValue.now(),
+            this.patientId
+        ));
+    }
+}
+
+// 3. FINALLY: Validate tests pass after generation
+]]></correct-example>
+          <incorrect-example title="Code generation without test review" conditions="Before generating domain code" expected-result="Code passes all tests" incorrectness-criteria="Generated code without reviewing tests"><![CDATA[
+// Wrong - generating code without reviewing architecture tests first
+@Entity // Wrong - should be @AggregateRoot from jMolecules
+@Component // Wrong - Spring annotation in domain (violates DependencyTest)
+public class PatientAggregate {
+    @Autowired // Wrong - field injection (violates AcopplementTest)
+    private PatientRepository repository;
+    
+    private String id; // Wrong - should be PatientId value object (violates DomainDrivenDesignTest)
+    
+    public void save() { // Wrong - CRUD method name (violates NameTest)
+        repository.save(this);
+    }
+}
+// This code will fail multiple architecture tests
+]]></incorrect-example>
+        </example>
+      </examples>
+    </non-negotiable>
+
+    <requirement priority="critical">
+      <description>Verificar que el código generado cumpla con todas las reglas de checkstyle.xml incluyendo longitud de métodos (max 30 líneas), complejidad ciclomática (max 10), parámetros (max 5), anidación (max 3), y evitar System.out.println.</description>
+      <examples>
+        <example title="Checkstyle Compliance">
+          <correct-example title="Checkstyle compliant code" conditions="Generating domain methods" expected-result="Passes checkstyle validation" correctness-criteria="Follows all checkstyle rules"><![CDATA[
+public class PatientAggregate {
+    private final PatientId patientId;
+    private final EmailAddress email;
+    
+    // Method under 30 lines ✓
+    // Cyclomatic complexity under 10 ✓
+    // Parameters under 5 ✓
+    public void updateContactInfo(final EmailAddress newEmail, 
+                                 final PhoneNumber newPhone) {
+        if (newEmail == null) {
+            throw new InvalidEmailException("Email cannot be null");
+        }
+        
+        if (newPhone == null) {
+            throw new InvalidPhoneException("Phone cannot be null");
+        }
+        
+        this.email = newEmail;
+        this.phone = newPhone;
+        
+        // Use logger instead of System.out.println ✓
+        log.info("Contact info updated for patient: {}", patientId);
+    }
+}
+]]></correct-example>
+          <incorrect-example title="Checkstyle violations" conditions="Generating domain methods" expected-result="Passes checkstyle validation" incorrectness-criteria="Violates checkstyle rules"><![CDATA[
+public class PatientAggregate {
+    // Method too long (> 30 lines) ✗
+    // Too many parameters (> 5) ✗
+    // High cyclomatic complexity ✗
+    public void updateInfo(String email, String phone, String address, 
+                          String city, String state, String zip, 
+                          String country) {
+        if (email == null) {
+            if (phone == null) {
+                if (address == null) {
+                    if (city == null) { // Too much nesting ✗
+                        System.out.println("All fields null"); // System.out.println ✗
+                        // ... 25+ more lines of nested logic
+                    }
+                }
+            }
+        }
+        // ... continues with more violations
+    }
+}
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <requirement priority="critical">
+      <description>Garantizar que el código generado pase específicamente los tests de JMoleculesTest.java usando las anotaciones correctas (@AggregateRoot, @Entity, @ValueObject, @Repository, @Service, @Factory) en lugar de anotaciones de Spring/JPA.</description>
+      <examples>
+        <example title="jMolecules Annotations Compliance">
+          <correct-example title="Correct jMolecules usage" conditions="Creating domain classes" expected-result="Passes JMoleculesTest" correctness-criteria="Uses jMolecules annotations"><![CDATA[
+// Correct - jMolecules annotations
+@AggregateRoot
+public class PatientAggregate {
+    private final PatientId patientId;
+}
+
+@Entity
+public class AttachmentEntity {
+    private final AttachmentId attachmentId;
+}
+
+@ValueObject
+public final class PatientId {
+    private final String value;
+}
+
+@Repository
+public interface PatientRepository {
+    void save(PatientAggregate patient);
+}
+
+@Service
+public class PatientValidationService {
+    // domain service logic
+}
+
+@Factory
+public final class PatientFactory {
+    public static PatientAggregate create(PatientId id) {
+        return new PatientAggregate(id);
+    }
+}
+]]></correct-example>
+          <incorrect-example title="Wrong annotations" conditions="Creating domain classes" expected-result="Passes JMoleculesTest" incorrectness-criteria="Uses Spring/JPA annotations"><![CDATA[
+// Wrong - Spring/JPA annotations in domain
+@Component // Wrong - should be @AggregateRoot
+public class PatientAggregate {
+    @Id // Wrong - JPA annotation
+    private String id;
+}
+
+@Entity // Wrong - JPA annotation, should be jMolecules @Entity
+@Table(name = "patients") // Wrong - JPA annotation
+public class PatientEntity {
+    // ...
+}
+
+@Repository // Wrong - Spring annotation, should be jMolecules @Repository
+public interface PatientRepository extends JpaRepository<Patient, String> {
+    // Wrong - extends JPA repository
+}
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <requirement priority="critical">
+      <description>Validar que el código generado respete la separación de bounded contexts según DomainDrivenDesignTest.java, evitando dependencias cruzadas entre contextos (patients, records, scheduling, staff, catalog) excepto shared.</description>
+      <examples>
+        <example title="Bounded Context Separation">
+          <correct-example title="Proper context separation" conditions="Creating cross-context relationships" expected-result="Passes DomainDrivenDesignTest" correctness-criteria="No direct cross-context dependencies"><![CDATA[
+// In patients context - correct
+@AggregateRoot
+public class PatientAggregate {
+    private final PatientId patientId;
+    private final MoneyValue balance; // From shared context ✓
+    
+    public void register() {
+        // Reference other contexts by ID only ✓
+        DomainEvents.raise(new PatientRegisteredEvent(
+            this.patientId,
+            // No direct reference to scheduling context
+        ));
+    }
+}
+
+// In scheduling context - correct
+@AggregateRoot  
+public class AppointmentAggregate {
+    private final AppointmentId appointmentId;
+    private final PatientId patientId; // Reference by ID only ✓
+    private final DoctorId doctorId;   // Reference by ID only ✓
+    private final MoneyValue cost;     // From shared context ✓
+}
+]]></correct-example>
+          <incorrect-example title="Cross-context dependencies" conditions="Creating cross-context relationships" expected-result="Passes DomainDrivenDesignTest" incorrectness-criteria="Direct cross-context references"><![CDATA[
+// Wrong - direct cross-context dependencies
+@AggregateRoot
+public class PatientAggregate {
+    private final PatientId patientId;
+    private final List<AppointmentAggregate> appointments; // Wrong - direct reference to scheduling context
+    
+    public void scheduleAppointment(DoctorAggregate doctor) { // Wrong - direct reference to staff context
+        // violates bounded context separation
+    }
+}
+
+// Wrong - mixing contexts
+@AggregateRoot
+public class AppointmentAggregate {
+    private final AppointmentId appointmentId;
+    private final PatientAggregate patient; // Wrong - direct reference
+    private final MedicalRecordAggregate record; // Wrong - direct reference
+}
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <requirement priority="high">
+      <description>Asegurar que el código generado cumpla con las reglas de ubicación de UbicationTest.java colocando cada tipo de clase en su paquete correspondiente (aggregates/, entities/, valueobjects/, factory/, etc.).</description>
+      <examples>
+        <example title="Package Structure Compliance">
+          <correct-example title="Correct package placement" conditions="Creating domain classes" expected-result="Passes UbicationTest" correctness-criteria="Classes in correct packages"><![CDATA[
+// Correct package structure
+domain/model/patients/
+├─ aggregates/PatientAggregate.java          // ✓ Aggregates in aggregates/
+├─ entities/AttachmentEntity.java            // ✓ Entities in entities/
+├─ valueobjects/PatientId.java              // ✓ Value objects in valueobjects/
+├─ factory/PatientFactory.java              // ✓ Factories in factory/
+└─ policy/PatientPolicy.java                // ✓ Policies in policy/
+
+domain/repository/patients/PatientRepository.java    // ✓ Repositories in repository/
+domain/service/patients/PatientValidationService.java // ✓ Services in service/
+domain/events/patients/PatientRegisteredEvent.java   // ✓ Events in events/
+]]></correct-example>
+          <incorrect-example title="Wrong package placement" conditions="Creating domain classes" expected-result="Passes UbicationTest" incorrectness-criteria="Classes in wrong packages"><![CDATA[
+// Wrong package structure
+domain/model/patients/
+├─ PatientAggregate.java                    // Wrong - should be in aggregates/
+├─ PatientId.java                          // Wrong - should be in valueobjects/
+├─ PatientRepository.java                  // Wrong - should be in domain/repository/
+└─ PatientValidationService.java          // Wrong - should be in domain/service/
+
+domain/
+├─ Patient.java                            // Wrong - should be in model/patients/aggregates/
+└─ utils/PatientUtils.java                 // Wrong - utils not allowed
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <requirement priority="high">
+      <description>Verificar que el código generado use nombres correctos según NameTest.java con sufijos apropiados (Aggregate, Entity, Value/VO, Repository, UseCase, etc.) y evite abreviaciones.</description>
+      <examples>
+        <example title="Naming Convention Compliance">
+          <correct-example title="Correct naming" conditions="Creating domain classes" expected-result="Passes NameTest" correctness-criteria="Follows naming conventions"><![CDATA[
+// Correct naming conventions
+@AggregateRoot
+public class PatientAggregate {        // ✓ Ends with "Aggregate"
+    private final PatientId patientId; // ✓ Ends with "Id"
+}
+
+@Entity
+public class AttachmentEntity {        // ✓ Ends with "Entity"
+    private final AttachmentId id;
+}
+
+@ValueObject
+public final class EmailAddress {     // ✓ Descriptive name, ends with "Value" or descriptive
+    private final String value;
+}
+
+@Repository
+public interface PatientRepository {  // ✓ Ends with "Repository"
+    void save(PatientAggregate patient);
+}
+
+@Factory
+public final class PatientFactory {   // ✓ Ends with "Factory"
+    public static PatientAggregate create(PatientId id) {
+        return new PatientAggregate(id);
+    }
+}
+]]></correct-example>
+          <incorrect-example title="Wrong naming" conditions="Creating domain classes" expected-result="Passes NameTest" incorrectness-criteria="Violates naming conventions"><![CDATA[
+// Wrong naming conventions
+@AggregateRoot
+public class Patient {                 // Wrong - should end with "Aggregate"
+    private final String id;           // Wrong - should be PatientId
+}
+
+@Entity  
+public class Attachment {              // Wrong - should end with "Entity"
+    private final String attachId;    // Wrong - should be AttachmentId
+}
+
+@ValueObject
+public final class Email {            // Wrong - not descriptive enough
+    private final String val;         // Wrong - abbreviated field name
+}
+
+@Repository
+public interface PatientRepo {        // Wrong - abbreviated, should be PatientRepository
+    void save(Patient pat);           // Wrong - abbreviated parameter
+}
+
+public final class PatientFact {      // Wrong - abbreviated, should be PatientFactory
+    public static Patient create(String id) { // Wrong - should use PatientId
+        return new Patient(id);
+    }
+}
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+  </requirements>
+
+  <context description="Validación de arquitectura">
+    <context-item title="Architecture Tests">Los tests en src/test/java/odoonto/architecture/ validan TODAS las reglas de arquitectura</context-item>
+    <context-item title="Checkstyle">El archivo checkstyle.xml define reglas de estilo y calidad de código</context-item>
+    <context-item title="Test-First Approach">SIEMPRE revisar tests ANTES de generar código</context-item>
+    <context-item title="Validation After">SIEMPRE validar que tests pasen DESPUÉS de generar código</context-item>
+    <context-item title="Zero Tolerance">CERO tolerancia a código que no pase los tests de arquitectura</context-item>
+  </context>
+
+  <references>
+    <reference as="dependency" href=".cursor/rules/rules.md" reason="Standard rule format">Base rule format and structure requirements</reference>
+    <reference as="dependency" href="src/test/java/odoonto/architecture/AccesTest.java" reason="Layer access rules">AccesTest.java - Layer access validation</reference>
+    <reference as="dependency" href="src/test/java/odoonto/architecture/AcopplementTest.java" reason="Coupling rules">AcopplementTest.java - Coupling validation</reference>
+    <reference as="dependency" href="src/test/java/odoonto/architecture/CleanCodeTest.java" reason="Clean code practices">CleanCodeTest.java - Clean code validation</reference>
+    <reference as="dependency" href="src/test/java/odoonto/architecture/DependencyTest.java" reason="Dependency rules">DependencyTest.java - Dependency validation</reference>
+    <reference as="dependency" href="src/test/java/odoonto/architecture/DomainDrivenDesignTest.java" reason="DDD compliance">DomainDrivenDesignTest.java - DDD validation</reference>
+    <reference as="dependency" href="src/test/java/odoonto/architecture/GoodPracticeTest.java" reason="Best practices">GoodPracticeTest.java - Best practices validation</reference>
+    <reference as="dependency" href="src/test/java/odoonto/architecture/JMoleculesTest.java" reason="jMolecules annotations">JMoleculesTest.java - jMolecules validation</reference>
+    <reference as="dependency" href="src/test/java/odoonto/architecture/NameTest.java" reason="Naming conventions">NameTest.java - Naming validation</reference>
+    <reference as="dependency" href="src/test/java/odoonto/architecture/SolidTest.java" reason="SOLID principles">SolidTest.java - SOLID validation</reference>
+    <reference as="dependency" href="src/test/java/odoonto/architecture/UbicationTest.java" reason="Package structure">UbicationTest.java - Package structure validation</reference>
+    <reference as="dependency" href="checkstyle.xml" reason="Code style rules">checkstyle.xml - Code style and quality rules</reference>
+  </references>
+</rule> 

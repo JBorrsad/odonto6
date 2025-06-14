@@ -301,6 +301,122 @@ import odoonto.domain.model.scheduling.aggregates.AppointmentAggregate;
         </example>
       </examples>
     </requirement>
+
+    <requirement priority="high">
+      <description>Implementar fábricas de dominio para objetos complejos: DefaultScheduleFactory (staff) y OdontogramFactory, TreatmentPlanFactory (records). Deben residir en domain/model/&lt;contexto&gt;/factory/, contener solo métodos estáticos y devolver objetos inmutables.</description>
+      <examples>
+        <example title="Domain factory">
+          <correct-example title="OdontogramFactory" conditions="Creating complex domain objects" expected-result="Factory pattern" correctness-criteria="Static methods, immutable objects"><![CDATA[
+@Factory
+public final class OdontogramFactory {
+    private OdontogramFactory() {}
+    
+    public static OdontogramEntity createFor(DentitionType type) {
+        return new OdontogramEntity(
+            OdontogramId.generate(),
+            type,
+            createDefaultTeeth(type)
+        );
+    }
+    
+    private static List<ToothEntity> createDefaultTeeth(DentitionType type) {
+        // factory logic
+    }
+}
+]]></correct-example>
+          <incorrect-example title="Complex constructor" conditions="Creating complex domain objects" expected-result="Factory pattern" incorrectness-criteria="Lógica compleja en constructor"><![CDATA[
+public class OdontogramEntity {
+    public OdontogramEntity(DentitionType type) {
+        // 60 líneas de inicialización
+        this.id = OdontogramId.generate();
+        this.type = type;
+        this.teeth = new ArrayList<>();
+        for (int i = 1; i <= getToothCount(type); i++) {
+            // compleja lógica de inicialización
+        }
+    }
+}
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <requirement priority="high">
+      <description>Todo evento de dominio debe: 1) Extender/implementar DomainEvent; 2) Contener los campos EventId id y TimestampValue occurredAt para idempotencia y trazabilidad.</description>
+      <examples>
+        <example title="Domain event">
+          <correct-example title="PatientRegisteredEvent" conditions="Creating domain events" expected-result="Event with id and timestamp" correctness-criteria="Has EventId and TimestampValue"><![CDATA[
+public record PatientRegisteredEvent(EventId id,
+                                     TimestampValue occurredAt,
+                                     PatientId patientId,
+                                     EmailAddress email)
+        implements DomainEvent {
+    
+    public static PatientRegisteredEvent create(PatientId patientId, EmailAddress email) {
+        return new PatientRegisteredEvent(
+            EventId.generate(),
+            TimestampValue.now(),
+            patientId,
+            email
+        );
+    }
+}
+]]></correct-example>
+          <incorrect-example title="Event without id" conditions="Creating domain events" expected-result="Event with id and timestamp" incorrectness-criteria="Falta EventId y TimestampValue"><![CDATA[
+public record PatientRegisteredEvent(PatientId patientId,
+                                     EmailAddress email)
+        implements DomainEvent {}  // Wrong - missing id and timestamp
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <requirement priority="high">
+      <description>Todos los archivos en valueobjects/ deben ser inmutables: campos final, sin setters, validación en constructor. ArchUnit debe fallar si encuentra setters o campos no-final.</description>
+      <examples>
+        <example title="Immutable Value Objects">
+          <correct-example title="Immutable PatientId" conditions="Creating value objects" expected-result="Immutable value object" correctness-criteria="Final fields, no setters"><![CDATA[
+public final class PatientId {
+    private final String value;
+    
+    public PatientId(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("PatientId cannot be null or empty");
+        }
+        this.value = value.trim();
+    }
+    
+    public String getValue() {
+        return value;
+    }
+    
+    @Override
+    public boolean equals(Object obj) { ... }
+    
+    @Override
+    public int hashCode() { ... }
+}
+]]></correct-example>
+          <incorrect-example title="Mutable value object" conditions="Creating value objects" expected-result="Immutable value object" incorrectness-criteria="Has setters or non-final fields"><![CDATA[
+public final class PatientId {
+    private String value; // Wrong - not final
+    
+    public PatientId(String value) {
+        this.value = value;
+    }
+    
+    public void setValue(String value) { // Wrong - has setter
+        this.value = value;
+    }
+    
+    public String getValue() {
+        return value;
+    }
+}
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
   </requirements>
 
   <context description="Consideraciones de arquitectura">
