@@ -1,0 +1,205 @@
+---
+description: Estructura y patrones para refactorización del dominio usando DDD con bounded contexts
+globs: src/main/java/odoonto/domain/**/*.java,src/test/java/odoonto/architecture/**/*.java
+alwaysApply: false
+---
+<rule>
+  <meta>
+    <title>Domain Refactoring – DDD Structure</title>
+    <description>Estructura y patrones para refactorizar de domain_old → domain usando DDD con bounded contexts</description>
+    <created-at utc-timestamp="1744240920">January 10, 2025, 09:22 AM</created-at>
+    <last-updated-at utc-timestamp="1750122000">June 15, 2025, 11:00 AM</last-updated-at>
+
+    <applies-to>
+      <file-matcher glob="src/main/java/odoonto/domain/**/*.java"/>
+      <file-matcher glob="src/test/java/odoonto/architecture/**/*.java"/>
+      <action-matcher action="domain-refactor"/>
+    </applies-to>
+  </meta>
+
+ 
+  <requirements>
+
+    <!-- 1 Simplicidad -->
+    <requirement priority="critical">
+      <description>Mantener la estructura más simple posible sin añadir elementos innecesarios, cumpliendo los tests de arquitectura.</description>
+      <examples>
+        <example title="Simplicity in Domain Classes">
+          <correct-example title="Minimal aggregate" conditions="Creating PatientAggregate" expected-result="Passes architecture tests" correctness-criteria="Only necessary fields and methods"><![CDATA[
+public class PatientAggregate {
+    private final PatientId patientId;
+    private final PersonName personName;
+    private final BirthDateValue birthDate;
+
+    public void register() {
+        DomainEvents.raise(new PatientRegisteredEvent(this.patientId));
+    }
+}
+]]></correct-example>
+          <incorrect-example title="Unnecessary complexity" conditions="Creating PatientAggregate" expected-result="Passes architecture tests" incorrectness-criteria="Adds unnecessary methods"><![CDATA[
+public class PatientAggregate {
+    private final PatientId patientId;
+    private final PersonName personName;
+    private final BirthDateValue birthDate;
+
+    public void register() { }
+    public void validate() { }
+    public void sanitize() { }
+    public void logCreation() { }          // extra, no-value methods
+}
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <!-- 2 Bounded Context / Estructura -->
+    <requirement priority="critical">
+      <description>Estructurar bounded contexts bajo <code>domain/model/{patients|staff|catalog|records|scheduling}/</code> e incluir las sub-carpetas <code>aggregates</code>, <code>entities</code>, <code>valueobjects</code>, <code>factory</code>, <code>policy</code> y <code>events</code> cuando apliquen.</description>
+      <examples>
+        <example title="Bounded Context Structure">
+          <correct-example title="Patients context completo" conditions="Creating patients domain" expected-result="Proper bounded context" correctness-criteria="Follows directory structure"><![CDATA[
+domain/model/patients/
+├─ aggregates/PatientAggregate.java
+├─ entities/AttachmentEntity.java
+├─ valueobjects/PatientId.java
+├─ factory/                        (vacío si no se necesita)
+├─ policy/
+├─ events/PatientRegisteredEvent.java
+├─ service/PatientValidationService.java
+└─ repository/PatientRepository.java
+]]></correct-example>
+          <incorrect-example title="Mixed contexts" conditions="Creating patients domain" expected-result="Proper bounded context" incorrectness-criteria="Mixes concerns"><![CDATA[
+domain/model/patients/
+├─ aggregates/PatientAggregate.java
+├─ aggregates/DoctorAggregate.java          // ❌ Wrong context
+├─ valueobjects/AppointmentId.java          // ❌ Scheduling VO en patients
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <!-- 3 Value Objects -->
+    <requirement priority="high">
+      <description>Implementar Value Objects inmutables con validación embebida y sin setters.</description>
+      <examples>
+        <example title="Value Object Implementation">
+          <correct-example title="Immutable PatientId" conditions="Creating PatientId value object" expected-result="Immutable with validation" correctness-criteria="Final fields, validation"><![CDATA[
+@ValueObject
+public final class PatientId {
+    private final String value;
+
+    public PatientId(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("PatientId cannot be null or empty");
+        }
+        this.value = value;
+    }
+
+    public String toString() { return value; }
+}
+]]></correct-example>
+          <incorrect-example title="Mutable value object" conditions="Creating PatientId value object" expected-result="Immutable with validation" incorrectness-criteria="Mutable fields"><![CDATA[
+public class PatientId {
+    private String value;             // mutable
+    public void setValue(String v) {  // setter
+        this.value = v;
+    }
+}
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <!-- 4 Métodos de intención + Eventos -->
+    <requirement priority="high">
+      <description>Crear agregados con métodos de intención claros y publicar eventos de dominio apropiados (cada evento contiene <code>EventId</code> y <code>TimestampValue</code> y extiende <code>DomainEvent</code>).</description>
+      <examples>
+        <example title="Aggregate with Intent Methods">
+          <correct-example title="PatientAggregate intent methods" conditions="Creating patient aggregate" expected-result="Clear business intent" correctness-criteria="Intent-revealing methods + event"><![CDATA[
+public class PatientAggregate {
+    public void register() {
+        DomainEvents.raise(new PatientRegisteredEvent(EventId.generate(), TimestampValue.now(), this.patientId));
+    }
+
+    public void updateContactInfo(EmailAddress email, PhoneNumber phone) { ... }
+}
+]]></correct-example>
+          <incorrect-example title="Generic CRUD methods" conditions="Creating patient aggregate" expected-result="Clear business intent" incorrectness-criteria="Generic method names"><![CDATA[
+public class PatientAggregate {
+    public void save() { }
+    public void update() { }
+}
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <!-- 5 Repositorios Domain-only -->
+    <requirement priority="medium">
+      <description>Implementar repositorios como interfaces puras sin dependencias de infraestructura.</description>
+      <examples>
+        <example title="Pure Domain Repository">
+          <correct-example title="PatientRepository interface" conditions="Creating repository" expected-result="Pure domain interface" correctness-criteria="No infrastructure dependencies"><![CDATA[
+public interface PatientRepository {
+    void save(PatientAggregate patient);
+    Optional<PatientAggregate> findById(PatientId id);
+}
+]]></correct-example>
+          <incorrect-example title="Infrastructure-coupled repository" conditions="Creating repository" expected-result="Pure domain interface" incorrectness-criteria="JPA annotations"><![CDATA[
+@Repository                       // ❌ Spring in domain
+public interface PatientRepository
+        extends JpaRepository<PatientAggregate, String> { }
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <!-- 6 Enums de dominio -->
+    <requirement priority="medium">
+      <description>Usar enums para valores discretos (SexValue, SpecialtyValue, DentitionType…).</description>
+      <examples>
+        <example title="Enum Value Objects">
+          <correct-example title="SexValue enum" conditions="Creating sex value object" expected-result="Type-safe enum" correctness-criteria="Enum with helper"><![CDATA[
+public enum SexValue {
+    MALE, FEMALE, OTHER;
+    public static SexValue fromString(String s) {
+        return valueOf(s.toUpperCase(Locale.ROOT));
+    }
+}
+]]></correct-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <!-- 7 Factories necesarias -->
+    <requirement priority="medium">
+      <description>Incluir fábricas para objetos complejos: <code>DefaultScheduleFactory</code> (staff), <code>OdontogramFactory</code> y <code>TreatmentPlanFactory</code> (records).</description>
+      <examples>
+        <example title="Domain factory">
+          <correct-example title="DefaultScheduleFactory" conditions="Creating default schedule" expected-result="ScheduleValue created" correctness-criteria="Factory pattern"><![CDATA[
+@Factory
+public final class DefaultScheduleFactory {
+    public static ScheduleValue defaultWeek() {
+        // build Monday-Friday 09:00-21:00 slots (30 min each)
+    }
+}
+]]></correct-example>
+        </example>
+      </examples>
+    </requirement>
+
+  </requirements>
+  <context description="Consideraciones adicionales">
+    <context-item title="Architecture Tests">Los tests bajo <code>src/test/java/odoonto/architecture</code> validan la separación de bounded contexts y las reglas de dependencia.</context-item>
+    <context-item title="Slice isolation">Ningún paquete en <code>domain/model/&lt;contexto&gt;</code> puede depender de otro contexto distinto — solo se permite depender de <code>domain/model/shared</code>.</context-item>
+    <context-item title="Temporal Handling">Usar <code>TimestampValue</code> (factory central) y no <code>LocalDateTime.now()</code> directamente en el dominio.</context-item>
+    <context-item title="Event-Driven">Los agregados publican eventos con <code>EventId</code> + <code>TimestampValue</code> para idempotencia y trazabilidad.</context-item>
+  </context>
+
+  <references>
+    <reference as="dependency" href=".cursor/rules/rules.md" reason="Standard rule format"/>
+  </references>
+</rule>
+
+
+

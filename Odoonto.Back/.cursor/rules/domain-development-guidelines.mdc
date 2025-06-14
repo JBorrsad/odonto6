@@ -1,0 +1,328 @@
+---
+description: Pautas estrictas de desarrollo para la capa Domain siguiendo DDD y jMolecules
+globs: src/main/java/odoonto/domain/**/*.java,src/test/java/odoonto/architecture/**/*.java
+alwaysApply: false
+---
+
+<rule>
+  <meta>
+    <title>Domain Development Guidelines - DDD + jMolecules</title>
+    <description>Pautas estrictas de desarrollo para la capa Domain siguiendo DDD y jMolecules con máxima simplicidad</description>
+    <created-at utc-timestamp="1744240920">January 10, 2025, 09:22 AM</created-at>
+    <last-updated-at utc-timestamp="1744240920">January 10, 2025, 09:22 AM</last-updated-at>
+    <applies-to>
+      <file-matcher glob="src/main/java/odoonto/domain/**/*.java">Archivos de la capa domain</file-matcher>
+      <file-matcher glob="src/test/java/odoonto/architecture/**/*.java">Tests de arquitectura</file-matcher>
+      <action-matcher action="domain-development">Desarrollo de dominio</action-matcher>
+    </applies-to>
+  </meta>
+
+  <requirements>
+    <non-negotiable priority="critical">
+      <description>Aprobar TODOS los tests ArchUnit/JUnit revisando los tests ANTES de generar código y validando que pasen DESPUÉS de cualquier cambio.</description>
+      <examples>
+        <example title="Architecture Test Compliance">
+          <correct-example title="Test-driven development" conditions="Creating domain class" expected-result="All tests pass" correctness-criteria="Reviewed tests first, validated after"><![CDATA[
+// 1. First review tests in src/test/java/odoonto/architecture
+// 2. Then create domain class
+public class PatientAggregate {
+    private final PatientId patientId;
+    // minimal implementation that passes tests
+}
+// 3. Run tests and validate they pass
+]]></correct-example>
+          <incorrect-example title="Code without test validation" conditions="Creating domain class" expected-result="All tests pass" incorrectness-criteria="Generated code without checking tests"><![CDATA[
+// Wrong - generated code without reviewing tests first
+public class PatientAggregate {
+    @Id // Wrong - JPA annotation breaks domain purity tests
+    private String id;
+    
+    @Service // Wrong - Spring annotation breaks tests
+    private ValidationService validator;
+}
+// Tests will fail due to infrastructure dependencies
+]]></incorrect-example>
+        </example>
+      </examples>
+    </non-negotiable>
+
+    <requirement priority="critical">
+      <description>Seguir estrictamente DDD + jMolecules con anotaciones específicas por carpeta y CERO dependencias a Spring/JPA.</description>
+      <examples>
+        <example title="DDD and jMolecules Compliance">
+          <correct-example title="Pure DDD with jMolecules" conditions="Creating domain classes" expected-result="Pure domain without infrastructure" correctness-criteria="Correct annotations, no Spring/JPA"><![CDATA[
+// In domain/model/patients/aggregates/
+@AggregateRoot
+public class PatientAggregate {
+    private final PatientId patientId;
+}
+
+// In domain/model/patients/valueobjects/
+@ValueObject
+public final class PatientId {
+    private final String value;
+}
+
+// In domain/model/patients/entities/
+@Entity
+public class AttachmentEntity {
+    private final AttachmentId attachmentId;
+}
+]]></correct-example>
+          <incorrect-example title="Infrastructure contamination" conditions="Creating domain classes" expected-result="Pure domain without infrastructure" incorrectness-criteria="Spring/JPA annotations present"><![CDATA[
+// Wrong - infrastructure annotations in domain
+@AggregateRoot
+@Component // Wrong - Spring annotation
+public class PatientAggregate {
+    @Id // Wrong - JPA annotation
+    @GeneratedValue // Wrong - JPA annotation  
+    private Long id;
+    
+    @Autowired // Wrong - Spring annotation
+    private PatientRepository repository;
+}
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <requirement priority="critical">
+      <description>Mantener bounded contexts separados con relaciones SOLO por IDs o eventos, nunca referencias directas entre contextos.</description>
+      <examples>
+        <example title="Bounded Context Separation">
+          <correct-example title="Context separation with IDs" conditions="Creating cross-context relationships" expected-result="No direct dependencies between contexts" correctness-criteria="Uses IDs and events only"><![CDATA[
+// In scheduling context
+public class AppointmentAggregate {
+    private final AppointmentId appointmentId;
+    private final PatientId patientId; // Reference by ID only
+    private final DoctorId doctorId;   // Reference by ID only
+    
+    public void schedule() {
+        // publish event for other contexts
+        DomainEvents.raise(new AppointmentScheduledEvent(appointmentId, patientId));
+    }
+}
+]]></correct-example>
+          <incorrect-example title="Direct cross-context references" conditions="Creating cross-context relationships" expected-result="No direct dependencies between contexts" incorrectness-criteria="Direct object references"><![CDATA[
+// Wrong - direct references between contexts
+public class AppointmentAggregate {
+    private final AppointmentId appointmentId;
+    private final PatientAggregate patient; // Wrong - direct reference
+    private final DoctorAggregate doctor;   // Wrong - direct reference
+}
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <requirement priority="high">
+      <description>Aplicar simplicidad y legibilidad máxima con CERO métodos o atributos innecesarios, constructores claros sin lógica oculta.</description>
+      <examples>
+        <example title="Maximum Simplicity">
+          <correct-example title="Minimal necessary code" conditions="Creating domain classes" expected-result="Clean, simple code" correctness-criteria="Only essential elements, clear constructors"><![CDATA[
+public final class PatientId {
+    private final String value;
+    
+    public PatientId(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("PatientId cannot be null or empty");
+        }
+        this.value = value.trim();
+    }
+    
+    public String getValue() {
+        return value;
+    }
+}
+]]></correct-example>
+          <incorrect-example title="Unnecessary complexity" conditions="Creating domain classes" expected-result="Clean, simple code" incorrectness-criteria="Hidden logic, unnecessary methods"><![CDATA[
+public final class PatientId {
+    private final String value;
+    private final Logger logger; // Unnecessary
+    
+    public PatientId(String value) {
+        this.value = processAndValidate(value); // Hidden logic
+        logger.info("PatientId created"); // Unnecessary
+    }
+    
+    private String processAndValidate(String value) {
+        // Hidden complex logic
+    }
+    
+    public void logAccess() { } // Unnecessary method
+    public String getFormattedValue() { } // Unnecessary method
+}
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <requirement priority="high">
+      <description>Garantizar inmutabilidad completa en Value Objects y colecciones usando Collections.unmodifiableList(), List.of(), sin setters públicos.</description>
+      <examples>
+        <example title="Complete Immutability">
+          <correct-example title="Immutable collections and objects" conditions="Creating value objects with collections" expected-result="Completely immutable" correctness-criteria="No setters, immutable collections"><![CDATA[
+@ValueObject
+public final class PatientAggregate {
+    private final PatientId patientId;
+    private final List<AllergyValue> allergies;
+    
+    public PatientAggregate(PatientId patientId, List<AllergyValue> allergies) {
+        this.patientId = patientId;
+        this.allergies = List.copyOf(allergies); // Immutable copy
+    }
+    
+    public List<AllergyValue> getAllergies() {
+        return allergies; // Already immutable
+    }
+}
+]]></correct-example>
+          <incorrect-example title="Mutable collections and setters" conditions="Creating value objects with collections" expected-result="Completely immutable" incorrectness-criteria="Mutable collections, setters present"><![CDATA[
+@ValueObject
+public class PatientAggregate { // Not final
+    private PatientId patientId; // Not final
+    private List<AllergyValue> allergies; // Mutable
+    
+    public void setPatientId(PatientId patientId) { // Setter in VO
+        this.patientId = patientId;
+    }
+    
+    public List<AllergyValue> getAllergies() {
+        return allergies; // Returns mutable collection
+    }
+}
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <requirement priority="high">
+      <description>Crear TODOS los IDs como Value Objects con validación única, formato <Entidad>Id.java, inmutables con equals() y hashCode().</description>
+      <examples>
+        <example title="ID Value Objects">
+          <correct-example title="Proper ID value object" conditions="Creating entity IDs" expected-result="Type-safe validated IDs" correctness-criteria="Validation, immutability, equals/hashCode"><![CDATA[
+@ValueObject
+public final class PatientId {
+    private final String value;
+    
+    public PatientId(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("PatientId cannot be null or empty");
+        }
+        this.value = value.trim();
+    }
+    
+    public String getValue() {
+        return value;
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        PatientId patientId = (PatientId) obj;
+        return Objects.equals(value, patientId.value);
+    }
+    
+    @Override
+    public int hashCode() {
+        return Objects.hash(value);
+    }
+}
+]]></correct-example>
+          <incorrect-example title="String-based IDs" conditions="Creating entity IDs" expected-result="Type-safe validated IDs" incorrectness-criteria="Primitive types, no validation"><![CDATA[
+// Wrong - using primitive String as ID
+public class PatientAggregate {
+    private String patientId; // Should be PatientId value object
+    
+    public PatientAggregate(String id) {
+        this.patientId = id; // No validation
+    }
+}
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <requirement priority="medium">
+      <description>Preparar TODOS los eventos con EventId y TimestampValue, inmutables y serializables, ubicados en domain/events/<bc>/</description>
+      <examples>
+        <example title="Proper Domain Events">
+          <correct-example title="Complete domain event" conditions="Creating domain events" expected-result="Versionable, immutable events" correctness-criteria="EventId, TimestampValue, immutable"><![CDATA[
+// In domain/events/patients/
+public final class PatientRegisteredEvent implements DomainEvent {
+    private final EventId eventId;
+    private final TimestampValue timestamp;
+    private final PatientId patientId;
+    private final String eventType = "PatientRegistered";
+    
+    public PatientRegisteredEvent(PatientId patientId) {
+        this.eventId = EventId.generate();
+        this.timestamp = TimestampValue.now();
+        this.patientId = patientId;
+    }
+    
+    // Getters only, no setters
+}
+]]></correct-example>
+          <incorrect-example title="Incomplete domain event" conditions="Creating domain events" expected-result="Versionable, immutable events" incorrectness-criteria="Missing EventId, mutable"><![CDATA[
+// Wrong - incomplete event structure
+public class PatientRegisteredEvent { // Not final, no DomainEvent interface
+    private PatientId patientId; // Not final
+    private Date timestamp; // Should be TimestampValue
+    // Missing EventId
+    
+    public void setPatientId(PatientId patientId) { // Setter makes it mutable
+        this.patientId = patientId;
+    }
+}
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+
+    <requirement priority="medium">
+      <description>Seguir estructura de archivos obligatoria con carpetas específicas para aggregates, entities, valueobjects, factory y policy.</description>
+      <examples>
+        <example title="File Structure Compliance">
+          <correct-example title="Proper directory structure" conditions="Creating domain classes" expected-result="Organized by DDD patterns" correctness-criteria="Correct directory placement"><![CDATA[
+domain/model/patients/
+├─ aggregates/
+│   └─ PatientAggregate.java    // @AggregateRoot only here
+├─ entities/
+│   └─ AttachmentEntity.java    // @Entity only here
+├─ valueobjects/
+│   └─ PatientId.java          // @ValueObject only here
+├─ factory/
+│   └─ PatientFactory.java     // Factories for complex objects
+└─ policy/
+    └─ PatientPolicy.java      // Domain policies
+]]></correct-example>
+          <incorrect-example title="Wrong directory placement" conditions="Creating domain classes" expected-result="Organized by DDD patterns" incorrectness-criteria="Files in wrong directories"><![CDATA[
+domain/model/patients/
+├─ PatientAggregate.java        // Wrong - should be in aggregates/
+├─ PatientId.java              // Wrong - should be in valueobjects/
+├─ util/                       // Wrong - not allowed directory
+│   └─ PatientUtils.java
+└─ service/                    // Wrong - services go in domain/service/
+    └─ PatientService.java
+]]></incorrect-example>
+        </example>
+      </examples>
+    </requirement>
+  </requirements>
+
+  <context description="Consideraciones de desarrollo">
+    <context-item title="Bounded Contexts">Permitidos: patients, records, scheduling, staff, catalog, shared</context-item>
+    <context-item title="Test-First">Siempre revisar tests de arquitectura ANTES de generar código</context-item>
+    <context-item title="No Speculation">NUNCA generar código especulativo o "por si acaso"</context-item>
+    <context-item title="Maximum Simplicity">Mantener siempre la máxima simplicidad posible</context-item>
+    <context-item title="Architecture Validation">OBLIGATORIO ejecutar tests después de cualquier cambio</context-item>
+  </context>
+
+  <references>
+    <reference as="dependency" href=".cursor/rules/rules.md" reason="Standard rule format">Base rule format and structure requirements</reference>
+    <reference as="context" href=".cursor/rules/domain-structure.md" reason="Domain structure">Strict domain structure requirements</reference>
+  </references>
+</rule>
+
