@@ -1,21 +1,30 @@
 package odoonto.domain.service.patients;
 
-import odoonto.domain.exceptions.DomainException;
-import java.time.LocalDate;
+import org.jmolecules.ddd.annotation.Service;
 
-public final class PatientValidationService {
+import odoonto.domain.model.patients.valueobjects.EmailAddress;
+import odoonto.domain.model.patients.valueobjects.PatientId;
+import odoonto.domain.repository.patients.PatientRepository;
 
-    public void validateBasicData(final String name, final LocalDate birthDate) {
-        if (name == null || name.trim().isEmpty()) {
-            throw new DomainException("Name cannot be null or empty");
-        }
-        
-        if (birthDate == null) {
-            throw new DomainException("Birth date cannot be null");
-        }
-        
-        if (birthDate.isAfter(LocalDate.now())) {
-            throw new DomainException("Birth date cannot be in the future");
-        }
+@Service
+public class PatientValidationService {
+    private final PatientRepository patientRepository;
+
+    public PatientValidationService(final PatientRepository patientRepository) {
+        this.patientRepository = patientRepository;
+    }
+
+    public boolean isEmailUnique(final EmailAddress email) {
+        return patientRepository.findByEmail(email).isEmpty();
+    }
+
+    public boolean isEmailUniqueForPatient(final EmailAddress email, final PatientId patientId) {
+        return patientRepository.findByEmail(email)
+            .map(patient -> patient.getPatientId().equals(patientId))
+            .orElse(true);
+    }
+
+    public boolean patientExists(final PatientId patientId) {
+        return patientRepository.findById(patientId).isPresent();
     }
 } 

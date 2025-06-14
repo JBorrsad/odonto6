@@ -1,0 +1,84 @@
+%%{init: {'theme':'neutral'}}%%
+graph TB
+    subgraph "ODOONTO DOMAIN LAYER"
+        subgraph "Patients Context"
+            PA["PatientAggregate"]
+            PID["PatientId"]
+            PN["PersonName"]
+            EMAIL["EmailAddress"]
+            PHONE["PhoneNumber"]
+            ADDR["AddressValue"]
+            BIRTH["BirthDateValue"]
+            SEX["SexValue"]
+            ALLERGY["AllergyValue"]
+        end
+        
+        subgraph "Records Context"
+            MRA["MedicalRecordAggregate"]
+            OE["OdontogramEntity"]
+            TE["ToothEntity"]
+            LE["LesionEntity"]
+            TRE["TreatmentEntity"]
+            MEE["MedicalEntryEntity"]
+            OF["OdontogramFactory"]
+            TPF["TreatmentPlanFactory"]
+        end
+        
+        subgraph "Scheduling Context"
+            AA["AppointmentAggregate"]
+            ACE["AvailabilityCalendarEntity"]
+            AT["AppointmentTime"]
+            AS["AppointmentStatus"]
+            TSV["TimeSlotValue"]
+            SP["SchedulingPolicy"]
+        end
+        
+        subgraph "Staff Context"
+            DA["DoctorAggregate"]
+            DID["DoctorId"]
+            SPEC["SpecialtyValue"]
+            SCHED["ScheduleValue"]
+            DSF["DefaultScheduleFactory"]
+        end
+        
+        subgraph "Catalog Context"
+            TCA["TreatmentCatalogAggregate"]
+            TPE["TreatmentPricingEntity"]
+            CID["CatalogId"]
+        end
+        
+        subgraph "Shared Context"
+            MV["MoneyValue"]
+            EID["EventId"]
+            DV["DurationValue"]
+            TV["TimestampValue"]
+        end
+    end
+    
+    subgraph "Domain Services"
+        PVS["PatientValidationService"]
+        AVS["AvailabilityService"]
+        TPS["TreatmentPlanService"]
+        SGS["ScheduleGeneratorService"]
+    end
+    
+    subgraph "Domain Events"
+        PRE["PatientRegisteredEvent"]
+        ASE["AppointmentScheduledEvent"]
+        ASCE["AppointmentStatusChangedEvent"]
+        TCE["TreatmentCompletedEvent"]
+        DCE["DoctorCreatedEvent"]
+        MRCE["MedicalRecordCreatedEvent"]
+    end
+    
+    %% Cross-context relationships (only by ID)
+    PA -.->|PatientId| AA
+    DA -.->|DoctorId| AA
+    MRA -.->|PatientId| PA
+    
+    %% Shared dependencies
+    PA --> MV
+    AA --> MV
+    AA --> DV
+    TCA --> MV
+    TCA --> DV

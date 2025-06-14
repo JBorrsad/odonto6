@@ -1,120 +1,59 @@
 package odoonto.domain.events.patients;
 
-import odoonto.domain.model.patients.valueobjects.PatientId;
+import odoonto.domain.events.shared.DomainEvent;
 import odoonto.domain.model.shared.valueobjects.EventId;
 import odoonto.domain.model.shared.valueobjects.TimestampValue;
-
+import odoonto.domain.model.patients.valueobjects.PatientId;
 import java.util.Objects;
 
-public final class PatientRegisteredEvent {
-    
+public final class PatientRegisteredEvent implements DomainEvent {
     private final EventId eventId;
-    private final PatientId patientId;
-    private final String firstName;
-    private final String lastName;
-    private final String email;
-    private final String phone;
     private final TimestampValue occurredAt;
+    private final PatientId patientId;
 
-    private PatientRegisteredEvent(final EventId eventId,
-                                  final PatientId patientId,
-                                  final String firstName,
-                                  final String lastName,
-                                  final String email,
-                                  final String phone,
-                                  final TimestampValue occurredAt) {
-        validateParameters(eventId, patientId, firstName, lastName, occurredAt);
-        this.eventId = eventId;
-        this.patientId = patientId;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.phone = phone;
-        this.occurredAt = occurredAt;
-    }
-
-    public static PatientRegisteredEvent create(final PatientId patientId,
-                                               final String firstName,
-                                               final String lastName,
-                                               final String email,
-                                               final String phone) {
-        return new PatientRegisteredEvent(
-            EventId.generate(),
-            patientId,
-            firstName,
-            lastName,
-            email,
-            phone,
-            TimestampValue.now()
-        );
-    }
-
-    public static PatientRegisteredEvent reconstruct(final EventId eventId,
-                                                    final PatientId patientId,
-                                                    final String firstName,
-                                                    final String lastName,
-                                                    final String email,
-                                                    final String phone,
-                                                    final TimestampValue occurredAt) {
-        return new PatientRegisteredEvent(eventId, patientId, firstName, lastName, 
-                                         email, phone, occurredAt);
-    }
-
-    private static void validateParameters(final EventId eventId,
-                                          final PatientId patientId,
-                                          final String firstName,
-                                          final String lastName,
-                                          final TimestampValue occurredAt) {
+    public PatientRegisteredEvent(final EventId eventId, final TimestampValue occurredAt,
+                                 final PatientId patientId) {
         if (eventId == null) {
             throw new IllegalArgumentException("Event ID cannot be null");
+        }
+        if (occurredAt == null) {
+            throw new IllegalArgumentException("Occurred at cannot be null");
         }
         if (patientId == null) {
             throw new IllegalArgumentException("Patient ID cannot be null");
         }
-        if (firstName == null || firstName.trim().isEmpty()) {
-            throw new IllegalArgumentException("First name cannot be null or empty");
-        }
-        if (lastName == null || lastName.trim().isEmpty()) {
-            throw new IllegalArgumentException("Last name cannot be null or empty");
-        }
-        if (occurredAt == null) {
-            throw new IllegalArgumentException("Occurred timestamp cannot be null");
-        }
+        this.eventId = eventId;
+        this.occurredAt = occurredAt;
+        this.patientId = patientId;
     }
 
+    public static PatientRegisteredEvent create(final PatientId patientId) {
+        return new PatientRegisteredEvent(
+            EventId.generate(),
+            TimestampValue.now(),
+            patientId
+        );
+    }
+
+    @Override
     public EventId getEventId() {
         return eventId;
+    }
+
+    @Override
+    public TimestampValue getOccurredAt() {
+        return occurredAt;
     }
 
     public PatientId getPatientId() {
         return patientId;
     }
 
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public TimestampValue getOccurredAt() {
-        return occurredAt;
-    }
-
     @Override
-    public boolean equals(final Object other) {
-        if (this == other) return true;
-        if (other == null || getClass() != other.getClass()) return false;
-        final PatientRegisteredEvent that = (PatientRegisteredEvent) other;
+    public boolean equals(final Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        final PatientRegisteredEvent that = (PatientRegisteredEvent) obj;
         return Objects.equals(eventId, that.eventId);
     }
 
@@ -125,11 +64,8 @@ public final class PatientRegisteredEvent {
 
     @Override
     public String toString() {
-        return "PatientRegisteredEvent{" +
-                "eventId=" + eventId +
-                ", patientId=" + patientId +
-                ", name='" + firstName + " " + lastName + '\'' +
-                ", occurredAt=" + occurredAt +
-                '}';
+        return "PatientRegisteredEvent{eventId=" + eventId + 
+               ", occurredAt=" + occurredAt + 
+               ", patientId=" + patientId + '}';
     }
 } 

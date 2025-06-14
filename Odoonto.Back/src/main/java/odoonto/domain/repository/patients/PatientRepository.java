@@ -1,18 +1,20 @@
 package odoonto.domain.repository.patients;
 
+import org.jmolecules.ddd.annotation.Repository;
 import odoonto.domain.model.patients.aggregates.PatientAggregate;
 import odoonto.domain.model.patients.valueobjects.PatientId;
+import odoonto.domain.model.patients.valueobjects.EmailAddress;
 
-import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface PatientRepository {
     
     void save(PatientAggregate patient);
     
-    Optional<PatientAggregate> findById(PatientId patientId);
+    Optional<PatientAggregate> findById(PatientId id);
     
-    List<PatientAggregate> findAll();
+    Optional<PatientAggregate> findByEmail(EmailAddress email);
     
-    void delete(PatientId patientId);
+    void delete(PatientId id);
 } 

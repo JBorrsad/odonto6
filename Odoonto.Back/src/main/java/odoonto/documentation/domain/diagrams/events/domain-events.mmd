@@ -1,0 +1,94 @@
+classDiagram
+    class DomainEvent {
+        <<interface>>
+        +getEventId() EventId
+        +getOccurredAt() TimestampValue
+    }
+    
+    class PatientRegisteredEvent {
+        -EventId id
+        -TimestampValue occurredAt
+        -PatientId patientId
+        -EmailAddress email
+        +create(PatientId, EmailAddress) PatientRegisteredEvent
+    }
+    
+    class AppointmentScheduledEvent {
+        -EventId id
+        -TimestampValue occurredAt
+        -AppointmentId appointmentId
+        -PatientId patientId
+        -DoctorId doctorId
+        -AppointmentTime appointmentTime
+        +create(AppointmentId, PatientId, DoctorId, AppointmentTime) AppointmentScheduledEvent
+    }
+    
+    class AppointmentStatusChangedEvent {
+        -EventId id
+        -TimestampValue occurredAt
+        -AppointmentId appointmentId
+        -AppointmentStatus oldStatus
+        -AppointmentStatus newStatus
+        +create(AppointmentId, AppointmentStatus, AppointmentStatus) AppointmentStatusChangedEvent
+    }
+    
+    class TreatmentCompletedEvent {
+        -EventId id
+        -TimestampValue occurredAt
+        -AppointmentId appointmentId
+        -TreatmentId treatmentId
+        -PatientId patientId
+        -DoctorId doctorId
+        +create(AppointmentId, TreatmentId, PatientId, DoctorId) TreatmentCompletedEvent
+    }
+    
+    class DoctorCreatedEvent {
+        -EventId id
+        -TimestampValue occurredAt
+        -DoctorId doctorId
+        -String fullName
+        -SpecialtyValue specialty
+        +create(DoctorId, String, SpecialtyValue) DoctorCreatedEvent
+    }
+    
+    class MedicalRecordCreatedEvent {
+        -EventId id
+        -TimestampValue occurredAt
+        -MedicalRecordId medicalRecordId
+        -PatientId patientId
+        +create(MedicalRecordId, PatientId) MedicalRecordCreatedEvent
+    }
+    
+    class TreatmentAddedEvent {
+        -EventId id
+        -TimestampValue occurredAt
+        -MedicalRecordId medicalRecordId
+        -TreatmentId treatmentId
+        +create(MedicalRecordId, TreatmentId) TreatmentAddedEvent
+    }
+    
+    class TreatmentPriceUpdatedEvent {
+        -EventId id
+        -TimestampValue occurredAt
+        -CatalogId catalogId
+        -TreatmentId treatmentId
+        -MoneyValue oldPrice
+        -MoneyValue newPrice
+        +create(CatalogId, TreatmentId, MoneyValue, MoneyValue) TreatmentPriceUpdatedEvent
+    }
+    
+    class DomainEvents {
+        <<utility>>
+        +raise(DomainEvent) void
+        +getEvents() List~DomainEvent~
+        +clearEvents() void
+    }
+    
+    DomainEvent <|.. PatientRegisteredEvent
+    DomainEvent <|.. AppointmentScheduledEvent
+    DomainEvent <|.. AppointmentStatusChangedEvent
+    DomainEvent <|.. TreatmentCompletedEvent
+    DomainEvent <|.. DoctorCreatedEvent
+    DomainEvent <|.. MedicalRecordCreatedEvent
+    DomainEvent <|.. TreatmentAddedEvent
+    DomainEvent <|.. TreatmentPriceUpdatedEvent 

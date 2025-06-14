@@ -1,0 +1,65 @@
+%%{init: {'theme':'neutral'}}%%
+classDiagram
+    class AppointmentAggregate {
+        <<aggregate>>
+        -AppointmentId appointmentId
+        -PatientId patientId
+        -DoctorId doctorId
+        -AppointmentTime appointmentTime
+        -DurationValue duration
+        -AppointmentStatus status
+        -List~TreatmentId~ plannedTreatments
+        ___
+        +schedule() void
+        +reschedule() void
+        +cancel() void
+        +complete() void
+    }
+    
+    class AvailabilityCalendarEntity {
+        <<entity>>
+        -DoctorId doctorId
+        -LocalDate date
+        -List~TimeSlotValue~ availableSlots
+        ___
+        +isAvailable() boolean
+        +blockSlot() void
+        +releaseSlot() void
+    }
+    
+    class AppointmentTime {
+        <<valueObject>>
+        -LocalDateTime dateTime
+        ___
+        +getDate() LocalDate
+        +getTime() LocalTime
+        +isBefore() boolean
+        +isAfter() boolean
+    }
+    
+    class TimeSlotValue {
+        <<valueObject>>
+        -LocalTime startTime
+        -LocalTime endTime
+        ___
+        +getDuration() DurationValue
+        +overlaps() boolean
+        +contains() boolean
+    }
+    
+    class AppointmentStatus {
+        <<enumeration>>
+        SCHEDULED
+        CONFIRMED
+        IN_PROGRESS
+        COMPLETED
+        CANCELLED
+        NO_SHOW
+        ___
+        +canTransitionTo() boolean
+        +isActive() boolean
+    }
+    
+    AppointmentAggregate *-- AppointmentTime : contains
+    AppointmentAggregate *-- AppointmentStatus : contains
+    AvailabilityCalendarEntity *-- TimeSlotValue : contains 

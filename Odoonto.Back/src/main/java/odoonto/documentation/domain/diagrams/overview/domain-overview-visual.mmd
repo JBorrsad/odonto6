@@ -1,0 +1,85 @@
+%%{init: {'theme':'neutral'}}%%
+graph TB
+    subgraph "🏥 ODOONTO DOMAIN LAYER"
+        subgraph "👥 Patients Context"
+            PA["&lt;&lt;aggregate&gt;&gt;<br/>PatientAggregate"]
+            PID["&lt;&lt;valueObject&gt;&gt;<br/>PatientId"]
+            PN["&lt;&lt;valueObject&gt;&gt;<br/>PersonName"]
+            EMAIL["&lt;&lt;valueObject&gt;&gt;<br/>EmailAddress"]
+            PHONE["&lt;&lt;valueObject&gt;&gt;<br/>PhoneNumber"]
+            ADDR["&lt;&lt;valueObject&gt;&gt;<br/>AddressValue"]
+            BIRTH["&lt;&lt;valueObject&gt;&gt;<br/>BirthDateValue"]
+            SEX["&lt;&lt;enumeration&gt;&gt;<br/>SexValue"]
+            ALLERGY["&lt;&lt;valueObject&gt;&gt;<br/>AllergyValue"]
+        end
+        
+        subgraph "📋 Records Context"
+            MRA["&lt;&lt;aggregate&gt;&gt;<br/>MedicalRecordAggregate"]
+            OE["&lt;&lt;entity&gt;&gt;<br/>OdontogramEntity"]
+            TE["&lt;&lt;entity&gt;&gt;<br/>ToothEntity"]
+            LE["&lt;&lt;entity&gt;&gt;<br/>LesionEntity"]
+            TRE["&lt;&lt;entity&gt;&gt;<br/>TreatmentEntity"]
+            MEE["&lt;&lt;entity&gt;&gt;<br/>MedicalEntryEntity"]
+            OF["&lt;&lt;factory&gt;&gt;<br/>OdontogramFactory"]
+            TPF["&lt;&lt;factory&gt;&gt;<br/>TreatmentPlanFactory"]
+        end
+        
+        subgraph "📅 Scheduling Context"
+            AA["&lt;&lt;aggregate&gt;&gt;<br/>AppointmentAggregate"]
+            ACE["&lt;&lt;entity&gt;&gt;<br/>AvailabilityCalendarEntity"]
+            AT["&lt;&lt;valueObject&gt;&gt;<br/>AppointmentTime"]
+            AS["&lt;&lt;enumeration&gt;&gt;<br/>AppointmentStatus"]
+            TSV["&lt;&lt;valueObject&gt;&gt;<br/>TimeSlotValue"]
+            SP["&lt;&lt;policy&gt;&gt;<br/>SchedulingPolicy"]
+        end
+        
+        subgraph "👨‍⚕️ Staff Context"
+            DA["&lt;&lt;aggregate&gt;&gt;<br/>DoctorAggregate"]
+            DID["&lt;&lt;valueObject&gt;&gt;<br/>DoctorId"]
+            SPEC["&lt;&lt;enumeration&gt;&gt;<br/>SpecialtyValue"]
+            SCHED["&lt;&lt;valueObject&gt;&gt;<br/>ScheduleValue"]
+            DSF["&lt;&lt;factory&gt;&gt;<br/>DefaultScheduleFactory"]
+        end
+        
+        subgraph "💰 Catalog Context"
+            TCA["&lt;&lt;aggregate&gt;&gt;<br/>TreatmentCatalogAggregate"]
+            TPE["&lt;&lt;entity&gt;&gt;<br/>TreatmentPricingEntity"]
+            CID["&lt;&lt;valueObject&gt;&gt;<br/>CatalogId"]
+        end
+        
+        subgraph "🔗 Shared Context"
+            MV["&lt;&lt;valueObject&gt;&gt;<br/>MoneyValue"]
+            EID["&lt;&lt;valueObject&gt;&gt;<br/>EventId"]
+            DV["&lt;&lt;valueObject&gt;&gt;<br/>DurationValue"]
+            TV["&lt;&lt;valueObject&gt;&gt;<br/>TimestampValue"]
+        end
+    end
+    
+    subgraph "⚙️ Domain Services"
+        PVS["&lt;&lt;service&gt;&gt;<br/>PatientValidationService"]
+        AVS["&lt;&lt;service&gt;&gt;<br/>AvailabilityService"]
+        TPS["&lt;&lt;service&gt;&gt;<br/>TreatmentPlanService"]
+        SGS["&lt;&lt;service&gt;&gt;<br/>ScheduleGeneratorService"]
+    end
+    
+    subgraph "⚡ Domain Events"
+        PRE["&lt;&lt;event&gt;&gt;<br/>PatientRegisteredEvent"]
+        ASE["&lt;&lt;event&gt;&gt;<br/>AppointmentScheduledEvent"]
+        ASCE["&lt;&lt;event&gt;&gt;<br/>AppointmentStatusChangedEvent"]
+        TCE["&lt;&lt;event&gt;&gt;<br/>TreatmentCompletedEvent"]
+        DCE["&lt;&lt;event&gt;&gt;<br/>DoctorCreatedEvent"]
+        MRCE["&lt;&lt;event&gt;&gt;<br/>MedicalRecordCreatedEvent"]
+    end
+    
+    %% Cross-context relationships (only by ID)
+    PA -.->|PatientId| AA
+    DA -.->|DoctorId| AA
+    MRA -.->|PatientId| PA
+    
+    %% Shared dependencies
+    PA --> MV
+    AA --> MV
+    AA --> DV
+    TCA --> MV
+    TCA --> DV
+``` 

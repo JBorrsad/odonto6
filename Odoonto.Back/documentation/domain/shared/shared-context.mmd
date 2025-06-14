@@ -1,0 +1,40 @@
+%%{init: {'theme':'neutral'}}%%
+classDiagram
+    class MoneyValue {
+        -BigDecimal amount
+        -String currency
+        ___
+        +add() MoneyValue
+        +subtract() MoneyValue
+        +multiply() MoneyValue
+        +isZero() boolean
+        +isPositive() boolean
+    }
+    
+    class EventId {
+        -String value
+        ___
+        +generate() EventId
+        +getValue() String
+        +equals(Object) boolean
+        +hashCode() int
+    }
+    
+    class DurationValue {
+        -int minutes
+        ___
+        +DurationValue(int)
+        +getMinutes() int
+        +getHours() double
+        +add() DurationValue
+        +isZero() boolean
+    }
+    
+    class TimestampValue {
+        -Instant timestamp
+        ___
+        +now() TimestampValue
+        +getTimestamp() Instant
+        +isBefore() boolean
+        +isAfter() boolean
+    } 

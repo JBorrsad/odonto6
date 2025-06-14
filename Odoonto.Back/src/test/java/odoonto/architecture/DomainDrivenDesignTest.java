@@ -4,6 +4,7 @@ import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.core.importer.ImportOption;
+import com.tngtech.archunit.library.dependencies.SlicesRuleDefinition;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.*;
 
@@ -26,19 +27,19 @@ public class DomainDrivenDesignTest {
                 .should().resideInAPackage("..domain.service..");
 
     @ArchTest
-    static final ArchRule domain_events_should_be_in_domain_event_package = 
+    static final ArchRule domain_events_should_be_in_domain_events_package = 
             classes()
                 .that().haveSimpleNameEndingWith("Event")
                 .or().haveSimpleNameEndingWith("DomainEvent")
                 .and().resideInAPackage("..domain..")
-                .should().resideInAPackage("..domain.event..");
+                .should().resideInAPackage("..domain.events..");
 
     @ArchTest
-    static final ArchRule factories_should_be_in_domain_factory_package = 
+    static final ArchRule factories_should_be_in_model_factory_package = 
             classes()
                 .that().haveSimpleNameEndingWith("Factory")
                 .and().resideInAPackage("..domain..")
-                .should().resideInAPackage("..domain.factory..");
+                .should().resideInAPackage("..domain.model..factory..");
 
     @ArchTest
     static final ArchRule specifications_should_be_in_domain_specification_package = 
@@ -49,11 +50,11 @@ public class DomainDrivenDesignTest {
                 .should().resideInAPackage("..domain.specification..");
 
     @ArchTest
-    static final ArchRule domain_exceptions_should_be_in_domain_exception_package = 
+    static final ArchRule domain_exceptions_should_be_in_domain_exceptions_package = 
             classes()
                 .that().haveSimpleNameEndingWith("Exception")
                 .and().resideInAPackage("..domain..")
-                .should().resideInAPackage("..domain.exception..");
+                .should().resideInAPackage("..domain.exceptions..");
 
     // =============== LENGUAJE UBICUO Y NAMING ===============
 
@@ -104,8 +105,25 @@ public class DomainDrivenDesignTest {
     @ArchTest
     static final ArchRule value_objects_should_be_immutable_verified = 
             classes()
-                .that().resideInAPackage("..domain.model.valueobject..")
+                .that().resideInAPackage("..domain.model..valueobject..")
                 .should().haveOnlyFinalFields();
+
+    @ArchTest
+    static final ArchRule value_objects_should_be_in_valueobjects_package = 
+            classes()
+                .that().haveSimpleNameEndingWith("Value")
+                .or().haveSimpleNameEndingWith("VO")
+                .and().resideInAPackage("..domain..")
+                .should().resideInAPackage("..domain.model..valueobject..");
+
+    @ArchTest
+    static final ArchRule events_must_have_required_fields = 
+            fields()
+                .that().areDeclaredInClassesThat()
+                .resideInAPackage("..domain.events..")
+                .and().areDeclaredInClassesThat().haveSimpleNameEndingWith("Event")
+                .and().haveRawType("odoonto.domain.model.shared.valueobjects.EventId")
+                .should().beDeclaredInClassesThat().resideInAPackage("..domain.events..");
 
     @ArchTest
     static final ArchRule aggregates_should_encapsulate_business_logic = 
@@ -119,10 +137,17 @@ public class DomainDrivenDesignTest {
 
     @ArchTest
     static final ArchRule bounded_contexts_should_be_isolated = 
+            SlicesRuleDefinition.slices()
+                .matching("odoonto.domain.model.(*)..")
+                .should().notDependOnEachOther()
+                .ignoreDependency("odoonto.domain.model.shared..", "..");
+
+    @ArchTest
+    static final ArchRule bounded_contexts_should_not_cross_reference = 
             noClasses()
-                .that().resideInAPackage("..domain..")
+                .that().resideInAPackage("..domain.model.patients..")
                 .should().dependOnClassesThat()
-                .resideInAnyPackage("..shared..", "..common..");
+                .resideInAnyPackage("..domain.model.records..", "..domain.model.scheduling..", "..domain.model.staff..", "..domain.model.catalog..");
 
     @ArchTest
     static final ArchRule domain_services_should_not_have_state = 
@@ -199,8 +224,9 @@ public class DomainDrivenDesignTest {
     @ArchTest
     static final ArchRule jmolecules_domain_events_must_be_annotated = 
             classes()
-                .that().resideInAPackage("..domain.event..")
-                .should().beAnnotatedWith("org.jmolecules.event.annotation.DomainEvent");
+                .that().resideInAPackage("..domain.events..")
+                .and().haveSimpleNameEndingWith("Event")
+                .should().implement("odoonto.domain.events.shared.DomainEvent");
 
     // =============== NO MEZCLAR ANOTACIONES ===============
 
@@ -234,4 +260,14 @@ public class DomainDrivenDesignTest {
                 .orShould().beAnnotatedWith("jakarta.persistence.Entity")
                 .orShould().beAnnotatedWith("jakarta.persistence.Embeddable")
                 .because("Domain classes should use jMolecules annotations instead of infrastructure annotations");
+
+    // =============== DOMAIN POLICIES ===============
+
+    @ArchTest
+    static final ArchRule policies_should_not_depend_on_infrastructure = 
+            noClasses()
+                .that().resideInAPackage("..domain.model..policy..")
+                .should().dependOnClassesThat()
+                .resideInAnyPackage("..infrastructure..", "org.springframework..")
+                .because("Domain policies should not depend on infrastructure");
 } 

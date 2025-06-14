@@ -56,11 +56,12 @@ public class UbicationTest {
                 .should().resideInAPackage("..domain.model..");
 
     @ArchTest
-    static final ArchRule value_objects_should_be_in_domain_model_valueobject = 
+    static final ArchRule value_objects_should_be_in_domain_model_valueobjects = 
             classes()
                 .that().haveSimpleNameEndingWith("Value")
                 .or().haveSimpleNameEndingWith("VO")
-                .should().resideInAPackage("..domain.model.valueobject..");
+                .and().resideInAPackage("..domain..")
+                .should().resideInAPackage("..domain.model..valueobject..");
 
     @ArchTest
     static final ArchRule external_adapters_should_be_in_infrastructure_external = 
@@ -83,19 +84,19 @@ public class UbicationTest {
                 .should().resideInAPackage("..domain.service..");
 
     @ArchTest
-    static final ArchRule domain_events_should_be_in_domain_event = 
+    static final ArchRule domain_events_should_be_in_domain_events = 
             classes()
                 .that().haveSimpleNameEndingWith("Event")
                 .or().haveSimpleNameEndingWith("DomainEvent")
                 .and().resideInAPackage("..domain..")
-                .should().resideInAPackage("..domain.event..");
+                .should().resideInAPackage("..domain.events..");
 
     @ArchTest
-    static final ArchRule domain_exceptions_should_be_in_domain_exception = 
+    static final ArchRule domain_exceptions_should_be_in_domain_exceptions = 
             classes()
                 .that().haveSimpleNameEndingWith("Exception")
                 .and().resideInAPackage("..domain..")
-                .should().resideInAPackage("..domain.exception..");
+                .should().resideInAPackage("..domain.exceptions..");
 
     @ArchTest
     static final ArchRule mappers_should_be_in_appropriate_mapper_package = 
@@ -114,4 +115,32 @@ public class UbicationTest {
             classes()
                 .that().haveSimpleNameEndingWith("QueryHandler")
                 .should().resideInAPackage("..application.query..");
+
+    @ArchTest
+    static final ArchRule aggregates_should_be_in_aggregates_package = 
+            classes()
+                .that().haveSimpleNameEndingWith("Aggregate")
+                .and().resideInAPackage("..domain..")
+                .should().resideInAPackage("..domain.model..aggregates..");
+
+    @ArchTest
+    static final ArchRule entities_should_be_in_entities_package = 
+            classes()
+                .that().haveSimpleNameEndingWith("Entity")
+                .and().resideInAPackage("..domain..")
+                .should().resideInAPackage("..domain.model..entities..");
+
+    @ArchTest
+    static final ArchRule factories_should_be_in_factory_package = 
+            classes()
+                .that().haveSimpleNameEndingWith("Factory")
+                .and().resideInAPackage("..domain..")
+                .should().resideInAPackage("..domain.model..factory..");
+
+    @ArchTest
+    static final ArchRule policies_should_be_in_policy_package = 
+            classes()
+                .that().haveSimpleNameEndingWith("Policy")
+                .and().resideInAPackage("..domain..")
+                .should().resideInAPackage("..domain.model..policy..");
 } 

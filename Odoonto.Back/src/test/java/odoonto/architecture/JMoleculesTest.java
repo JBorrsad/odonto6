@@ -29,7 +29,7 @@ public class JMoleculesTest {
     @ArchTest
     static final ArchRule value_objects_must_be_annotated_with_jmolecules = 
             classes()
-                .that().resideInAPackage("..domain.model.valueobject..")
+                .that().resideInAPackage("..domain.model..valueobject..")
                 .should().beAnnotatedWith("org.jmolecules.ddd.annotation.ValueObject");
 
     @ArchTest
@@ -48,13 +48,15 @@ public class JMoleculesTest {
     @ArchTest
     static final ArchRule domain_events_must_be_annotated_with_jmolecules = 
             classes()
-                .that().resideInAPackage("..domain.event..")
-                .should().beAnnotatedWith("org.jmolecules.event.annotation.DomainEvent");
+                .that().resideInAPackage("..domain.events..")
+                .and().haveSimpleNameEndingWith("Event")
+                .should().implement("odoonto.domain.events.shared.DomainEvent");
 
     @ArchTest
     static final ArchRule factories_must_be_annotated_with_jmolecules = 
             classes()
-                .that().resideInAPackage("..domain.factory..")
+                .that().resideInAPackage("..domain.model..factory..")
+                .and().haveSimpleNameEndingWith("Factory")
                 .should().beAnnotatedWith("org.jmolecules.ddd.annotation.Factory");
 
     @ArchTest

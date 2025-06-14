@@ -1,0 +1,35 @@
+%%{init: {'theme':'neutral'}}%%
+classDiagram
+    class TreatmentCatalogAggregate {
+        -CatalogId catalogId
+        -List~TreatmentPricingEntity~ treatments
+        ___
+        +addTreatment() void
+        +updatePrice() void
+        +getTreatmentPrice() MoneyValue
+        +getTreatmentDuration() DurationValue
+    }
+    
+    class TreatmentPricingEntity {
+        -TreatmentId treatmentId
+        -String name
+        -String description
+        -MoneyValue price
+        -DurationValue estimatedDuration
+        ___
+        +updatePrice() void
+        +updateDuration() void
+        +getPrice() MoneyValue
+    }
+    
+    class CatalogId {
+        -String value
+        ___
+        +CatalogId(String)
+        +getValue() String
+        +equals(Object) boolean
+        +hashCode() int
+    }
+    
+    TreatmentCatalogAggregate *-- TreatmentPricingEntity : contains
+    TreatmentCatalogAggregate *-- CatalogId : contains 

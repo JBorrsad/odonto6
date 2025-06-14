@@ -1,0 +1,111 @@
+%%{init: {'theme':'neutral'}}%%
+classDiagram
+    class PatientAggregate {
+        &lt;&lt;aggregate&gt;&gt;
+        -PatientId patientId
+        -PersonName personName
+        -EmailAddress email
+        -PhoneNumber phone
+        -AddressValue address
+        -BirthDateValue birthDate
+        -SexValue sex
+        -AllergyValue allergies
+        ___
+        +register() void
+        +updateContactInfo() void
+        +updateAddress() void
+        +updatePersonalInfo() void
+    }
+    
+    class PatientId {
+        &lt;&lt;valueObject&gt;&gt;
+        -String value
+        ___
+        +PatientId(String)
+        +getValue() String
+        +equals(Object) boolean
+        +hashCode() int
+    }
+    
+    class PersonName {
+        &lt;&lt;valueObject&gt;&gt;
+        -String firstName
+        -String lastName
+        ___
+        +PersonName(String, String)
+        +getFirstName() String
+        +getLastName() String
+        +getFullName() String
+    }
+    
+    class EmailAddress {
+        &lt;&lt;valueObject&gt;&gt;
+        -String value
+        ___
+        +EmailAddress(String)
+        +getValue() String
+        +isValid() boolean
+        +getDomain() String
+    }
+    
+    class PhoneNumber {
+        &lt;&lt;valueObject&gt;&gt;
+        -String value
+        ___
+        +PhoneNumber(String)
+        +getValue() String
+        +isValid() boolean
+        +getFormattedNumber() String
+    }
+    
+    class AddressValue {
+        &lt;&lt;valueObject&gt;&gt;
+        -String street
+        -String city
+        -String state
+        -String zipCode
+        -String country
+        ___
+        +getFullAddress() String
+        +getStreet() String
+        +getCity() String
+    }
+    
+    class BirthDateValue {
+        &lt;&lt;valueObject&gt;&gt;
+        -LocalDate value
+        ___
+        +BirthDateValue(LocalDate)
+        +getAge() int
+        +isMinor() boolean
+        +isSenior() boolean
+    }
+    
+    class SexValue {
+        &lt;&lt;enumeration&gt;&gt;
+        MALE
+        FEMALE
+        OTHER
+        ___
+        +fromString(String) SexValue
+        +getDisplayName() String
+    }
+    
+    class AllergyValue {
+        &lt;&lt;valueObject&gt;&gt;
+        -String notes
+        ___
+        +AllergyValue(String)
+        +getNotes() String
+        +hasAllergies() boolean
+        +isEmpty() boolean
+    }
+    
+    PatientAggregate *-- PatientId : contains
+    PatientAggregate *-- PersonName : contains
+    PatientAggregate *-- EmailAddress : contains
+    PatientAggregate *-- PhoneNumber : contains
+    PatientAggregate *-- AddressValue : contains
+    PatientAggregate *-- BirthDateValue : contains
+    PatientAggregate *-- SexValue : contains
+    PatientAggregate *-- AllergyValue : contains 

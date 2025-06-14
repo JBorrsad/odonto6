@@ -1,0 +1,102 @@
+%%{init: {'theme':'neutral'}}%%
+classDiagram
+    class PatientAggregate {
+        -PatientId patientId
+        -PersonName personName
+        -EmailAddress email
+        -PhoneNumber phone
+        -AddressValue address
+        -BirthDateValue birthDate
+        -SexValue sex
+        -AllergyValue allergies
+        ___
+        +register() void
+        +updateContactInfo() void
+        +updateAddress() void
+        +updatePersonalInfo() void
+    }
+    
+    class PatientId {
+        -String value
+        ___
+        +PatientId(String)
+        +getValue() String
+        +equals(Object) boolean
+        +hashCode() int
+    }
+    
+    class PersonName {
+        -String firstName
+        -String lastName
+        ___
+        +PersonName(String, String)
+        +getFirstName() String
+        +getLastName() String
+        +getFullName() String
+    }
+    
+    class EmailAddress {
+        -String value
+        ___
+        +EmailAddress(String)
+        +getValue() String
+        +isValid() boolean
+        +getDomain() String
+    }
+    
+    class PhoneNumber {
+        -String value
+        ___
+        +PhoneNumber(String)
+        +getValue() String
+        +isValid() boolean
+        +getFormattedNumber() String
+    }
+    
+    class AddressValue {
+        -String street
+        -String city
+        -String state
+        -String zipCode
+        -String country
+        ___
+        +getFullAddress() String
+        +getStreet() String
+        +getCity() String
+    }
+    
+    class BirthDateValue {
+        -LocalDate value
+        ___
+        +BirthDateValue(LocalDate)
+        +getAge() int
+        +isMinor() boolean
+        +isSenior() boolean
+    }
+    
+    class SexValue {
+        MALE
+        FEMALE
+        OTHER
+        ___
+        +fromString(String) SexValue
+        +getDisplayName() String
+    }
+    
+    class AllergyValue {
+        -String notes
+        ___
+        +AllergyValue(String)
+        +getNotes() String
+        +hasAllergies() boolean
+        +isEmpty() boolean
+    }
+    
+    PatientAggregate *-- PatientId : contains
+    PatientAggregate *-- PersonName : contains
+    PatientAggregate *-- EmailAddress : contains
+    PatientAggregate *-- PhoneNumber : contains
+    PatientAggregate *-- AddressValue : contains
+    PatientAggregate *-- BirthDateValue : contains
+    PatientAggregate *-- SexValue : contains
+    PatientAggregate *-- AllergyValue : contains 

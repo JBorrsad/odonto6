@@ -1,16 +1,11 @@
 package odoonto.domain.exceptions;
 
-public class DomainException extends RuntimeException {
-
-    public DomainException(final String message) {
+public abstract class DomainException extends RuntimeException {
+    protected DomainException(final String message) {
         super(message);
     }
 
-    public DomainException(final String message, final Throwable cause) {
+    protected DomainException(final String message, final Throwable cause) {
         super(message, cause);
-    }
-
-    public DomainException(final Throwable cause) {
-        super(cause);
     }
 } 

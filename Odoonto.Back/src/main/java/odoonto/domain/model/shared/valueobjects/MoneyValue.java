@@ -1,14 +1,16 @@
 package odoonto.domain.model.shared.valueobjects;
 
+import org.jmolecules.ddd.annotation.ValueObject;
 import java.math.BigDecimal;
 import java.util.Objects;
 
+@ValueObject
 public final class MoneyValue {
     
     private final BigDecimal amount;
     private final String currency;
 
-    private MoneyValue(final BigDecimal amount, final String currency) {
+    public MoneyValue(final BigDecimal amount, final String currency) {
         if (amount == null) {
             throw new IllegalArgumentException("Amount cannot be null");
         }
@@ -16,7 +18,7 @@ public final class MoneyValue {
             throw new IllegalArgumentException("Currency cannot be null or empty");
         }
         this.amount = amount;
-        this.currency = currency;
+        this.currency = currency.trim().toUpperCase();
     }
 
     public static MoneyValue of(final BigDecimal amount, final String currency) {
@@ -36,10 +38,10 @@ public final class MoneyValue {
     }
 
     @Override
-    public boolean equals(final Object other) {
-        if (this == other) return true;
-        if (other == null || getClass() != other.getClass()) return false;
-        final MoneyValue that = (MoneyValue) other;
+    public boolean equals(final Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        final MoneyValue that = (MoneyValue) obj;
         return Objects.equals(amount, that.amount) && Objects.equals(currency, that.currency);
     }
 

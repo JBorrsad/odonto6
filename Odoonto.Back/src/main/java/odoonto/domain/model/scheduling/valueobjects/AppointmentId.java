@@ -1,18 +1,18 @@
 package odoonto.domain.model.scheduling.valueobjects;
 
 import org.jmolecules.ddd.annotation.ValueObject;
-
 import java.util.Objects;
 import java.util.UUID;
 
 @ValueObject
 public final class AppointmentId {
-    
     private final String value;
 
     private AppointmentId(final String value) {
-        validateValue(value);
-        this.value = value;
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("AppointmentId cannot be null or empty");
+        }
+        this.value = value.trim();
     }
 
     public static AppointmentId generate() {
@@ -23,21 +23,15 @@ public final class AppointmentId {
         return new AppointmentId(value);
     }
 
-    private static void validateValue(final String value) {
-        if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException("AppointmentId value cannot be null or empty");
-        }
-    }
-
     public String getValue() {
         return value;
     }
 
     @Override
-    public boolean equals(final Object other) {
-        if (this == other) return true;
-        if (other == null || getClass() != other.getClass()) return false;
-        final AppointmentId that = (AppointmentId) other;
+    public boolean equals(final Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        final AppointmentId that = (AppointmentId) obj;
         return Objects.equals(value, that.value);
     }
 

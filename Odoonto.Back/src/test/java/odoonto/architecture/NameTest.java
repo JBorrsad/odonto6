@@ -48,7 +48,7 @@ public class NameTest {
     @ArchTest
     static final ArchRule value_objects_should_end_with_value_or_vo = 
             classes()
-                .that().resideInAPackage("..domain.model.valueobject..")
+                .that().resideInAPackage("..domain.model..valueobject..")
                 .should().haveSimpleNameEndingWith("Value")
                 .orShould().haveSimpleNameEndingWith("VO");
 
@@ -76,4 +76,29 @@ public class NameTest {
             classes()
                 .that().areAnnotatedWith("org.jmolecules.ddd.annotation.Repository")
                 .should().resideInAPackage("..domain.repository..");
+
+    @ArchTest
+    static final ArchRule factories_should_end_with_factory = 
+            classes()
+                .that().resideInAPackage("..domain.model..factory..")
+                .should().haveSimpleNameEndingWith("Factory");
+
+    @ArchTest
+    static final ArchRule policies_should_end_with_policy = 
+            classes()
+                .that().resideInAPackage("..domain.model..policy..")
+                .should().haveSimpleNameEndingWith("Policy");
+
+    @ArchTest
+    static final ArchRule events_should_end_with_event = 
+            classes()
+                .that().resideInAPackage("..domain.events..")
+                .should().haveSimpleNameEndingWith("Event");
+
+    @ArchTest
+    static final ArchRule identifiers_should_end_with_id = 
+            classes()
+                .that().resideInAPackage("..domain.model..valueobject..")
+                .and().haveSimpleNameEndingWith("Id")
+                .should().haveSimpleNameEndingWith("Id");
 } 

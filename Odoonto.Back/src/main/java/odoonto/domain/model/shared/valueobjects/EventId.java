@@ -1,50 +1,47 @@
 package odoonto.domain.model.shared.valueobjects;
 
+import org.jmolecules.ddd.annotation.ValueObject;
 import java.util.Objects;
 import java.util.UUID;
 
+@ValueObject
 public final class EventId {
-    
-    private final String id;
+    private final String value;
 
-    private EventId(final String id) {
-        validateId(id);
-        this.id = id;
+    private EventId(final String value) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException("EventId cannot be null or empty");
+        }
+        this.value = value.trim();
     }
 
     public static EventId generate() {
         return new EventId(UUID.randomUUID().toString());
     }
 
-    public static EventId of(final String id) {
-        return new EventId(id);
+    public static EventId of(final String value) {
+        return new EventId(value);
     }
 
-    private static void validateId(final String id) {
-        if (id == null || id.trim().isEmpty()) {
-            throw new IllegalArgumentException("Event ID cannot be null or empty");
-        }
-    }
-
-    public String getId() {
-        return id;
+    public String getValue() {
+        return value;
     }
 
     @Override
-    public boolean equals(final Object other) {
-        if (this == other) return true;
-        if (other == null || getClass() != other.getClass()) return false;
-        final EventId eventId = (EventId) other;
-        return Objects.equals(id, eventId.id);
+    public boolean equals(final Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        final EventId eventId = (EventId) obj;
+        return Objects.equals(value, eventId.value);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(value);
     }
 
     @Override
     public String toString() {
-        return id;
+        return value;
     }
 } 

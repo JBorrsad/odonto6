@@ -86,7 +86,7 @@ public class AcopplementTest {
     static final ArchRule value_objects_should_override_equals_and_hashcode = 
             fields()
                 .that().areDeclaredInClassesThat()
-                .resideInAPackage("..domain.model.valueobject..")
+                .resideInAPackage("..domain.model..valueobject..")
                 .should().beFinal()
                 .because("Value objects should be immutable and override equals/hashCode");
 

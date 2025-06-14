@@ -1,0 +1,49 @@
+%%{init: {'theme':'neutral'}}%%
+classDiagram
+    class DoctorAggregate {
+        <<aggregate>>
+        -DoctorId doctorId
+        -PersonName personName
+        -SpecialtyValue specialty
+        -ScheduleValue schedule
+        ___
+        +updateSchedule() void
+        +changeSpecialty() void
+        +isAvailableAt() boolean
+    }
+    
+    class DoctorId {
+        <<valueObject>>
+        -String value
+        ___
+        +DoctorId(String)
+        +getValue() String
+        +equals(Object) boolean
+        +hashCode() int
+    }
+    
+    class SpecialtyValue {
+        <<enumeration>>
+        GENERAL_DENTISTRY
+        ORTHODONTICS
+        ENDODONTICS
+        PERIODONTICS
+        ORAL_SURGERY
+        PEDIATRIC_DENTISTRY
+        ___
+        +getDisplayName() String
+        +getCode() String
+    }
+    
+    class ScheduleValue {
+        <<valueObject>>
+        -Map~DayOfWeek,TimeSlotValue~ weeklySchedule
+        ___
+        +getAvailableSlots() List
+        +isWorkingDay() boolean
+        +getWorkingHours() TimeSlotValue
+    }
+    
+    DoctorAggregate *-- DoctorId : contains
+    DoctorAggregate *-- SpecialtyValue : contains
+    DoctorAggregate *-- ScheduleValue : contains 

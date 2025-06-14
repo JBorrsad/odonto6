@@ -1,0 +1,71 @@
+%%{init: {'theme':'neutral'}}%%
+classDiagram
+    class MedicalRecordAggregate {
+        <<aggregate>>
+        -MedicalRecordId recordId
+        -PatientId patientId
+        -OdontogramEntity odontogram
+        -List~MedicalEntryEntity~ entries
+        ___
+        +createEntry() void
+        +updateOdontogram() void
+        +addTreatment() void
+    }
+    
+    class OdontogramEntity {
+        <<entity>>
+        -OdontogramId odontogramId
+        -DentitionType dentitionType
+        -List~ToothEntity~ teeth
+        ___
+        +addTooth() void
+        +updateTooth() void
+        +getToothByNumber() ToothEntity
+    }
+    
+    class ToothEntity {
+        <<entity>>
+        -ToothNumber toothNumber
+        -List~LesionEntity~ lesions
+        -List~TreatmentEntity~ treatments
+        ___
+        +addLesion() void
+        +addTreatment() void
+        +isHealthy() boolean
+    }
+    
+    class LesionEntity {
+        <<entity>>
+        -LesionType lesionType
+        -ToothFaceValue face
+        -String description
+        ___
+        +getDescription() String
+        +getSeverity() String
+    }
+    
+    class TreatmentEntity {
+        <<entity>>
+        -TreatmentId treatmentId
+        -TreatmentType treatmentType
+        -ToothFaceValue face
+        -TimestampValue performedAt
+        ___
+        +complete() void
+        +isCompleted() boolean
+    }
+    
+    class MedicalEntryEntity {
+        <<entity>>
+        -String notes
+        -TimestampValue createdAt
+        ___
+        +getNotes() String
+        +getCreatedAt() TimestampValue
+    }
+    
+    MedicalRecordAggregate *-- OdontogramEntity : contains
+    MedicalRecordAggregate *-- MedicalEntryEntity : contains
+    OdontogramEntity *-- ToothEntity : contains
+    ToothEntity *-- LesionEntity : contains
+    ToothEntity *-- TreatmentEntity : contains 

@@ -1,0 +1,13 @@
+{
+  "name": "odoonto-domain-docs",
+  "version": "1.0.0",
+  "description": "Documentation system for Odoonto domain layer",
+  "scripts": {
+    "sync-diagrams": "node src/main/java/odoonto/documentation/domain/sync-diagrams.js",
+    "sync-diagrams:watch": "node src/main/java/odoonto/documentation/domain/sync-diagrams.js --watch",
+    "docs:build": "npm run sync-diagrams"
+  },
+  "keywords": ["domain", "ddd", "documentation", "mermaid"],
+  "author": "Odoonto Team",
+  "license": "MIT"
+} 

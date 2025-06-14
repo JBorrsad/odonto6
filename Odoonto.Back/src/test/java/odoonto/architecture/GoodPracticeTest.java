@@ -14,7 +14,7 @@ public class GoodPracticeTest {
     @ArchTest
     static final ArchRule value_objects_should_be_immutable = 
             classes()
-                .that().resideInAPackage("..domain.model.valueobject..")
+                .that().resideInAPackage("..domain.model..valueobject..")
                 .should().haveOnlyFinalFields();
 
     @ArchTest
@@ -53,4 +53,8 @@ public class GoodPracticeTest {
                 .that().resideInAPackage("..controller.rest..")
                 .should().dependOnClassesThat()
                 .resideInAPackage("..domain.model..");
+
+    @ArchTest
+    static final ArchRule methods_should_not_return_null = 
+            GeneralCodingRules.NO_CLASSES_SHOULD_ACCESS_STANDARD_STREAMS;
 } 
